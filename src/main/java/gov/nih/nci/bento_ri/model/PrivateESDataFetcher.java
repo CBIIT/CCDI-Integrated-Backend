@@ -180,7 +180,14 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                             Map<String, Object> args = env.getArguments();
                             return fileOverview(args);
                         })
-                        // no sure if this is still needed
+                        .dataFetcher("numberOfDiseases", env -> {
+                            Map<String, Object> args = env.getArguments();
+                            return numberOfDiseases(args);
+                        })
+                        .dataFetcher("numberOfParticipants", env -> {
+                            Map<String, Object> args = env.getArguments();
+                            return numberOfParticipants(args);
+                        })
                         .dataFetcher("numberOfStudies", env -> {
                             Map<String, Object> args = env.getArguments();
                             return numberOfStudies(args);
@@ -2507,9 +2514,21 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         return esService.collectPage(request, query, properties, ESService.MAX_ES_SIZE, 0);
     }
 
+    private Integer numberOfDiseases(Map<String, Object> params) throws IOException {
+        Map<String, Object> query_diseases = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "diagnoses");
+        int numDiseases = getNodeCount("diagnosis", query_diseases, DIAGNOSIS_END_POINT).size();
+        return numDiseases;
+    }
+
+    private Integer numberOfParticipants(Map<String, Object> params) throws IOException {
+        Map<String, Object> query_participants = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "participants");
+        int numParticipants = getNodeCount("id", query_participants, PARTICIPANTS_END_POINT).size();
+        return numParticipants;
+    }
+    
     private Integer numberOfStudies(Map<String, Object> params) throws IOException {
-        Map<String, Object> query_files_all_records = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "files_overall");
-        int numStudies = getNodeCount("study_id", query_files_all_records, FILES_END_POINT).size();
+        Map<String, Object> query_studies = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "studies");
+        int numStudies = getNodeCount("study_id", query_studies, STUDIES_END_POINT).size();
         return numStudies;
     }
 
