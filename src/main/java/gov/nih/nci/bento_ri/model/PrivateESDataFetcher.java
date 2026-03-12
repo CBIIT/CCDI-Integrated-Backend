@@ -328,7 +328,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_END_POINT, STUDIES_END_POINT,
                 GS_COUNT_ENDPOINT, STUDIES_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "study_count",
-                GS_RESULT_FIELD, "studies_table",
+                GS_RESULT_FIELD, "studies",
                 GS_SEARCH_FIELD, List.of("study_id_gs", "study_name_gs", "study_status_gs"),
                 GS_SORT_FIELD, "study_id",
                 GS_COLLECT_FIELDS, new String[][]{
@@ -714,7 +714,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         params.put("study_id",study_ids);
 
 
-        Map<String, Object> query_participants = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "participants_table");
+        Map<String, Object> query_participants = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "participants");
 
         Request participantsCountRequest = new Request("GET", PARTICIPANTS_END_POINT);
 
@@ -1046,7 +1046,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     ADDITIONAL_UPDATE, Map.of("WXS", 2000, "Other", 500, "RNA-Seq", 1000, "WGS", 1500),
                     AGG_ENDPOINT, FILES_END_POINT
             ));
-            Map<String, Object> query_participants = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "participants_table");
+            Map<String, Object> query_participants = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "participants");
             // System.out.println(gson.toJson(query_participants));
             Map<String, Object> newQuery_participants = new HashMap<>(query_participants);
             newQuery_participants.put("size", 0);
@@ -1060,37 +1060,37 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             JsonObject participantsCountResult = inventoryESService.send(participantsCountRequest);
             int numberOfParticipants = participantsCountResult.getAsJsonObject("hits").getAsJsonObject("total").get("value").getAsInt();
             int participants_file_count = participantsCountResult.getAsJsonObject("aggregations").getAsJsonObject("file_count").get("value").getAsInt();
-            Map<String, Object> query_diagnosis = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "diagnoses_table");
+            Map<String, Object> query_diagnosis = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "diagnoses");
             Request diagnosisCountRequest = new Request("GET", DIAGNOSIS_COUNT_END_POINT);
             diagnosisCountRequest.setJsonEntity(gson.toJson(query_diagnosis));
             JsonObject diagnosisCountResult = inventoryESService.send(diagnosisCountRequest);
             int numberOfDiagnosis = diagnosisCountResult.get("count").getAsInt();
-            Map<String, Object> query_genetic_analyses = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "genetic_analyses_table");
+            Map<String, Object> query_genetic_analyses = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "genetic_analyses");
             Request geneticAnalysesCountRequest = new Request("GET", GENETIC_ANALYSES_COUNT_END_POINT);
             geneticAnalysesCountRequest.setJsonEntity(gson.toJson(query_genetic_analyses));
             JsonObject geneticAnalysesCountResult = inventoryESService.send(geneticAnalysesCountRequest);
             int numberOfGeneticAnalyses = geneticAnalysesCountResult.get("count").getAsInt();
-            Map<String, Object> query_treatments = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "treatments_table");
+            Map<String, Object> query_treatments = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "treatments");
             Request treatmentsCountRequest = new Request("GET", TREATMENTS_COUNT_END_POINT);
             treatmentsCountRequest.setJsonEntity(gson.toJson(query_treatments));
             JsonObject treatmentsCountResult = inventoryESService.send(treatmentsCountRequest);
             int numberOfTreatments = treatmentsCountResult.get("count").getAsInt();
-            Map<String, Object> query_treatment_responses = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "treatment_responses_table");
+            Map<String, Object> query_treatment_responses = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "treatment_responses");
             Request treatmentResponsesCountRequest = new Request("GET", TREATMENT_RESPONSES_COUNT_END_POINT);
             treatmentResponsesCountRequest.setJsonEntity(gson.toJson(query_treatment_responses));
             JsonObject treatmentResponsesCountResult = inventoryESService.send(treatmentResponsesCountRequest);
             int numberOfTreatmentResponses = treatmentResponsesCountResult.get("count").getAsInt();
-            Map<String, Object> query_samples = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "samples_table");
+            Map<String, Object> query_samples = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "samples");
             Request samplesCountRequest = new Request("GET", SAMPLES_END_POINT);
             samplesCountRequest.setJsonEntity(gson.toJson(query_samples));
             JsonObject samplesCountResult = inventoryESService.send(samplesCountRequest);
             int numberOfSamples = samplesCountResult.get("count").getAsInt();
             
-            Map<String, Object> query_studies = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "study_participants_faceted");
+            Map<String, Object> query_studies = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "study_participants");
             int numberOfStudies = getNodeCount("study_id", query_studies, STUDIES_FACET_END_POINT).size();
 
             Request filesCountRequest = new Request("GET", FILES_COUNT_END_POINT);
-            Map<String, Object> query_files = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "files_table");
+            Map<String, Object> query_files = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "files");
             filesCountRequest.setJsonEntity(gson.toJson(query_files));
             JsonObject filesCountResult = inventoryESService.send(filesCountRequest);
             int numberOfFiles = filesCountResult.get("count").getAsInt();
@@ -1156,7 +1156,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     }
                     //if any facet value is above the number, perform the query
                     if (facetValues_need_update.size() > 0) {
-                        Map<String, Object> query_4_update = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(field), Set.of(), "nested_filters", "participants_table");
+                        Map<String, Object> query_4_update = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(field), Set.of(), "nested_filters", "participants");
                         String prop = field;
                         String nestedProperty = "";
                         if (indexType.equals("survivals_table")) {
@@ -1566,7 +1566,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 }
                 //if any facet value is above the number, perform the query
                 if (facetValues_need_update.size() > 0) {
-                    Map<String, Object> query_4_update = inventoryESService.buildFacetFilterQuery(query_params, RANGE_PARAMS, Set.of(field), Set.of(), "nested_filters", "participants_table");
+                    Map<String, Object> query_4_update = inventoryESService.buildFacetFilterQuery(query_params, RANGE_PARAMS, Set.of(field), Set.of(), "nested_filters", "participants");
                     String prop = field;
                     query_4_update = inventoryESService.addCustomAggregations(query_4_update, "facetAgg", prop, "sample_diagnosis_genetic_analysis_file_filters");
                     Request request = new Request("GET", PARTICIPANTS_END_POINT);

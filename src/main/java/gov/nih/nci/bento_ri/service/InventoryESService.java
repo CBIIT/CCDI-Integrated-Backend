@@ -28,15 +28,15 @@ public class InventoryESService extends ESService {
     public static final String AGGS = "aggs";
     public static final int MAX_ES_SIZE = 10000;
     final Set<String> PARTICIPANT_PARAMS = Set.of("race", "sex_at_birth", "participant_id");
-    final Set<String> SURVIVAL_PARAMS = Set.of("last_known_survival_status", "age_at_last_known_survival_status", "first_event");
-    final Set<String> TREATMENT_PARAMS = Set.of("treatment_type", "treatment_agent", "age_at_treatment_start");
-    final Set<String> TREATMENT_RESPONSE_PARAMS = Set.of("response_category", "age_at_response");
-    final Set<String> DIAGNOSIS_PARAMS = Set.of( "diagnosis", "disease_phase", "diagnosis_classification_system", "diagnosis_basis", "tumor_grade_source", "tumor_stage_source", "diagnosis_anatomic_site", "age_at_diagnosis", "diagnosis_category");
+    final Set<String> SURVIVAL_PARAMS = Set.of("last_known_survival_status", "age_at_last_known_survival_status", "first_event", "cause_of_death");
+    final Set<String> TREATMENT_PARAMS = Set.of("treatment_type", "treatment_agent", "age_at_treatment_start", "age_at_treatment_end");
+    final Set<String> TREATMENT_RESPONSE_PARAMS = Set.of("response_category", "age_at_response", "response_system", "response");
+    final Set<String> DIAGNOSIS_PARAMS = Set.of( "diagnosis", "disease_phase", "diagnosis_classification_system", "diagnosis_basis", "diagnosis_anatomic_site", "age_at_diagnosis", "diagnosis_category");
+    final Set<String> GENETIC_ANALYSIS_PARAMS = Set.of( "alteration", "alteration_type", "fusion_partner_gene", "gene_symbol", "reported_significance", "reported_significance_system", "status");
     final Set<String> SAMPLE_PARAMS = Set.of("sample_anatomic_site", "participant_age_at_collection", "sample_tumor_status", "tumor_classification");
     final Set<String> FILE_PARAMS = Set.of("data_category", "file_type", "library_selection", "library_source_material", "library_source_molecule", "library_strategy", "file_mapping_level");
     final Set<String> SAMPLE_FILE_PARAMS = Set.of("sample_anatomic_site", "participant_age_at_collection", "sample_tumor_status", "tumor_classification", "data_category", "file_type", "library_selection", "library_source_material", "library_source_molecule", "library_strategy", "file_mapping_level");
     
-
     static final AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
 
     private static final Logger logger = LogManager.getLogger(RedisService.class);
@@ -166,7 +166,7 @@ public class InventoryESService extends ESService {
             List<Object> filter_1 = new ArrayList<>();
             List<Object> combined_filters = new ArrayList<>();
             List<Object> combined_participant_filters = new ArrayList<>();
-            List<Object> combined_sample_diagnosis_filters = new ArrayList<>();
+            List<Object> combined_sample_diagnosis_genetic_analysis_filters = new ArrayList<>();
             List<Object> combined_survival_filters = new ArrayList<>();
             List<Object> combined_treatment_filters = new ArrayList<>();
             List<Object> combined_treatment_response_filters = new ArrayList<>();
@@ -211,16 +211,16 @@ public class InventoryESService extends ESService {
                             
                             if (includeUnknown) {
                                 // Include unknown values (-999) by default when no unknownAges parameter is specified
-                                combined_sample_diagnosis_filters.add(Map.of(
+                                combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
                                     "bool", Map.of("should", List.of(
-                                        Map.of("range", Map.of("combined_filters.sample_diagnosis_filters."+key, range)),
-                                        Map.of("term", Map.of("combined_filters.sample_diagnosis_filters."+key, -999))
+                                        Map.of("range", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, range)),
+                                        Map.of("term", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, -999))
                                     ))
                                 ));
                             } else {
                                 // Use normal range filter when unknownAges parameter is specified
-                                combined_sample_diagnosis_filters.add(Map.of(
-                                    "range", Map.of("combined_filters.sample_diagnosis_filters."+key, range)
+                                combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
+                                    "range", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, range)
                                 ));
                             }
                         } else if (key.equals("participant_age_at_collection")) {
@@ -237,20 +237,46 @@ public class InventoryESService extends ESService {
                             
                             if (includeUnknown) {
                                 // Include unknown values (-999) by default when no unknownAges parameter is specified
-                                combined_sample_diagnosis_filters.add(Map.of(
+                                combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
                                     "bool", Map.of("should", List.of(
-                                        Map.of("range", Map.of("combined_filters.sample_diagnosis_filters."+key, range)),
-                                        Map.of("term", Map.of("combined_filters.sample_diagnosis_filters."+key, -999))
+                                        Map.of("range", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, range)),
+                                        Map.of("term", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, -999))
                                     ))
                                 ));
                             } else {
                                 // Use normal range filter when unknownAges parameter is specified
-                                combined_sample_diagnosis_filters.add(Map.of(
-                                    "range", Map.of("combined_filters.sample_diagnosis_filters."+key, range)
+                                combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
+                                    "range", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, range)
                                 ));
                             }
                         
                         } else if (key.equals("age_at_treatment_start")) {
+                            // Check if unknownAges parameter exists to determine if we should include unknown values
+                            String unknownAgesKey = key + "_unknownAges";
+                            boolean includeUnknown = true; // Default to including unknown values
+                            if (params.containsKey(unknownAgesKey)) {
+                                List<String> unknownAgesValues = (List<String>) params.get(unknownAgesKey);
+                                // Only consider unknownAges parameter if it has a meaningful value
+                                if (unknownAgesValues != null && !unknownAgesValues.isEmpty() && !unknownAgesValues.get(0).equals("")) {
+                                    includeUnknown = false; // Use normal range filtering when unknownAges parameter is specified
+                                }
+                            }
+                            
+                            if (includeUnknown) {
+                                // Include unknown values (-999) by default when no unknownAges parameter is specified
+                                combined_treatment_filters.add(Map.of(
+                                    "bool", Map.of("should", List.of(
+                                        Map.of("range", Map.of("combined_filters.treatment_filters."+key, range)),
+                                        Map.of("term", Map.of("combined_filters.treatment_filters."+key, -999))
+                                    ))
+                                ));
+                            } else {
+                                // Use normal range filter when unknownAges parameter is specified
+                                combined_treatment_filters.add(Map.of(
+                                    "range", Map.of("combined_filters.treatment_filters."+key, range)
+                                ));
+                            }
+                        } else if (key.equals("age_at_treatment_end")) {
                             // Check if unknownAges parameter exists to determine if we should include unknown values
                             String unknownAgesKey = key + "_unknownAges";
                             boolean includeUnknown = true; // Default to including unknown values
@@ -338,27 +364,34 @@ public class InventoryESService extends ESService {
                     
                     // Handle unknownAges parameter for age fields
                     String unknownAgesKey = key + "_unknownAges";
-                    if (params.containsKey(unknownAgesKey) && (key.equals("age_at_diagnosis") || key.equals("participant_age_at_collection") || key.equals("age_at_treatment_start") || key.equals("age_at_response") || key.equals("age_at_last_known_survival_status"))) {
+                    if (params.containsKey(unknownAgesKey) && (key.equals("age_at_diagnosis") || key.equals("participant_age_at_collection") || key.equals("age_at_treatment_start") || key.equals("age_at_treatment_end") || key.equals("age_at_response") || key.equals("age_at_last_known_survival_status"))) {
                         List<String> unknownAgesValues = (List<String>) params.get(unknownAgesKey);
                         if (unknownAgesValues != null && !unknownAgesValues.isEmpty() && !unknownAgesValues.get(0).equals("")) {
                             String unknownAgesValue = unknownAgesValues.get(0);
                             if ("exclude".equals(unknownAgesValue)) {
                                 // Exclude records with unknown values (-999) and null values by checking field exists
                                 if (key.equals("age_at_diagnosis")) {
-                                    combined_sample_diagnosis_filters.add(Map.of(
+                                    combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
                                         "bool", Map.of(
                                             "must", List.of(Map.of("exists", Map.of("field", "combined_filters.sample_diagnosis_filters."+key))),
                                             "must_not", List.of(Map.of("term", Map.of("combined_filters.sample_diagnosis_filters."+key, -999)))
                                         )
                                     ));
                                 } else if (key.equals("participant_age_at_collection")) {
-                                    combined_sample_diagnosis_filters.add(Map.of(
+                                    combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
                                         "bool", Map.of(
                                             "must", List.of(Map.of("exists", Map.of("field", "combined_filters.sample_diagnosis_filters."+key))),
                                             "must_not", List.of(Map.of("term", Map.of("combined_filters.sample_diagnosis_filters."+key, -999)))
                                         )
                                     ));
                                 } else if (key.equals("age_at_treatment_start")) {
+                                    combined_treatment_filters.add(Map.of(
+                                        "bool", Map.of(
+                                            "must", List.of(Map.of("exists", Map.of("field", "combined_filters.treatment_filters."+key))),
+                                            "must_not", List.of(Map.of("term", Map.of("combined_filters.treatment_filters."+key, -999)))
+                                        )
+                                    ));
+                                }  else if (key.equals("age_at_treatment_end")) {
                                     combined_treatment_filters.add(Map.of(
                                         "bool", Map.of(
                                             "must", List.of(Map.of("exists", Map.of("field", "combined_filters.treatment_filters."+key))),
@@ -383,14 +416,18 @@ public class InventoryESService extends ESService {
                             } else if ("only".equals(unknownAgesValue)) {
                                 // Only include records with unknown values (-999)
                                 if (key.equals("age_at_diagnosis")) {
-                                    combined_sample_diagnosis_filters.add(Map.of(
-                                        "terms", Map.of("combined_filters.sample_diagnosis_filters."+key, List.of(-999))
+                                    combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
+                                        "terms", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, List.of(-999))
                                     ));
                                 } else if (key.equals("participant_age_at_collection")) {
-                                    combined_sample_diagnosis_filters.add(Map.of(
-                                        "terms", Map.of("combined_filters.sample_diagnosis_filters."+key, List.of(-999))
+                                    combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
+                                        "terms", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, List.of(-999))
                                     ));
                                 } else if (key.equals("age_at_treatment_start")) {
+                                    combined_treatment_filters.add(Map.of(
+                                        "terms", Map.of("combined_filters.treatment_filters."+key, List.of(-999))
+                                    ));
+                                }  else if (key.equals("age_at_treatment_end")) {
                                     combined_treatment_filters.add(Map.of(
                                         "terms", Map.of("combined_filters.treatment_filters."+key, List.of(-999))
                                     ));
@@ -470,12 +507,16 @@ public class InventoryESService extends ESService {
                                 "terms", Map.of("combined_filters.treatment_response_filters."+key, valueSet)
                             ));
                         } else if (DIAGNOSIS_PARAMS.contains(key)) {
-                            combined_sample_diagnosis_filters.add(Map.of(
-                                "terms", Map.of("combined_filters.sample_diagnosis_filters."+key, valueSet)
+                            combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
+                                "terms", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, valueSet)
+                            ));
+                        }  else if (GENETIC_ANALYSIS_PARAMS.contains(key)) {
+                            combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
+                                "terms", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, valueSet)
                             ));
                         } else if (SAMPLE_PARAMS.contains(key)) {
-                            combined_sample_diagnosis_filters.add(Map.of(
-                                "terms", Map.of("combined_filters.sample_diagnosis_filters."+key, valueSet)
+                            combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
+                                "terms", Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters."+key, valueSet)
                             ));
                         } else {
                             filter_1.add(Map.of(
@@ -488,17 +529,13 @@ public class InventoryESService extends ESService {
 
             int filterLen = filter_1.size();
             int combinedParticipantFilterLen = combined_participant_filters.size();
-            int combinedSampleDiagnosisFilterLen = combined_sample_diagnosis_filters.size();
+            int combinedSampleDiagnosisGeneticAnalysisFilterLen = combined_sample_diagnosis_genetic_analysis_filters.size();
             int combinedSurvivalFilterLen = combined_survival_filters.size();
             int combinedTreatmentFilterLen = combined_treatment_filters.size();
             int combinedTreatmentResponseFilterLen = combined_treatment_response_filters.size();
 
-            if (filterLen + combinedParticipantFilterLen + combinedSampleDiagnosisFilterLen + combinedSurvivalFilterLen + combinedTreatmentFilterLen + combinedTreatmentResponseFilterLen == 0) {
-                if (indexType.equals("files_overall")) {
-                    result.put("query", Map.of("match_all", Map.of()));
-                } else {
-                    result.put("query", Map.of("bool", Map.of("must", Map.of("exists", Map.of("field", "file_id")))));
-                }
+            if (filterLen + combinedParticipantFilterLen + combinedSampleDiagnosisGeneticAnalysisFilterLen + combinedSurvivalFilterLen + combinedTreatmentFilterLen + combinedTreatmentResponseFilterLen == 0) {
+                result.put("query", Map.of("match_all", Map.of()));
             } else {
                 if (combinedParticipantFilterLen > 0) {
                     //add each element of combined_participant_filters to combined_filters
@@ -506,8 +543,8 @@ public class InventoryESService extends ESService {
                         combined_filters.add(filter);
                     }
                 }
-                if (combinedSampleDiagnosisFilterLen > 0) {
-                    combined_filters.add(Map.of("nested", Map.of("path", "combined_filters.sample_diagnosis_filters", "query", Map.of("bool", Map.of("filter", combined_sample_diagnosis_filters)))));
+                if (combinedSampleDiagnosisGeneticAnalysisFilterLen > 0) {
+                    combined_filters.add(Map.of("nested", Map.of("path", "combined_filters.sample_diagnosis_genetic_analysis_filters", "query", Map.of("bool", Map.of("filter", combined_sample_diagnosis_genetic_analysis_filters)))));
                 }
                 if (combinedSurvivalFilterLen > 0) {
                     combined_filters.add(Map.of("nested", Map.of("path", "combined_filters.survival_filters", "query", Map.of("bool", Map.of("filter", combined_survival_filters)))));
@@ -521,22 +558,20 @@ public class InventoryESService extends ESService {
                 // System.out.println(filter_1);
                 filter_1.add(Map.of("nested", Map.of("path", "combined_filters", "query", Map.of("bool", Map.of("filter", combined_filters)))));
                 List<Object> overall_filter = new ArrayList<>();
-                if (indexType.equals("files_overall")) {
-                    overall_filter.add(Map.of("bool", Map.of("filter", filter_1)));
-                } else {
-                    overall_filter.add(Map.of("bool", Map.of("must", Map.of("exists", Map.of("field", "file_id")), "filter", filter_1))); 
-                }
+                overall_filter.add(Map.of("bool", Map.of("filter", filter_1)));
                 result.put("query", Map.of("bool", Map.of("should", overall_filter)));
             }
         } else {
             List<Object> filter = new ArrayList<>();
             List<Object> diagnosis_filters = new ArrayList<>();
+            List<Object> genetic_analysis_filters = new ArrayList<>();
             List<Object> survival_filters = new ArrayList<>();
             List<Object> treatment_filters = new ArrayList<>();
             List<Object> treatment_response_filters = new ArrayList<>();
             List<Object> file_filters = new ArrayList<>();
-            List<Object> sample_file_filters = new ArrayList<>();
+            List<Object> sample_genetic_analysis_file_filters = new ArrayList<>();
             List<Object> sample_diagnosis_file_filters = new ArrayList<>();
+            List<Object> sample_diagnosis_genetic_analysis_file_filters = new ArrayList<>();
             
             for (String key: params.keySet()) {
                 if (localExcludedParams.contains(key)) {
@@ -560,7 +595,7 @@ public class InventoryESService extends ESService {
                         if (higher != null) {
                             range.put("lte", higher);
                         }
-                        if(indexType.endsWith("participants") && (key.equals("age_at_diagnosis") || key.equals("participant_age_at_collection"))){
+                        if((indexType.equals("participants") || indexType.equals("study_participants")) && (key.equals("age_at_diagnosis") || key.equals("participant_age_at_collection"))){
                             // Check if unknownAges parameter exists to determine if we should include unknown values
                             String unknownAgesKey = key + "_unknownAges";
                             boolean includeUnknown = true; // Default to including unknown values
@@ -574,16 +609,16 @@ public class InventoryESService extends ESService {
                             
                             if (includeUnknown) {
                                 // Include unknown values (-999) by default when no unknownAges parameter is specified
-                                sample_diagnosis_file_filters.add(Map.of(
+                                sample_diagnosis_genetic_analysis_file_filters.add(Map.of(
                                     "bool", Map.of("should", List.of(
-                                        Map.of("range", Map.of("sample_diagnosis_file_filters."+key, range)),
-                                        Map.of("term", Map.of("sample_diagnosis_file_filters."+key, -999))
+                                        Map.of("range", Map.of("sample_diagnosis_genetic_analysis_file_filters."+key, range)),
+                                        Map.of("term", Map.of("sample_diagnosis_genetic_analysis_file_filters."+key, -999))
                                     ))
                                 ));
                             } else {
                                 // Use normal range filter when unknownAges parameter is specified
-                                sample_diagnosis_file_filters.add(Map.of(
-                                    "range", Map.of("sample_diagnosis_file_filters."+key, range)
+                                sample_diagnosis_genetic_analysis_file_filters.add(Map.of(
+                                    "range", Map.of("sample_diagnosis_genetic_analysis_file_filters."+key, range)
                                 ));
                             }
                         } else if (indexType.equals("samples") && key.equals("age_at_diagnosis")) {
@@ -626,19 +661,45 @@ public class InventoryESService extends ESService {
                             
                             if (includeUnknown) {
                                 // Include unknown values (-999) by default when no unknownAges parameter is specified
-                                sample_file_filters.add(Map.of(
+                                sample_genetic_analysis_file_filters.add(Map.of(
                                     "bool", Map.of("should", List.of(
-                                        Map.of("range", Map.of("sample_file_filters."+key, range)),
-                                        Map.of("term", Map.of("sample_file_filters."+key, -999))
+                                        Map.of("range", Map.of("sample_genetic_analysis_file_filters."+key, range)),
+                                        Map.of("term", Map.of("sample_genetic_analysis_file_filters."+key, -999))
                                     ))
                                 ));
                             } else {
                                 // Use normal range filter when unknownAges parameter is specified
-                                sample_file_filters.add(Map.of(
-                                    "range", Map.of("sample_file_filters."+key, range)
+                                sample_genetic_analysis_file_filters.add(Map.of(
+                                    "range", Map.of("sample_genetic_analysis_file_filters."+key, range)
                                 ));
                             }
-                        } else if (!indexType.equals("treatments") && key.equals("age_at_treatment_start")) {
+                        }  else if (indexType.equals("genetic_analyses") && key.equals("participant_age_at_collection")) {
+                            // Check if unknownAges parameter exists to determine if we should include unknown values
+                            String unknownAgesKey = key + "_unknownAges";
+                            boolean includeUnknown = true; // Default to including unknown values
+                            if (params.containsKey(unknownAgesKey)) {
+                                List<String> unknownAgesValues = (List<String>) params.get(unknownAgesKey);
+                                // Only consider unknownAges parameter if it has a meaningful value
+                                if (unknownAgesValues != null && !unknownAgesValues.isEmpty() && !unknownAgesValues.get(0).equals("")) {
+                                    includeUnknown = false; // Use normal range filtering when unknownAges parameter is specified
+                                }
+                            }
+                            
+                            if (includeUnknown) {
+                                // Include unknown values (-999) by default when no unknownAges parameter is specified
+                                sample_diagnosis_file_filters.add(Map.of(
+                                    "bool", Map.of("should", List.of(
+                                        Map.of("range", Map.of("sample_diagnosis_file_filters."+key, range)),
+                                        Map.of("term", Map.of("sample_diagnosis_file_filters."+key, -999))
+                                    ))
+                                ));
+                            } else {
+                                // Use normal range filter when unknownAges parameter is specified
+                                sample_diagnosis_file_filters.add(Map.of(
+                                    "range", Map.of("sample_diagnosis_file_filters."+key, range)
+                                ));
+                            }
+                        } else if (!indexType.equals("treatments") && (key.equals("age_at_treatment_start") || key.equals("age_at_treatment_end"))) {
                             // Check if unknownAges parameter exists to determine if we should include unknown values
                             String unknownAgesKey = key + "_unknownAges";
                             boolean includeUnknown = true; // Default to including unknown values
@@ -725,18 +786,18 @@ public class InventoryESService extends ESService {
                     
                     // Handle unknownAges parameter for age fields
                     String unknownAgesKey = key + "_unknownAges";
-                    if (params.containsKey(unknownAgesKey) && (key.equals("age_at_diagnosis") || key.equals("participant_age_at_collection") || key.equals("age_at_treatment_start") || key.equals("age_at_response") || key.equals("age_at_last_known_survival_status"))) {
+                    if (params.containsKey(unknownAgesKey) && (key.equals("age_at_diagnosis") || key.equals("participant_age_at_collection") || key.equals("age_at_treatment_start") || key.equals("age_at_treatment_end") || key.equals("age_at_response") || key.equals("age_at_last_known_survival_status"))) {
                         List<String> unknownAgesValues = (List<String>) params.get(unknownAgesKey);
                         if (unknownAgesValues != null && !unknownAgesValues.isEmpty() && !unknownAgesValues.get(0).equals("")) {
                             String unknownAgesValue = unknownAgesValues.get(0);
                             
                             if ("exclude".equals(unknownAgesValue)) {
                                 // Exclude records with unknown values (-999) and null values by checking field exists
-                                if(indexType.endsWith("participants") && (key.equals("age_at_diagnosis") || key.equals("participant_age_at_collection"))){
-                                    sample_diagnosis_file_filters.add(Map.of(
+                                if((indexType.equals("participants") || indexType.equals("study_participants")) && (key.equals("age_at_diagnosis") || key.equals("participant_age_at_collection"))){
+                                    sample_diagnosis_genetic_analysis_file_filters.add(Map.of(
                                         "bool", Map.of(
-                                            "must", List.of(Map.of("exists", Map.of("field", "sample_diagnosis_file_filters."+key))),
-                                            "must_not", List.of(Map.of("term", Map.of("sample_diagnosis_file_filters."+key, -999)))
+                                            "must", List.of(Map.of("exists", Map.of("field", "sample_diagnosis_genetic_analysis_file_filters."+key))),
+                                            "must_not", List.of(Map.of("term", Map.of("sample_diagnosis_genetic_analysis_file_filters."+key, -999)))
                                         )
                                     ));
                                 } else if (indexType.equals("samples") && key.equals("age_at_diagnosis")) {
@@ -747,13 +808,20 @@ public class InventoryESService extends ESService {
                                         )
                                     ));
                                 } else if (indexType.equals("diagnosis") && key.equals("participant_age_at_collection")) {
-                                    sample_file_filters.add(Map.of(
+                                    sample_genetic_analysis_file_filters.add(Map.of(
                                         "bool", Map.of(
-                                            "must", List.of(Map.of("exists", Map.of("field", "sample_file_filters."+key))),
-                                            "must_not", List.of(Map.of("term", Map.of("sample_file_filters."+key, -999)))
+                                            "must", List.of(Map.of("exists", Map.of("field", "sample_genetic_analysis_file_filters."+key))),
+                                            "must_not", List.of(Map.of("term", Map.of("sample_genetic_analysis_file_filters."+key, -999)))
                                         )
                                     ));
-                                } else if (!indexType.equals("treatments") && key.equals("age_at_treatment_start")) {
+                                }  else if (indexType.equals("genetic_analyses") && key.equals("participant_age_at_collection")) {
+                                    sample_diagnosis_file_filters.add(Map.of(
+                                        "bool", Map.of(
+                                            "must", List.of(Map.of("exists", Map.of("field", "sample_diagnosis_file_filters."+key))),
+                                            "must_not", List.of(Map.of("term", Map.of("sample_diagnosis_file_filters."+key, -999)))
+                                        )
+                                    ));
+                                } else if (!indexType.equals("treatments") && (key.equals("age_at_treatment_start") || key.equals("age_at_treatment_end"))) {
                                     treatment_filters.add(Map.of(
                                         "bool", Map.of(
                                             "must", List.of(Map.of("exists", Map.of("field", "treatment_filters."+key))),
@@ -784,19 +852,23 @@ public class InventoryESService extends ESService {
                                 }
                             } else if ("only".equals(unknownAgesValue)) {
                                 // Only include records with unknown values (-999)
-                                if(indexType.endsWith("participants") && (key.equals("age_at_diagnosis") || key.equals("participant_age_at_collection"))){
-                                    sample_diagnosis_file_filters.add(Map.of(
-                                        "terms", Map.of("sample_diagnosis_file_filters."+key, List.of(-999))
+                                if((indexType.equals("participants") || indexType.equals("study_participants")) && (key.equals("age_at_diagnosis") || key.equals("participant_age_at_collection"))){
+                                    sample_diagnosis_genetic_analysis_file_filters.add(Map.of(
+                                        "terms", Map.of("sample_diagnosis_genetic_analysis_file_filters."+key, List.of(-999))
                                     ));
                                 } else if (indexType.equals("samples") && key.equals("age_at_diagnosis")) {
                                     diagnosis_filters.add(Map.of(
                                         "terms", Map.of("diagnosis_filters."+key, List.of(-999))
                                     ));
                                 } else if (indexType.equals("diagnosis") && key.equals("participant_age_at_collection")) {
-                                    sample_file_filters.add(Map.of(
-                                        "terms", Map.of("sample_file_filters."+key, List.of(-999))
+                                    sample_genetic_analysis_file_filters.add(Map.of(
+                                        "terms", Map.of("sample_genetic_analysis_file_filters."+key, List.of(-999))
                                     ));
-                                } else if (!indexType.equals("treatments") && key.equals("age_at_treatment_start")) {
+                                }  else if (indexType.equals("genetic_analyses") && key.equals("participant_age_at_collection")) {
+                                    sample_diagnosis_file_filters.add(Map.of(
+                                        "terms", Map.of("sample_diagnosis_file_filters."+key, List.of(-999))
+                                    ));
+                                } else if (!indexType.equals("treatments") && (key.equals("age_at_treatment_start") || key.equals("age_at_treatment_end"))) {
                                     treatment_filters.add(Map.of(
                                         "terms", Map.of("treatment_filters."+key, List.of(-999))
                                     ));
@@ -863,7 +935,15 @@ public class InventoryESService extends ESService {
                     }
                     // list with only one empty string [""] means return all records
                     if (valueSet.size() > 0 && !(valueSet.size() == 1 && valueSet.get(0).equals(""))) {
-                        if ((DIAGNOSIS_PARAMS.contains(key) || SAMPLE_FILE_PARAMS.contains(key) || FILE_PARAMS.contains(key)) && (!indexType.equals("diagnosis") && !indexType.equals("samples"))) {
+                        if ((DIAGNOSIS_PARAMS.contains(key) || SAMPLE_PARAMS.contains(key) || GENETIC_ANALYSIS_PARAMS.contains(key) || FILE_PARAMS.contains(key)) && !indexType.equals("diagnosis") && !indexType.equals("samples") && !indexType.equals("genetic_analyses")) {
+                            sample_diagnosis_genetic_analysis_file_filters.add(Map.of(
+                                "terms", Map.of("sample_diagnosis_genetic_analysis_file_filters."+key, valueSet)
+                            ));
+                        } else if ((SAMPLE_PARAMS.contains(key) || GENETIC_ANALYSIS_PARAMS.contains(key) || FILE_PARAMS.contains(key)) && indexType.equals("diagnosis")) {
+                            sample_genetic_analysis_file_filters.add(Map.of(
+                                "terms", Map.of("sample_genetic_analysis_file_filters."+key, valueSet)
+                            ));
+                        }  else if ((SAMPLE_PARAMS.contains(key) || DIAGNOSIS_PARAMS.contains(key) || FILE_PARAMS.contains(key)) && indexType.equals("genetic_analyses")) {
                             sample_diagnosis_file_filters.add(Map.of(
                                 "terms", Map.of("sample_diagnosis_file_filters."+key, valueSet)
                             ));
@@ -883,9 +963,9 @@ public class InventoryESService extends ESService {
                             diagnosis_filters.add(Map.of(
                                 "terms", Map.of("diagnosis_filters."+key, valueSet)
                             ));
-                        } else if (SAMPLE_FILE_PARAMS.contains(key) && !indexType.equals("samples")) {
-                            sample_file_filters.add(Map.of(
-                                "terms", Map.of("sample_file_filters."+key, valueSet)
+                        }  else if (GENETIC_ANALYSIS_PARAMS.contains(key) && indexType.equals("samples")) {
+                            genetic_analysis_filters.add(Map.of(
+                                "terms", Map.of("genetic_analysis_filters."+key, valueSet)
                             ));
                         } else if (FILE_PARAMS.contains(key) && indexType.equals("samples")) {
                             file_filters.add(Map.of(
@@ -905,16 +985,14 @@ public class InventoryESService extends ESService {
             int treatmentFilterLen = treatment_filters.size();
             int treatmentResponseFilterLen = treatment_response_filters.size();
             int diagnosisFilterLen = diagnosis_filters.size();
-            int sampleFileFilterLen = sample_file_filters.size();
+            int geneticAnalysisFilterLen = genetic_analysis_filters.size();
             int fileFilterLen = file_filters.size();
             int sampleDiagnosisFileFilterLen = sample_diagnosis_file_filters.size();
-
-            if (FilterLen + survivalFilterLen + treatmentFilterLen + treatmentResponseFilterLen+ diagnosisFilterLen + sampleFileFilterLen + fileFilterLen + sampleDiagnosisFileFilterLen == 0) {
+            int sampleGeneticAnalysisFileFilterLen = sample_genetic_analysis_file_filters.size();
+            int sampleDiagnosisGeneticAnalysisFileFilterLen = sample_diagnosis_genetic_analysis_file_filters.size();
+            if (FilterLen + survivalFilterLen + treatmentFilterLen + treatmentResponseFilterLen+ diagnosisFilterLen + geneticAnalysisFilterLen + fileFilterLen + sampleDiagnosisFileFilterLen + sampleGeneticAnalysisFileFilterLen + sampleDiagnosisGeneticAnalysisFileFilterLen == 0) {
                 result.put("query", Map.of("match_all", Map.of()));
             } else {
-                if (diagnosisFilterLen > 0) {
-                    filter.add(Map.of("nested", Map.of("path", "diagnosis_filters", "query", Map.of("bool", Map.of("filter", diagnosis_filters)))));
-                }
                 if (survivalFilterLen > 0) {
                     filter.add(Map.of("nested", Map.of("path", "survival_filters", "query", Map.of("bool", Map.of("filter", survival_filters)))));
                 }
@@ -924,14 +1002,23 @@ public class InventoryESService extends ESService {
                 if (treatmentResponseFilterLen > 0) {
                     filter.add(Map.of("nested", Map.of("path", "treatment_response_filters", "query", Map.of("bool", Map.of("filter", treatment_response_filters)))));
                 }
-                if (sampleFileFilterLen > 0) {
-                    filter.add(Map.of("nested", Map.of("path", "sample_file_filters", "query", Map.of("bool", Map.of("filter", sample_file_filters)))));
+                if (diagnosisFilterLen > 0) {
+                    filter.add(Map.of("nested", Map.of("path", "diagnosis_filters", "query", Map.of("bool", Map.of("filter", diagnosis_filters)))));
+                }
+                if (geneticAnalysisFilterLen > 0) {
+                    filter.add(Map.of("nested", Map.of("path", "genetic_analysis_filters", "query", Map.of("bool", Map.of("filter", genetic_analysis_filters)))));
                 }
                 if (fileFilterLen > 0) {
                     filter.add(Map.of("nested", Map.of("path", "file_filters", "query", Map.of("bool", Map.of("filter", file_filters)))));
                 }
                 if (sampleDiagnosisFileFilterLen > 0) {
                     filter.add(Map.of("nested", Map.of("path", "sample_diagnosis_file_filters", "query", Map.of("bool", Map.of("filter", sample_diagnosis_file_filters)))));
+                }
+                if (sampleGeneticAnalysisFileFilterLen > 0) {
+                    filter.add(Map.of("nested", Map.of("path", "sample_genetic_analysis_file_filters", "query", Map.of("bool", Map.of("filter", sample_genetic_analysis_file_filters)))));
+                }
+                if (sampleDiagnosisGeneticAnalysisFileFilterLen > 0) {
+                    filter.add(Map.of("nested", Map.of("path", "sample_diagnosis_genetic_analysis_file_filters", "query", Map.of("bool", Map.of("filter", sample_diagnosis_genetic_analysis_file_filters)))));
                 }
                 result.put("query", Map.of("bool", Map.of("filter", filter)));
             }
