@@ -52,8 +52,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String STUDIES_FACET_END_POINT = "/study_participants_faceted/_search";
     final String PARTICIPANTS_END_POINT = "/participants_table/_search";
     final String SURVIVALS_END_POINT = "/survivals_table/_search";
-    final String TREATMENT_END_POINT = "/treatments_table/_search";
-    final String TREATMENT_RESPONSE_END_POINT = "/treatment_responses_table/_search";
+    final String TREATMENTS_END_POINT = "/treatments_table/_search";
+    final String TREATMENT_RESPONSES_END_POINT = "/treatment_responses_table/_search";
     final String DIAGNOSIS_END_POINT = "/diagnoses_table/_search";
     final String GENETIC_ANALYSES_END_POINT = "/genetic_analyses_table/_search";
     final String STUDIES_END_POINT = "/studies_table/_search";
@@ -840,50 +840,50 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 AGG_NAME, "treatment_type",
                 FILTER_COUNT_QUERY, "filterParticipantCountByTreatmentType",
                 ADDITIONAL_UPDATE, Map.of("Chemotherapy", 3000, "Radiation Therapy", 1500, "Surgical Procedure", 2000),
-                AGG_ENDPOINT, TREATMENT_END_POINT
+                AGG_ENDPOINT, TREATMENTS_END_POINT
             ));
             PARTICIPANT_TERM_AGGS.add(Map.of(
                 CARDINALITY_AGG_NAME, "pid",
                 AGG_NAME, "treatment_agent",
                 FILTER_COUNT_QUERY, "filterParticipantCountByTreatmentAgent",
-                AGG_ENDPOINT, TREATMENT_END_POINT
+                AGG_ENDPOINT, TREATMENTS_END_POINT
             ));
             PARTICIPANT_TERM_AGGS.add(Map.of(
                 CARDINALITY_AGG_NAME, "pid",
                 AGG_NAME, "age_at_treatment_start",
                 FILTER_COUNT_QUERY, "filterParticipantCountByAgeAtTreatmentStart",
-                AGG_ENDPOINT, TREATMENT_END_POINT
+                AGG_ENDPOINT, TREATMENTS_END_POINT
             ));
             PARTICIPANT_TERM_AGGS.add(Map.of(
                 CARDINALITY_AGG_NAME, "pid",
                 AGG_NAME, "age_at_treatment_end",
                 FILTER_COUNT_QUERY, "filterParticipantCountByAgeAtTreatmentEnd",
-                AGG_ENDPOINT, TREATMENT_END_POINT
+                AGG_ENDPOINT, TREATMENTS_END_POINT
             ));
             // treatment response related aggregations
             PARTICIPANT_TERM_AGGS.add(Map.of(
                 CARDINALITY_AGG_NAME, "pid",
                 AGG_NAME, "response",
                 FILTER_COUNT_QUERY, "filterParticipantCountByResponse",
-                AGG_ENDPOINT, TREATMENT_RESPONSE_END_POINT
+                AGG_ENDPOINT, TREATMENT_RESPONSES_END_POINT
             ));
             PARTICIPANT_TERM_AGGS.add(Map.of(
                 CARDINALITY_AGG_NAME, "pid",
                 AGG_NAME, "age_at_response",
                 FILTER_COUNT_QUERY, "filterParticipantCountByAgeAtResponse",
-                AGG_ENDPOINT, TREATMENT_RESPONSE_END_POINT
+                AGG_ENDPOINT, TREATMENT_RESPONSES_END_POINT
             ));
             PARTICIPANT_TERM_AGGS.add(Map.of(
                 CARDINALITY_AGG_NAME, "pid",
                 AGG_NAME, "response_category",
                 FILTER_COUNT_QUERY, "filterParticipantCountByResponseCategory",
-                AGG_ENDPOINT, TREATMENT_RESPONSE_END_POINT
+                AGG_ENDPOINT, TREATMENT_RESPONSES_END_POINT
             ));
             PARTICIPANT_TERM_AGGS.add(Map.of(
                 CARDINALITY_AGG_NAME, "pid",
                 AGG_NAME, "response_system",
                 FILTER_COUNT_QUERY, "filterParticipantCountByResponseSystem",
-                AGG_ENDPOINT, TREATMENT_RESPONSE_END_POINT
+                AGG_ENDPOINT, TREATMENT_RESPONSES_END_POINT
             ));
             // survival related aggregations
             PARTICIPANT_TERM_AGGS.add(Map.of(
@@ -1080,6 +1080,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             treatmentResponsesCountRequest.setJsonEntity(gson.toJson(query_treatment_responses));
             JsonObject treatmentResponsesCountResult = inventoryESService.send(treatmentResponsesCountRequest);
             int numberOfTreatmentResponses = treatmentResponsesCountResult.get("count").getAsInt();
+            Map<String, Object> query_survivals = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "survivals");
+            Request survivalsCountRequest = new Request("GET", SURVIVALS_COUNT_END_POINT);
+            survivalsCountRequest.setJsonEntity(gson.toJson(query_survivals));
+            JsonObject survivalsCountResult = inventoryESService.send(survivalsCountRequest);
+            int numberOfSurvivals = survivalsCountResult.get("count").getAsInt();
             Map<String, Object> query_samples = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "samples");
             Request samplesCountRequest = new Request("GET", SAMPLES_END_POINT);
             samplesCountRequest.setJsonEntity(gson.toJson(query_samples));
@@ -2888,7 +2893,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         if ("treatment_type".equals(propertyName) || "treatment_agent".equals(propertyName)) {
             return Map.of(
                 "index", "treatments",
-                "endpoint", TREATMENT_END_POINT,
+                "endpoint", TREATMENTS_END_POINT,
                 "cardinalityAggName", "pid"  // Count unique participants
             );
         }
@@ -2897,7 +2902,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         if ("response".equals(propertyName) || "response_category".equals(propertyName)) {
             return Map.of(
                 "index", "treatment_responses",
-                "endpoint", TREATMENT_RESPONSE_END_POINT,
+                "endpoint", TREATMENT_RESPONSES_END_POINT,
                 "cardinalityAggName", "pid"  // Count unique participants
             );
         }
