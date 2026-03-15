@@ -151,19 +151,27 @@ type SearchParticipantsResult {
     filterParticipantCountByDiagnosisAnatomicSite: [SearchParticipantsReturnObject]
     filterParticipantCountByDiagnosisCategory: [SearchParticipantsReturnObject]
     filterParticipantCountByDiagnosisClassificationSystem: [SearchParticipantsReturnObject]
-    filterParticipantCountByDiagnosisVerificationStatus: [SearchParticipantsReturnObject]
     filterParticipantCountByDiagnosisBasis: [SearchParticipantsReturnObject]
     filterParticipantCountByDiseasePhase: [SearchParticipantsReturnObject]
     filterParticipantCountByDiagnosis: [SearchParticipantsReturnObject]
-    filterParticipantCountByTumorGradeSource: [SearchParticipantsReturnObject]
-    filterParticipantCountByTumorStageSource: [SearchParticipantsReturnObject]
-    filterParticipantCountBySurvivalStatus: [SearchParticipantsReturnObject]
+    filterParticipantCountByReportedSignificance: [SearchParticipantsReturnObject]
+    filterParticipantCountByReportedSignificanceSystem: [SearchParticipantsReturnObject]
+    filterParticipantCountByGeneSymbol: [SearchParticipantsReturnObject]
+    filterParticipantCountByAlteration: [SearchParticipantsReturnObject]
+    filterParticipantCountByAlterationType: [SearchParticipantsReturnObject]
+    filterParticipantCountByFusionPartnerGene: [SearchParticipantsReturnObject]
+    filterParticipantCountByStatus: [SearchParticipantsReturnObject]
     filterParticipantCountByTreatmentType: [SearchParticipantsReturnObject]
     filterParticipantCountByTreatmentAgent: [SearchParticipantsReturnObject]
     filterParticipantCountByAgeAtTreatmentStart: RangeCount
-    filterParticipantCountByResponseCategory: [SearchParticipantsReturnObject]
+    filterParticipantCountByAgeAtTreatmentEnd: RangeCount
+    filterParticipantCountByResponse: [SearchParticipantsReturnObject]
     filterParticipantCountByAgeAtResponse: RangeCount
+    filterParticipantCountByResponseCategory: [SearchParticipantsReturnObject]
+    filterParticipantCountByResponseSystem: [SearchParticipantsReturnObject]
     filterParticipantCountByAgeAtLastKnownSurvivalStatus: RangeCount
+    filterParticipantCountByCauseOfDeath: [SearchParticipantsReturnObject]
+    filterParticipantCountBySurvivalStatus: [SearchParticipantsReturnObject]
     filterParticipantCountByFirstEvent: [SearchParticipantsReturnObject]
     filterParticipantCountBySampleAnatomicSite: [SearchParticipantsReturnObject]
     filterParticipantCountBySampleAge: RangeCount
@@ -171,10 +179,8 @@ type SearchParticipantsResult {
     filterParticipantCountByTumorClassification: [SearchParticipantsReturnObject]
     filterParticipantCountByDataCategory: [SearchParticipantsReturnObject]
     filterParticipantCountByFileType: [SearchParticipantsReturnObject]
+    filterParticipantCountByFileMappingLevel: [SearchParticipantsReturnObject]
     filterParticipantCountByDBGAPAccession: [SearchParticipantsReturnObject]
-    filterParticipantCountByGrantID: [SearchParticipantsReturnObject]
-    filterParticipantCountByInstitution: [SearchParticipantsReturnObject]
-    filterParticipantCountByName: [SearchParticipantsReturnObject]
     filterParticipantCountByAcronym: [SearchParticipantsReturnObject]
     filterParticipantCountByStudyTitle: [SearchParticipantsReturnObject]
     filterParticipantCountByStudyStatus: [SearchParticipantsReturnObject]
@@ -182,18 +188,17 @@ type SearchParticipantsResult {
     filterParticipantCountByLibrarySourceMaterial: [SearchParticipantsReturnObject]
     filterParticipantCountByLibrarySourceMolecule: [SearchParticipantsReturnObject]
     filterParticipantCountByLibraryStrategy: [SearchParticipantsReturnObject]
-    filterParticipantCountByFileMappingLevel: [SearchParticipantsReturnObject]
 
     numberOfStudies: Int
     numberOfParticipants: Int
     numberOfSamples: Int
     numberOfFiles: Int
     numberOfDiagnosis: Int
+    numberOfGeneticAnalyses: Int
+    numberOfSurvivals: Int
+    numberOfTreatments: Int
+    numberOfTreatmentResponses: Int
     participantsFileCount: Int
-    diagnosisFileCount: Int
-    samplesFileCount: Int
-    studiesFileCount: Int
-    filesFileCount: Int
 
     participantCountByStudy: [SearchParticipantsReturnObject]
     participantCountByDiagnosis: [SearchParticipantsReturnObject]
@@ -521,7 +526,8 @@ type QueryType {
         last_known_survival_status: [String] = [""],
         age_at_last_known_survival_status: [Int] = [0],
         age_at_last_known_survival_status_unknownAges: [String] = [""],
-        first_event: [String] = [""]
+        first_event: [String] = [""],
+        cause_of_death: [String] = [""],
         
         # Samples
         sample_anatomic_site: [String] = [""],
@@ -542,13 +548,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],
-        
-        # Table config
-        first: Int = 10,
-        offset: Int = 0,
-        order_by: String = "",
-        sort_direction: String = ""
+        study_status: [String] = [""]
     ): SearchParticipantsResult
     
     participantOverview (
@@ -598,7 +598,8 @@ type QueryType {
         last_known_survival_status: [String] = [""],
         age_at_last_known_survival_status: [Int] = [0],
         age_at_last_known_survival_status_unknownAges: [String] = [""],
-        first_event: [String] = [""]
+        first_event: [String] = [""],
+        cause_of_death: [String] = [""],
         
         # Samples
         sample_anatomic_site: [String] = [""],
