@@ -251,8 +251,7 @@ type ParticipantOverViewResult {
 }
 
 type DiagnosisOverViewResult {
-    pid: String
-    d_id: String
+    id: String
     diagnosis_id: String
     participant_id: String
     sample_id: String
@@ -265,13 +264,20 @@ type DiagnosisOverViewResult {
     diagnosis_category: String
     diagnosis_basis: String
     age_at_diagnosis: Int
-    tumor_grade_source: String
-    tumor_stage_source: String
-    last_known_survival_status: String
+    diagnosis_comment: String
+    tumor_classification: String
+    toronto_childhood_cancer_staging: String
+    tumor_grade: String
+    tumor_stage_clinical_t: String
+    tumor_stage_clinical_n: String
+    tumor_stage_clinical_m: String
     files: [String]
 }
 
 type GeneticAnalysisOverviewResult {
+    dbgap_accession: String
+    participant_id: String
+    study_id: String
     id: String
     genetic_analysis_id: String
     alteration: String
@@ -330,6 +336,9 @@ type SampleOverViewResult {
 
 type SurvivalOverViewResult {
     id: String
+    dbgap_accession: String
+    participant_id: String
+    study_id: String
     survival_id: String
     age_at_event_free_survival_status: Int
     age_at_last_known_survival_status: Int
@@ -341,6 +350,9 @@ type SurvivalOverViewResult {
 
 type TreatmentOverViewResult {
     id: String
+    dbgap_accession: String
+    participant_id: String
+    study_id: String
     treatment_id: String
     age_at_treatment_end: Int
     age_at_treatment_start: Int
@@ -350,6 +362,9 @@ type TreatmentOverViewResult {
 
 type TreatmentResponseOverViewResult {
     id: String
+    dbgap_accession: String
+    participant_id: String
+    study_id: String
     treatment_response_id: String
     age_at_response: Int
     response: String

@@ -1959,7 +1959,15 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"diagnosis_classification_system", "diagnosis_classification_system"},
             new String[]{"diagnosis_basis", "diagnosis_basis"},
             new String[]{"diagnosis_category", "diagnosis_category"},
-            new String[]{"age_at_diagnosis", "age_at_diagnosis"}
+            new String[]{"age_at_diagnosis", "age_at_diagnosis"},
+            new String[]{"diagnosis_comment", "diagnosis_comment"},
+            new String[]{"tumor_classification", "tumor_classification"},
+            new String[]{"toronto_childhood_cancer_staging", "toronto_childhood_cancer_staging"},
+            new String[]{"tumor_grade", "tumor_grade"},
+            new String[]{"tumor_stage_clinical_t", "tumor_stage_clinical_t"},
+            new String[]{"tumor_stage_clinical_n", "tumor_stage_clinical_n"},
+            new String[]{"tumor_stage_clinical_m", "tumor_stage_clinical_m"},
+            new String[]{"tumor_stage_clinical_o", "tumor_stage_clinical_o"}
         };
 
         String defaultSort = "diagnosis_id"; // Default sort order
@@ -1975,7 +1983,15 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("disease_phase", "disease_phase"),
                 Map.entry("diagnosis_basis", "diagnosis_basis"),
                 Map.entry("diagnosis_classification_system", "diagnosis_classification_system"),
-                Map.entry("age_at_diagnosis", "age_at_diagnosis")
+                Map.entry("age_at_diagnosis", "age_at_diagnosis"),
+                Map.entry("diagnosis_comment", "diagnosis_comment"),
+                Map.entry("tumor_classification", "tumor_classification"),
+                Map.entry("toronto_childhood_cancer_staging", "toronto_childhood_cancer_staging"),
+                Map.entry("tumor_grade", "tumor_grade"),
+                Map.entry("tumor_stage_clinical_t", "tumor_stage_clinical_t"),
+                Map.entry("tumor_stage_clinical_n", "tumor_stage_clinical_n"),
+                Map.entry("tumor_stage_clinical_m", "tumor_stage_clinical_m"),
+                Map.entry("tumor_stage_clinical_o", "tumor_stage_clinical_o")
         );
 
         return overview(DIAGNOSIS_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "diagnoses_table");
@@ -1994,7 +2010,19 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"gene_symbol", "gene_symbol"},
             new String[]{"reported_significance", "reported_significance"},
             new String[]{"reported_significance_system", "reported_significance_system"},
-            new String[]{"status", "status"}
+            new String[]{"status", "status"},
+            new String[]{"test", "test"},
+            new String[]{"alteration_effect", "alteration_effect"},
+            new String[]{"alteration_type", "alteration_type"},
+            new String[]{"chromosome", "chromosome"},
+            new String[]{"exon", "exon"},
+            new String[]{"fusion_partner_exon", "fusion_partner_exon"},
+            new String[]{"reference_genome", "reference_genome"},
+            new String[]{"cytoband", "cytoband"},
+            new String[]{"genomic_source_category", "genomic_source_category"},
+            new String[]{"hgvs_coding", "hgvs_coding"},
+            new String[]{"hgvs_genome", "hgvs_genome"},
+            new String[]{"hgvs_protein", "hgvs_protein"}
         };
 
         String defaultSort = "genetic_analysis_id"; // Default sort order
@@ -2009,7 +2037,19 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("gene_symbol", "gene_symbol"),
                 Map.entry("reported_significance", "reported_significance"),
                 Map.entry("reported_significance_system", "reported_significance_system"),
-                Map.entry("status", "status")
+                Map.entry("status", "status"),
+                Map.entry("test", "test"),
+                Map.entry("alteration_effect", "alteration_effect"),
+                Map.entry("alteration_type", "alteration_type"),
+                Map.entry("chromosome", "chromosome"),
+                Map.entry("exon", "exon"),
+                Map.entry("fusion_partner_exon", "fusion_partner_exon"),
+                Map.entry("reference_genome", "reference_genome"),
+                Map.entry("cytoband", "cytoband"),
+                Map.entry("genomic_source_category", "genomic_source_category"),
+                Map.entry("hgvs_coding", "hgvs_coding"),
+                Map.entry("hgvs_genome", "hgvs_genome"),
+                Map.entry("hgvs_protein", "hgvs_protein")
         );
 
         return overview(GENETIC_ANALYSES_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "genetic_analyses_table");
