@@ -1,7 +1,7 @@
 queries:
   - name: filesInList
     index:
-      - files
+      - files_table
     filter:
       type: pagination
       defaultSortField: file_name
