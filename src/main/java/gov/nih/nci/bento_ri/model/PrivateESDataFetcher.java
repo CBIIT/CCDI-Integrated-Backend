@@ -990,69 +990,112 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             ));
             // file related aggregations
             PARTICIPANT_TERM_AGGS.add(Map.of(
-                    CARDINALITY_AGG_NAME, "pid",
-                    AGG_NAME, "data_category",
-                    WIDGET_QUERY, "participantCountByDataCategory",
-                    FILTER_COUNT_QUERY, "filterParticipantCountByDataCategory",
-                    ADDITIONAL_UPDATE, Map.of("Genomics", 1000, "Pathology Imaging", 1000, "Sequencing", 2000, "Clinical", 1500, "Copy Number Variation", 1000),
-                    AGG_ENDPOINT, FILES_END_POINT
-            ));
-            PARTICIPANT_TERM_AGGS.add(Map.of(
-                    CARDINALITY_AGG_NAME, "pid",
-                    AGG_NAME, "file_type",
-                    FILTER_COUNT_QUERY, "filterParticipantCountByFileType",
-                    ADDITIONAL_UPDATE, new HashMap<String, Integer>() {{
-                        put("bai", 1500);
-                        put("bam", 3500);
-                        put("crai", 3600);
-                        put("cram", 4000);
-                        put("fastq", 2000);
-                        put("html", 3000);
-                        put("idat", 1000);
-                        put("json", 2000);
-                        put("pdf", 3000);
-                        put("tsv", 1000);
-                        put("txt", 3500);
-                        put("dicom", 500);
-                        put("vcf", 3500);
-                    }},
-                    AGG_ENDPOINT, FILES_END_POINT
-            ));
-            PARTICIPANT_TERM_AGGS.add(Map.of(
                 CARDINALITY_AGG_NAME, "pid",
-                AGG_NAME, "file_mapping_level",
-                FILTER_COUNT_QUERY, "filterParticipantCountByFileMappingLevel",
-                ADDITIONAL_UPDATE, Map.of("Participant", 1000,"Sample", 5000),
+                AGG_NAME, "data_category",
+                WIDGET_QUERY, "participantCountByDataCategory",
+                FILTER_COUNT_QUERY, "filterParticipantCountByDataCategory",
+                ADDITIONAL_UPDATE, Map.of("Genomics", 1000, "Pathology Imaging", 1000, "Sequencing", 2000, "Clinical", 1500, "Copy Number Variation", 1000),
                 AGG_ENDPOINT, FILES_END_POINT
             ));
             PARTICIPANT_TERM_AGGS.add(Map.of(
-                    CARDINALITY_AGG_NAME, "pid",
+                AGG_NAME, "data_category",
+                FILTER_COUNT_QUERY, "filterFileCountByDataCategory",
+                AGG_ENDPOINT, FILES_END_POINT
+            ));
+            PARTICIPANT_TERM_AGGS.add(Map.of(
+                    AGG_NAME, "file_type",
+                    FILTER_COUNT_QUERY, "filterFileCountByFileType",
+                    AGG_ENDPOINT, FILES_END_POINT
+            ));
+            PARTICIPANT_TERM_AGGS.add(Map.of(
+                AGG_NAME, "file_mapping_level",
+                FILTER_COUNT_QUERY, "filterFileCountByFileMappingLevel",
+                AGG_ENDPOINT, FILES_END_POINT
+            ));
+            PARTICIPANT_TERM_AGGS.add(Map.of(
                     AGG_NAME, "library_selection",
-                    FILTER_COUNT_QUERY, "filterParticipantCountByLibrarySelection",
-                    ADDITIONAL_UPDATE, Map.of("Hybrid Selection", 4500, "Other", 1000, "Unspecified", 1000),
+                    FILTER_COUNT_QUERY, "filterFileCountByLibrarySelection",
                     AGG_ENDPOINT, FILES_END_POINT
             ));
             PARTICIPANT_TERM_AGGS.add(Map.of(
-                    CARDINALITY_AGG_NAME, "pid",
                     AGG_NAME, "library_source_material",
-                    FILTER_COUNT_QUERY, "filterParticipantCountByLibrarySourceMaterial",
-                    ADDITIONAL_UPDATE, Map.of("Bulk Cells", 3000, "Not Reported", 2000),
+                    FILTER_COUNT_QUERY, "filterFileCountByLibrarySourceMaterial",
                     AGG_ENDPOINT, FILES_END_POINT
             ));
             PARTICIPANT_TERM_AGGS.add(Map.of(
-                    CARDINALITY_AGG_NAME, "pid",
                     AGG_NAME, "library_source_molecule",
-                    FILTER_COUNT_QUERY, "filterParticipantCountByLibrarySourceMolecule",
-                    ADDITIONAL_UPDATE, Map.of("Genomic", 5000, "Transcriptomic", 3500, "Not Reported", 1000),
+                    FILTER_COUNT_QUERY, "filterFileCountByLibrarySourceMolecule",
                     AGG_ENDPOINT, FILES_END_POINT
             ));
             PARTICIPANT_TERM_AGGS.add(Map.of(
-                    CARDINALITY_AGG_NAME, "pid",
                     AGG_NAME, "library_strategy",
-                    FILTER_COUNT_QUERY, "filterParticipantCountByLibraryStrategy",
-                    ADDITIONAL_UPDATE, Map.of("WXS", 2000, "Other", 500, "RNA-Seq", 1000, "WGS", 1500),
+                    FILTER_COUNT_QUERY, "filterFileCountByLibraryStrategy",
                     AGG_ENDPOINT, FILES_END_POINT
             ));
+            // PARTICIPANT_TERM_AGGS.add(Map.of(
+            //         CARDINALITY_AGG_NAME, "pid",
+            //         AGG_NAME, "data_category",
+            //         WIDGET_QUERY, "participantCountByDataCategory",
+            //         FILTER_COUNT_QUERY, "filterParticipantCountByDataCategory",
+            //         ADDITIONAL_UPDATE, Map.of("Genomics", 1000, "Pathology Imaging", 1000, "Sequencing", 2000, "Clinical", 1500, "Copy Number Variation", 1000),
+            //         AGG_ENDPOINT, FILES_END_POINT
+            // ));
+            // PARTICIPANT_TERM_AGGS.add(Map.of(
+            //         CARDINALITY_AGG_NAME, "pid",
+            //         AGG_NAME, "file_type",
+            //         FILTER_COUNT_QUERY, "filterParticipantCountByFileType",
+            //         ADDITIONAL_UPDATE, new HashMap<String, Integer>() {{
+            //             put("bai", 1500);
+            //             put("bam", 3500);
+            //             put("crai", 3600);
+            //             put("cram", 4000);
+            //             put("fastq", 2000);
+            //             put("html", 3000);
+            //             put("idat", 1000);
+            //             put("json", 2000);
+            //             put("pdf", 3000);
+            //             put("tsv", 1000);
+            //             put("txt", 3500);
+            //             put("dicom", 500);
+            //             put("vcf", 3500);
+            //         }},
+            //         AGG_ENDPOINT, FILES_END_POINT
+            // ));
+            // PARTICIPANT_TERM_AGGS.add(Map.of(
+            //     CARDINALITY_AGG_NAME, "pid",
+            //     AGG_NAME, "file_mapping_level",
+            //     FILTER_COUNT_QUERY, "filterParticipantCountByFileMappingLevel",
+            //     ADDITIONAL_UPDATE, Map.of("Participant", 1000,"Sample", 5000),
+            //     AGG_ENDPOINT, FILES_END_POINT
+            // ));
+            // PARTICIPANT_TERM_AGGS.add(Map.of(
+            //         CARDINALITY_AGG_NAME, "pid",
+            //         AGG_NAME, "library_selection",
+            //         FILTER_COUNT_QUERY, "filterParticipantCountByLibrarySelection",
+            //         ADDITIONAL_UPDATE, Map.of("Hybrid Selection", 4500, "Other", 1000, "Unspecified", 1000),
+            //         AGG_ENDPOINT, FILES_END_POINT
+            // ));
+            // PARTICIPANT_TERM_AGGS.add(Map.of(
+            //         CARDINALITY_AGG_NAME, "pid",
+            //         AGG_NAME, "library_source_material",
+            //         FILTER_COUNT_QUERY, "filterParticipantCountByLibrarySourceMaterial",
+            //         ADDITIONAL_UPDATE, Map.of("Bulk Cells", 3000, "Not Reported", 2000),
+            //         AGG_ENDPOINT, FILES_END_POINT
+            // ));
+            // PARTICIPANT_TERM_AGGS.add(Map.of(
+            //         CARDINALITY_AGG_NAME, "pid",
+            //         AGG_NAME, "library_source_molecule",
+            //         FILTER_COUNT_QUERY, "filterParticipantCountByLibrarySourceMolecule",
+            //         ADDITIONAL_UPDATE, Map.of("Genomic", 5000, "Transcriptomic", 3500, "Not Reported", 1000),
+            //         AGG_ENDPOINT, FILES_END_POINT
+            // ));
+            // PARTICIPANT_TERM_AGGS.add(Map.of(
+            //         CARDINALITY_AGG_NAME, "pid",
+            //         AGG_NAME, "library_strategy",
+            //         FILTER_COUNT_QUERY, "filterParticipantCountByLibraryStrategy",
+            //         ADDITIONAL_UPDATE, Map.of("WXS", 2000, "Other", 500, "RNA-Seq", 1000, "WGS", 1500),
+            //         AGG_ENDPOINT, FILES_END_POINT
+            // ));
             Map<String, Object> query_participants = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "participants_table");
             // System.out.println(gson.toJson(query_participants));
             Map<String, Object> newQuery_participants = new HashMap<>(query_participants);

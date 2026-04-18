@@ -177,17 +177,17 @@ type SearchParticipantsResult {
     filterParticipantCountBySampleAge: RangeCount
     filterParticipantCountByTumorStatus: [SearchParticipantsReturnObject]
     filterParticipantCountByTumorClassification: [SearchParticipantsReturnObject]
-    filterParticipantCountByDataCategory: [SearchParticipantsReturnObject]
-    filterParticipantCountByFileType: [SearchParticipantsReturnObject]
-    filterParticipantCountByFileMappingLevel: [SearchParticipantsReturnObject]
+    filterFileCountByDataCategory: [SearchParticipantsReturnObject]
+    filterFileCountByFileType: [SearchParticipantsReturnObject]
+    filterFileCountByFileMappingLevel: [SearchParticipantsReturnObject]
     filterParticipantCountByDBGAPAccession: [SearchParticipantsReturnObject]
     filterParticipantCountByAcronym: [SearchParticipantsReturnObject]
     filterParticipantCountByStudyTitle: [SearchParticipantsReturnObject]
     filterParticipantCountByStudyStatus: [SearchParticipantsReturnObject]
-    filterParticipantCountByLibrarySelection: [SearchParticipantsReturnObject]
-    filterParticipantCountByLibrarySourceMaterial: [SearchParticipantsReturnObject]
-    filterParticipantCountByLibrarySourceMolecule: [SearchParticipantsReturnObject]
-    filterParticipantCountByLibraryStrategy: [SearchParticipantsReturnObject]
+    filterFileCountByLibrarySelection: [SearchParticipantsReturnObject]
+    filterFileCountByLibrarySourceMaterial: [SearchParticipantsReturnObject]
+    filterFileCountByLibrarySourceMolecule: [SearchParticipantsReturnObject]
+    filterFileCountByLibraryStrategy: [SearchParticipantsReturnObject]
 
     numberOfStudies: Int
     numberOfParticipants: Int

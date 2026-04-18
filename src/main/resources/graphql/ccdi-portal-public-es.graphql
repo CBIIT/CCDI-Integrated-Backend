@@ -45,8 +45,8 @@ type SearchParticipantsResult {
     filterParticipantCountBySampleAge: RangeCount
     filterParticipantCountByTumorStatus: [SearchParticipantsReturnObject]
     filterParticipantCountByTumorClassification: [SearchParticipantsReturnObject]
-    filterParticipantCountByDataCategory: [SearchParticipantsReturnObject]
-    filterParticipantCountByFileType: [SearchParticipantsReturnObject]
+    filterFileCountByDataCategory: [SearchParticipantsReturnObject]
+    filterFileCountByFileType: [SearchParticipantsReturnObject]
     filterParticipantCountByDBGAPAccession: [SearchParticipantsReturnObject]
     filterParticipantCountByGrantID: [SearchParticipantsReturnObject]
     filterParticipantCountByInstitution: [SearchParticipantsReturnObject]
@@ -54,11 +54,11 @@ type SearchParticipantsResult {
     filterParticipantCountByAcronym: [SearchParticipantsReturnObject]
     filterParticipantCountByStudyTitle: [SearchParticipantsReturnObject]
     filterParticipantCountByStudyStatus: [SearchParticipantsReturnObject]
-    filterParticipantCountByLibrarySelection: [SearchParticipantsReturnObject]
-    filterParticipantCountByLibrarySourceMaterial: [SearchParticipantsReturnObject]
-    filterParticipantCountByLibrarySourceMolecule: [SearchParticipantsReturnObject]
-    filterParticipantCountByLibraryStrategy: [SearchParticipantsReturnObject]
-    filterParticipantCountByFileMappingLevel: [SearchParticipantsReturnObject]
+    filterFileCountByLibrarySelection: [SearchParticipantsReturnObject]
+    filterFileCountByLibrarySourceMaterial: [SearchParticipantsReturnObject]
+    filterFileCountByLibrarySourceMolecule: [SearchParticipantsReturnObject]
+    filterFileCountByLibraryStrategy: [SearchParticipantsReturnObject]
+    filterFileCountByFileMappingLevel: [SearchParticipantsReturnObject]
 
     numberOfStudies: Int
     numberOfParticipants: Int
