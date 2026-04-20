@@ -6,7 +6,7 @@ COPY . .
 RUN mvn package -DskipTests
 
 # Production stage - Amazon Linux 2023 with Corretto 17 and Tomcat 11
-FROM amazoncorretto:17-al2023 AS final
+FROM amazoncorretto:21-al2023 AS final
 
 ENV CATALINA_HOME=/usr/local/tomcat
 ENV PATH=$CATALINA_HOME/bin:$PATH
