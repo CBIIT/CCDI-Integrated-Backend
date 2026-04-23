@@ -1,0 +1,232 @@
+# Facet filters and how to query/aggregate them
+# agg_name - facet filter's corresponding field in Opensearch query
+# cardinality_agg_name - Opensearch field for identify unique results
+# filter_count_name - what to call the count in GraphQL
+# widget_count_name - what to call the widget count in GraphQL
+# additional_update - values whose counts must be corrected
+
+diagnoses:
+  - agg_name: age_at_diagnosis
+    cardinality_agg_name: pid
+    cardinality_index_name: participants
+    filter_count_name: filterParticipantCountByDiagnosisAge
+    widget_count_name: participantCountByDiagnosisAge
+  - agg_name: diagnosis
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByDiagnosis
+    widget_count_name: participantCountByDiagnosis
+  - agg_name: diagnosis_anatomic_site
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByDiagnosisAnatomicSite
+    widget_count_name: null
+  - agg_name: diagnosis_basis
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByDiagnosisBasis
+    widget_count_name: null
+    additional_update:
+      Clinical: 3500
+      Not Reported: 2000
+      Unknown: 4000
+  - agg_name: diagnosis_category
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByDiagnosisCategory
+    widget_count_name: participantCountByDiagnosisCategory
+  - agg_name: diagnosis_classification_system
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByDiagnosisClassificationSystem
+    widget_count_name: null
+    additional_update:
+      ICD-O-3.2: 5000
+      'Indication for Study': 1000
+  - agg_name: disease_phase
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByDiseasePhase
+    widget_count_name: null
+    additional_update:
+      Initial Diagnosis: 4000
+      Not Reported: 3500
+# files:
+#   - agg_name: data_category
+#     cardinality_agg_name: pid
+#     filter_count_name: filterParticipantCountByDataCategory
+#     widget_count_name: participantCountByDataCategory
+#     additional_update:
+#       Clinical: 1500
+#       'Copy Number Variation': 1000
+#       Genomics: 1000
+#       'Pathology Imaging': 1000
+#       Sequencing: 2000
+#   - agg_name: data_category
+#     cardinality_agg_name: null
+#     filter_count_name: filterFileCountByDataCategory
+#     widget_count_name: null
+#   - agg_name: file_type
+#     cardinality_agg_name: null
+#     filter_count_name: filterFileCountByFileType
+#     widget_count_name: null
+#   - agg_name: file_mapping_level
+#     cardinality_agg_name: null
+#     filter_count_name: filterFileCountByFileMappingLevel
+#     widget_count_name: null
+#   - agg_name: library_selection
+#     cardinality_agg_name: null
+#     filter_count_name: filterFileCountByLibrarySelection
+#     widget_count_name: null
+#   - agg_name: library_source_material
+#     cardinality_agg_name: null
+#     filter_count_name: filterFileCountByLibrarySourceMaterial
+#     widget_count_name: null
+#   - agg_name: library_source_molecule
+#     cardinality_agg_name: null
+#     filter_count_name: filterFileCountByLibrarySourceMolecule
+#     widget_count_name: null
+#   - agg_name: library_strategy
+#     cardinality_agg_name: null
+#     filter_count_name: filterFileCountByLibraryStrategy
+#     widget_count_name: null
+genetic_analyses:
+  - agg_name: alteration
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByAlteration
+    widget_count_name: null
+  - agg_name: alteration_type
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByAlterationType
+    widget_count_name: null
+  - agg_name: fusion_partner_gene
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByFusionPartnerGene
+    widget_count_name: null
+  - agg_name: gene_symbol
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByGeneSymbol
+    widget_count_name: null
+  - agg_name: reported_significance
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByReportedSignificance
+    widget_count_name: null
+  - agg_name: reported_significance_system
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByReportedSignificanceSystem
+    widget_count_name: null
+  - agg_name: status
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByStatus
+    widget_count_name: null
+participants:
+  - agg_name: race
+    cardinality_agg_name: null
+    filter_count_name: filterParticipantCountByRace
+    widget_count_name: participantCountByRace
+  - agg_name: sex_at_birth
+    cardinality_agg_name: null
+    filter_count_name: filterParticipantCountBySexAtBirth
+    widget_count_name: participantCountBySexAtBirth
+samples:
+  - agg_name: participant_age_at_collection
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountBySampleAge
+    widget_count_name: null
+  - agg_name: sample_anatomic_site
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountBySampleAnatomicSite
+    widget_count_name: null
+  - agg_name: sample_tumor_status
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByTumorStatus
+    widget_count_name: null
+    additional_update:
+      Normal: 4000
+      Tumor: 4500
+  - agg_name: tumor_classification
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByTumorClassification
+    widget_count_name: null
+    additional_update:
+      'Not Applicable': 4000
+      'Not Reported': 1500
+      Primary: 1000
+studies:
+  - agg_name: dbgap_accession
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByDbgapAccession
+    widget_count_name: null
+    additional_update:
+      phs001327: 2000
+  - agg_name: study_acronym
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByAcronym
+    widget_count_name: participantCountByStudy
+    additional_update:
+      CCSS_SMN: 2000
+  - agg_name: study_name
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByStudyTitle
+    widget_count_name: null
+    additional_update:
+      'Childhood Cancer Survivor Study (CCSS)': 2000
+  - agg_name: study_status
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByStudyStatus
+    widget_count_name: null
+    additional_update:
+      Active: 2000
+      Completed: 3000
+survivals:
+  - agg_name: age_at_last_known_survival_status
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByAgeAtLastKnownSurvivalStatus
+    widget_count_name: null
+  - agg_name: cause_of_death
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByCauseOfDeath
+    widget_count_name: null
+  - agg_name: first_event
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByFirstEvent
+    widget_count_name: null
+  - agg_name: last_known_survival_status
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountBySurvivalStatus
+    widget_count_name: null
+    additional_update:
+      Alive: 3500
+      Unknown: 5000
+treatments:
+  - agg_name: age_at_treatment_end
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByAgeAtTreatmentEnd
+    widget_count_name: null
+  - agg_name: age_at_treatment_start
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByAgeAtTreatmentStart
+    widget_count_name: null
+  - agg_name: treatment_agent
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByTreatmentAgent
+    widget_count_name: null
+  - agg_name: treatment_type
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByTreatmentType
+    widget_count_name: null
+    additional_update:
+      Chemotherapy: 3000
+      Radiation Therapy: 1500
+      Surgical Procedure: 2000
+treatment_responses:
+  - agg_name: age_at_response
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByAgeAtResponse
+    widget_count_name: null
+  - agg_name: response
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByResponse
+    widget_count_name: null
+  - agg_name: response_category
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByResponseCategory
+    widget_count_name: null
+  - agg_name: response_system
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByResponseSystem
+    widget_count_name: null
