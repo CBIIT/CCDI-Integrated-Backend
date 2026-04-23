@@ -45,45 +45,45 @@ diagnoses_table:
     additional_update:
       Initial Diagnosis: 4000
       Not Reported: 3500
-# files_table:
-#   - agg_name: data_category
-#     cardinality_agg_name: pid
-#     filter_count_name: filterParticipantCountByDataCategory
-#     widget_count_name: participantCountByDataCategory
-#     additional_update:
-#       Clinical: 1500
-#       'Copy Number Variation': 1000
-#       Genomics: 1000
-#       'Pathology Imaging': 1000
-#       Sequencing: 2000
-#   - agg_name: data_category
-#     cardinality_agg_name: null
-#     filter_count_name: filterFileCountByDataCategory
-#     widget_count_name: null
-#   - agg_name: file_type
-#     cardinality_agg_name: null
-#     filter_count_name: filterFileCountByFileType
-#     widget_count_name: null
-#   - agg_name: file_mapping_level
-#     cardinality_agg_name: null
-#     filter_count_name: filterFileCountByFileMappingLevel
-#     widget_count_name: null
-#   - agg_name: library_selection
-#     cardinality_agg_name: null
-#     filter_count_name: filterFileCountByLibrarySelection
-#     widget_count_name: null
-#   - agg_name: library_source_material
-#     cardinality_agg_name: null
-#     filter_count_name: filterFileCountByLibrarySourceMaterial
-#     widget_count_name: null
-#   - agg_name: library_source_molecule
-#     cardinality_agg_name: null
-#     filter_count_name: filterFileCountByLibrarySourceMolecule
-#     widget_count_name: null
-#   - agg_name: library_strategy
-#     cardinality_agg_name: null
-#     filter_count_name: filterFileCountByLibraryStrategy
-#     widget_count_name: null
+files_table:
+  - agg_name: data_category
+    cardinality_agg_name: pid
+    filter_count_name: filterParticipantCountByDataCategory
+    widget_count_name: participantCountByDataCategory
+    additional_update:
+      Clinical: 1500
+      'Copy Number Variation': 1000
+      Genomics: 1000
+      'Pathology Imaging': 1000
+      Sequencing: 2000
+  - agg_name: data_category
+    cardinality_agg_name: null
+    filter_count_name: filterFileCountByDataCategory
+    widget_count_name: null
+  - agg_name: file_type
+    cardinality_agg_name: null
+    filter_count_name: filterFileCountByFileType
+    widget_count_name: null
+  - agg_name: file_mapping_level
+    cardinality_agg_name: null
+    filter_count_name: filterFileCountByFileMappingLevel
+    widget_count_name: null
+  - agg_name: library_selection
+    cardinality_agg_name: null
+    filter_count_name: filterFileCountByLibrarySelection
+    widget_count_name: null
+  - agg_name: library_source_material
+    cardinality_agg_name: null
+    filter_count_name: filterFileCountByLibrarySourceMaterial
+    widget_count_name: null
+  - agg_name: library_source_molecule
+    cardinality_agg_name: null
+    filter_count_name: filterFileCountByLibrarySourceMolecule
+    widget_count_name: null
+  - agg_name: library_strategy
+    cardinality_agg_name: null
+    filter_count_name: filterFileCountByLibraryStrategy
+    widget_count_name: null
 genetic_analyses_table:
   - agg_name: alteration
     cardinality_agg_name: pid

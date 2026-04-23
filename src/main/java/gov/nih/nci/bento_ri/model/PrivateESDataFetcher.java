@@ -85,7 +85,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String VALUES_COUNT_END_POINT = "/model_values/_count";
     final Map<String, String> ENDPOINTS = Map.ofEntries( // Used to access endpoints when iterating over a list of Opensearch indices
         Map.entry("diagnoses_table", DIAGNOSIS_END_POINT),
-        // Map.entry("files_table", FILES_END_POINT),
+        Map.entry("files_table", FILES_END_POINT),
         Map.entry("genetic_analyses_table", GENETIC_ANALYSES_END_POINT),
         Map.entry("participants_table", PARTICIPANTS_END_POINT),
         Map.entry("samples_table", SAMPLES_END_POINT),
@@ -893,11 +893,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         Map<String, Object> query_studies = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "study_participants_faceted");
         int numberOfStudies = getNodeCount("study_id", query_studies, STUDIES_FACET_END_POINT).size();
 
-        // Request filesCountRequest = new Request("GET", FILES_COUNT_END_POINT);
-        // Map<String, Object> query_files = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "files_table");
-        // filesCountRequest.setJsonEntity(gson.toJson(query_files));
-        // JsonObject filesCountResult = inventoryESService.send(filesCountRequest);
-        // int numberOfFiles = filesCountResult.get("count").getAsInt();
+        Request filesCountRequest = new Request("GET", FILES_COUNT_END_POINT);
+        Map<String, Object> query_files = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "files_table");
+        filesCountRequest.setJsonEntity(gson.toJson(query_files));
+        JsonObject filesCountResult = inventoryESService.send(filesCountRequest);
+        int numberOfFiles = filesCountResult.get("count").getAsInt();
 
         data.put("numberOfStudies", numberOfStudies);
         data.put("numberOfParticipants", numberOfParticipants);
@@ -907,7 +907,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         data.put("numberOfTreatmentResponses", numberOfTreatmentResponses);
         data.put("numberOfSurvivals", numberOfSurvivals);
         data.put("numberOfSamples", numberOfSamples);
-        // data.put("numberOfFiles", numberOfFiles);
+        data.put("numberOfFiles", numberOfFiles);
         data.put("participantsFileCount", participants_file_count);
 
         // Iterate through facet filters to query their counts
