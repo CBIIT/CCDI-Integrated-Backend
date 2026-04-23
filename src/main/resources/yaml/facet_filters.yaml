@@ -5,10 +5,10 @@
 # widget_count_name - what to call the widget count in GraphQL
 # additional_update - values whose counts must be corrected
 
-diagnoses:
+diagnoses_table:
   - agg_name: age_at_diagnosis
     cardinality_agg_name: pid
-    cardinality_index_name: participants
+    cardinality_index_name: participants_table
     filter_count_name: filterParticipantCountByDiagnosisAge
     widget_count_name: participantCountByDiagnosisAge
   - agg_name: diagnosis
@@ -45,7 +45,7 @@ diagnoses:
     additional_update:
       Initial Diagnosis: 4000
       Not Reported: 3500
-# files:
+# files_table:
 #   - agg_name: data_category
 #     cardinality_agg_name: pid
 #     filter_count_name: filterParticipantCountByDataCategory
@@ -84,7 +84,7 @@ diagnoses:
 #     cardinality_agg_name: null
 #     filter_count_name: filterFileCountByLibraryStrategy
 #     widget_count_name: null
-genetic_analyses:
+genetic_analyses_table:
   - agg_name: alteration
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountByAlteration
@@ -113,7 +113,7 @@ genetic_analyses:
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountByStatus
     widget_count_name: null
-participants:
+participants_table:
   - agg_name: race
     cardinality_agg_name: null
     filter_count_name: filterParticipantCountByRace
@@ -122,7 +122,7 @@ participants:
     cardinality_agg_name: null
     filter_count_name: filterParticipantCountBySexAtBirth
     widget_count_name: participantCountBySexAtBirth
-samples:
+samples_table:
   - agg_name: participant_age_at_collection
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountBySampleAge
@@ -146,10 +146,10 @@ samples:
       'Not Applicable': 4000
       'Not Reported': 1500
       Primary: 1000
-studies:
+studies_table:
   - agg_name: dbgap_accession
     cardinality_agg_name: pid
-    filter_count_name: filterParticipantCountByDbgapAccession
+    filter_count_name: filterParticipantCountByDBGAPAccession
     widget_count_name: null
     additional_update:
       phs001327: 2000
@@ -172,7 +172,7 @@ studies:
     additional_update:
       Active: 2000
       Completed: 3000
-survivals:
+survivals_table:
   - agg_name: age_at_last_known_survival_status
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountByAgeAtLastKnownSurvivalStatus
@@ -192,7 +192,7 @@ survivals:
     additional_update:
       Alive: 3500
       Unknown: 5000
-treatments:
+treatments_table:
   - agg_name: age_at_treatment_end
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountByAgeAtTreatmentEnd
@@ -213,7 +213,7 @@ treatments:
       Chemotherapy: 3000
       Radiation Therapy: 1500
       Surgical Procedure: 2000
-treatment_responses:
+treatment_responses_table:
   - agg_name: age_at_response
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountByAgeAtResponse

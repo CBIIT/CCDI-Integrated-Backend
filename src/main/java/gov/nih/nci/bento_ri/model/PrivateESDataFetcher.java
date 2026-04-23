@@ -43,8 +43,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String CARDINALITY_INDEX_NAME = "cardinality_index_name";
     final String AGG_NAME = "agg_name";
     final String AGG_ENDPOINT = "agg_endpoint";
-    final String WIDGET_QUERY = "widgetQueryName";
-    final String FILTER_COUNT_QUERY = "filterCountQueryName";
+    final String WIDGET_QUERY = "widget_count_name";
+    final String FILTER_COUNT_QUERY = "filter_count_name";
     final String ADDITIONAL_UPDATE = "additional_update";
 
     private Map<String, List<Map<String, Object>>> facetFilters;
@@ -84,15 +84,15 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String PROPERTIES_COUNT_END_POINT = "/model_properties/_count";
     final String VALUES_COUNT_END_POINT = "/model_values/_count";
     final Map<String, String> ENDPOINTS = Map.ofEntries( // Used to access endpoints when iterating over a list of Opensearch indices
-        Map.entry("diagnoses", DIAGNOSIS_END_POINT),
-        // Map.entry("files", FILES_END_POINT),
-        Map.entry("genetic_analyses", GENETIC_ANALYSES_END_POINT),
-        Map.entry("participants", PARTICIPANTS_END_POINT),
-        Map.entry("samples", SAMPLES_END_POINT),
-        Map.entry("studies", STUDIES_END_POINT),
-        Map.entry("survivals", SURVIVALS_END_POINT),
-        Map.entry("treatments", TREATMENTS_END_POINT),
-        Map.entry("treatment_responses", TREATMENT_RESPONSES_END_POINT)
+        Map.entry("diagnoses_table", DIAGNOSIS_END_POINT),
+        // Map.entry("files_table", FILES_END_POINT),
+        Map.entry("genetic_analyses_table", GENETIC_ANALYSES_END_POINT),
+        Map.entry("participants_table", PARTICIPANTS_END_POINT),
+        Map.entry("samples_table", SAMPLES_END_POINT),
+        Map.entry("studies_table", STUDIES_END_POINT),
+        Map.entry("survivals_table", SURVIVALS_END_POINT),
+        Map.entry("treatments_table", TREATMENTS_END_POINT),
+        Map.entry("treatment_responses_table", TREATMENT_RESPONSES_END_POINT)
     );
 
     final String GS_END_POINT = "endpoint";
@@ -952,7 +952,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     // Fetch data for widgets
                     if (isRangeParam) { // Numerical range widgets - these counts will be exact!
                         String queryIndex = cardinalityIndexName != null ? cardinalityIndexName : index;
-                        widgetCounts = subjectCountByRange(field, params, queryIndex, cardinalityAggName, queryIndex);
+                        String queryEndpoint = ENDPOINTS.get(queryIndex);
+                        if (queryEndpoint == null) {
+                            throw new IOException("No OpenSearch endpoint mapping found for index: " + queryIndex);
+                        }
+                        widgetCounts = subjectCountByRange(field, params, queryEndpoint, cardinalityAggName, queryIndex);
                     } else if (params.containsKey(field) && values.size() > 0) { // Non-range widgets - these counts might be inaccurate!
                         widgetCounts = subjectCountBy(field, params, endpoint, cardinalityAggName, index);
                     }
@@ -995,19 +999,19 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     Map<String, Object> query_4_update = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(field), Set.of(), "nested_filters", "participants_table");
                     String prop = field;
                     String nestedProperty = "";
-                    if (index.equals("survivals")) {
+                    if (index.equals("survivals_table")) {
                         nestedProperty = "survival_filters";
-                    } else if (index.equals("treatments")) {
+                    } else if (index.equals("treatments_table")) {
                         nestedProperty = "treatment_filters";
-                    } else if (index.equals("treatment_responses")) {
+                    } else if (index.equals("treatment_responses_table")) {
                         nestedProperty = "treatment_response_filters";
-                    } else if (index.equals("samples")) {
+                    } else if (index.equals("samples_table")) {
                         nestedProperty = "sample_diagnosis_genetic_analysis_file_filters";
-                    } else if (index.equals("diagnoses")) {
+                    } else if (index.equals("diagnoses_table")) {
                         nestedProperty = "sample_diagnosis_genetic_analysis_file_filters";
-                    } else if (index.equals("genetic_analyses")) {
+                    } else if (index.equals("genetic_analyses_table")) {
                         nestedProperty = "sample_diagnosis_genetic_analysis_file_filters";
-                    } else if (index.equals("files")) {
+                    } else if (index.equals("files_table")) {
                         nestedProperty = "sample_diagnosis_genetic_analysis_file_filters";
                     } else {
                         nestedProperty = "";
