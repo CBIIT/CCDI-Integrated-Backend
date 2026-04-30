@@ -56,7 +56,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String SORT_DIRECTION = "sort_direction";
 
     final String COHORTS_END_POINT = "/cohorts/_search";
-    final String STUDIES_FACET_END_POINT = "/study_participants_faceted/_search";
     final String PARTICIPANTS_END_POINT = "/participants_table/_search";
     final String SURVIVALS_END_POINT = "/survivals_table/_search";
     final String TREATMENTS_END_POINT = "/treatments_table/_search";
@@ -89,7 +88,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         Map.entry("genetic_analyses_table", GENETIC_ANALYSES_END_POINT),
         Map.entry("participants_table", PARTICIPANTS_END_POINT),
         Map.entry("samples_table", SAMPLES_END_POINT),
-        Map.entry("studies_table", STUDIES_END_POINT),
         Map.entry("survivals_table", SURVIVALS_END_POINT),
         Map.entry("treatments_table", TREATMENTS_END_POINT),
         Map.entry("treatment_responses_table", TREATMENT_RESPONSES_END_POINT)
@@ -832,8 +830,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         JsonObject samplesCountResult = inventoryESService.send(samplesCountRequest);
         int numberOfSamples = samplesCountResult.get("count").getAsInt();
         
-        Map<String, Object> query_studies = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "study_participants_faceted");
-        int numberOfStudies = getNodeCount("study_id", query_studies, STUDIES_FACET_END_POINT).size();
+        Map<String, Object> query_studies = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "participants_table");
+        int numberOfStudies = getNodeCount("study_id", query_studies, PARTICIPANTS_END_POINT).size();
 
         Request filesCountRequest = new Request("GET", FILES_COUNT_END_POINT);
         Map<String, Object> query_files = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "files_table");

@@ -121,6 +121,22 @@ participants_table:
     cardinality_agg_name: null
     filter_count_name: filterParticipantCountBySexAtBirth
     widget_count_name: participantCountBySexAtBirth
+  - agg_name: dbgap_accession
+    cardinality_agg_name: null
+    filter_count_name: filterParticipantCountByDBGAPAccession
+    widget_count_name: null
+  - agg_name: study_acronym
+    cardinality_agg_name: null
+    filter_count_name: filterParticipantCountByAcronym
+    widget_count_name: participantCountByStudy
+  - agg_name: study_name
+    cardinality_agg_name: null
+    filter_count_name: filterParticipantCountByStudyTitle
+    widget_count_name: null
+  - agg_name: study_status
+    cardinality_agg_name: null
+    filter_count_name: filterParticipantCountByStudyStatus
+    widget_count_name: null
 samples_table:
   - agg_name: participant_age_at_collection
     cardinality_agg_name: pid
@@ -145,32 +161,6 @@ samples_table:
       'Not Applicable': 4000
       'Not Reported': 1500
       Primary: 1000
-studies_table:
-  - agg_name: dbgap_accession
-    cardinality_agg_name: pid
-    filter_count_name: filterParticipantCountByDBGAPAccession
-    widget_count_name: null
-    additional_update:
-      phs001327: 2000
-  - agg_name: study_acronym
-    cardinality_agg_name: pid
-    filter_count_name: filterParticipantCountByAcronym
-    widget_count_name: participantCountByStudy
-    additional_update:
-      CCSS_SMN: 2000
-  - agg_name: study_name
-    cardinality_agg_name: pid
-    filter_count_name: filterParticipantCountByStudyTitle
-    widget_count_name: null
-    additional_update:
-      'Childhood Cancer Survivor Study (CCSS)': 2000
-  - agg_name: study_status
-    cardinality_agg_name: pid
-    filter_count_name: filterParticipantCountByStudyStatus
-    widget_count_name: null
-    additional_update:
-      Active: 2000
-      Completed: 3000
 survivals_table:
   - agg_name: age_at_last_known_survival_status
     cardinality_agg_name: pid
