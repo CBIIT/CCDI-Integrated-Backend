@@ -8,7 +8,6 @@
 diagnoses_table:
   - agg_name: age_at_diagnosis
     cardinality_agg_name: pid
-    cardinality_index_name: participants_table
     filter_count_name: filterParticipantCountByDiagnosisAge
     widget_count_name: participantCountByDiagnosisAge
   - agg_name: diagnosis
