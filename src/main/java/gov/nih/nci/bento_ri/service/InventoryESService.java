@@ -1200,34 +1200,17 @@ public class InventoryESService extends ESService {
         Map<String, Object> fields = new HashMap<String, Object>();
         Map<String, Object> subField = new HashMap<String, Object>();
         Map<String, Object> subField_ranges = new HashMap<String, Object>();
+        // diagnoses_table: range on root field (e.g. age_at_diagnosis in days), not combined_filters (files_table).
         subField_ranges.put("field", rangeAggName);
-                // Opensearch ranges are [from, to)
-        subField_ranges.put("ranges", Set.of(
-            Map.of(
-                "key", "0 - 4",
-                "from", 0,
-                "to", 5 * 365
-            ), Map.of(
-                "key", "5 - 9",
-                "from", 5 * 365,
-                "to", 10 * 365
-            ), Map.of(
-                "key", "10 - 14",
-                "from", 10 * 365,
-                "to", 15 * 365
-            ), Map.of(
-                "key", "15 - 19",
-                "from", 15 * 365,
-                "to", 20 * 365
-            ), Map.of(
-                "key", "20 - 29",
-                "from", 20 * 365,
-                "to", 30 * 365
-            ), Map.of(
-                "key", "> 29",
-                "from", 30 * 365
-            )
-        ));
+        // Age-at-diagnosis bins: half-open [from, to) in days (365 days per year band).
+        List<Map<String, Object>> rangesList = new ArrayList<>();
+        rangesList.add(Map.of("key", "0 - 4", "from", 0, "to", 5 * 365));
+        rangesList.add(Map.of("key", "5 - 9", "from", 5 * 365, "to", 10 * 365));
+        rangesList.add(Map.of("key", "10 - 14", "from", 10 * 365, "to", 15 * 365));
+        rangesList.add(Map.of("key", "15 - 19", "from", 15 * 365, "to", 20 * 365));
+        rangesList.add(Map.of("key", "20 - 29", "from", 20 * 365, "to", 30 * 365));
+        rangesList.add(Map.of("key", "> 29", "from", 30 * 365));
+        subField_ranges.put("ranges", rangesList);
                 
         subField.put("range", subField_ranges);
         if (! (cardinalityAggName == null)) {
