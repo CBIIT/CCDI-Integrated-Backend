@@ -145,7 +145,8 @@ samples_table:
       'Not Applicable': 4000
       'Not Reported': 1500
       Primary: 1000
-studies_table:
+# Study facet counts use study_participants_faceted (has pid); studies_table is one doc per study.
+study_participants_faceted:
   - agg_name: dbgap_accession
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountByDBGAPAccession

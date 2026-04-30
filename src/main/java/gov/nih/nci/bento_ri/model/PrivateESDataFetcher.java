@@ -89,7 +89,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         Map.entry("genetic_analyses_table", GENETIC_ANALYSES_END_POINT),
         Map.entry("participants_table", PARTICIPANTS_END_POINT),
         Map.entry("samples_table", SAMPLES_END_POINT),
-        Map.entry("studies_table", STUDIES_END_POINT),
+        Map.entry("study_participants_faceted", STUDIES_FACET_END_POINT),
         Map.entry("survivals_table", SURVIVALS_END_POINT),
         Map.entry("treatments_table", TREATMENTS_END_POINT),
         Map.entry("treatment_responses_table", TREATMENT_RESPONSES_END_POINT)
