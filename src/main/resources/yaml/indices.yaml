@@ -1639,7 +1639,7 @@ Indices:
               p.guid AS guid,
               treatment_filters
 
-            UNION ALL
+            UNION
 
             // treatment_radiation
             WITH p
