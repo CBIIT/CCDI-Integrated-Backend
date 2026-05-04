@@ -1606,36 +1606,64 @@ Indices:
       - name: "treatment_chemotherapy_filters"
         query: |
           MATCH (p:participant)
-            WITH p
-            SKIP $skip LIMIT $limit
-            OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
-            WITH
-              p,
-              tchemo,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: tchemo.chemotherapy_type,
-                    treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
-                    age_at_treatment_start: tchemo.age_at_treatment_start,
-                    age_at_treatment_end: tchemo.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters_new
-            WITH
-              p,
-              CASE
-                WHEN tchemo IS NOT NULL
-                THEN treatment_filters_new
-                ELSE []
-              END AS treatment_filters_new
-            WITH
-              p,
-              coalesce(p.treatment_filters, []) + treatment_filters_new AS treatment_filters
-            RETURN
-              p.guid AS guid,
-              treatment_filters
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
+          WITH
+            p,
+            tchemo,
+            coalesce(
+              [item in collect(
+                DISTINCT {
+                  treatment_type: tchemo.chemotherapy_type,
+                  treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
+                  age_at_treatment_start: tchemo.age_at_treatment_start,
+                  age_at_treatment_end: tchemo.age_at_treatment_end
+                }
+              ) WHERE item IS NOT NULL],
+              []
+            ) AS treatment_filters
+          WITH
+            p,
+            CASE
+              WHEN tchemo IS NOT NULL
+              THEN treatment_filters
+              ELSE []
+            END AS treatment_filters
+          RETURN
+            p.guid AS guid,
+            treatment_filters
+        page_size: 500
+      - name: "treatment_radiation_filters"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
+          WITH
+            p,
+            trad,
+            coalesce(
+              [item in collect(
+                DISTINCT {
+                  treatment_type: trad.radiation_therapy_type,
+                  treatment_agent: trad.beam_radiation_type,
+                  age_at_treatment_start: trad.age_at_treatment_start,
+                  age_at_treatment_end: trad.age_at_treatment_end
+                }
+              ) WHERE item IS NOT NULL],
+              []
+            ) AS treatment_filters
+          WITH
+            p,
+            CASE
+              WHEN trad IS NOT NULL
+              THEN treatment_filters
+              ELSE []
+            END AS treatment_filters
+          RETURN
+            p.guid AS guid,
+            treatment_filters
         page_size: 500
 
   - index_name: survivals_table
