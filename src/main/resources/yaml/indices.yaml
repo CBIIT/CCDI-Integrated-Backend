@@ -1698,6 +1698,36 @@ Indices:
             RETURN
               p.guid AS guid,
               treatment_filters
+
+            UNION
+
+            // treatment_other
+            WITH p
+            OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
+            WITH
+              p,
+              toth,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: toth.treatment_type,
+                    treatment_agent: toth.other_treatment_type,
+                    age_at_treatment_start: toth.age_at_treatment_start,
+                    age_at_treatment_end: toth.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatment_filters
+            WITH
+              p,
+              CASE
+                WHEN toth IS NOT NULL
+                THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+            RETURN
+              p.guid AS guid,
+              treatment_filters
           }
           WITH
             guid,
