@@ -1603,66 +1603,80 @@ Indices:
             p.guid AS guid,
             survival_filters
         page_size: 500
-      - name: "treatment_chemotherapy_filters"
+      - name: "treatment_filters"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
+
+          // Build a superlist of treatment filters
+          CALL {
+            // treatment_chemotherapy
+            WITH p
+            OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
+            WITH
+              p,
+              tchemo,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: tchemo.chemotherapy_type,
+                    treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
+                    age_at_treatment_start: tchemo.age_at_treatment_start,
+                    age_at_treatment_end: tchemo.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatment_filters
+            WITH
+              p,
+              CASE
+                WHEN tchemo IS NOT NULL
+                THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+            RETURN
+              p.guid AS guid,
+              treatment_filters
+
+            UNION ALL
+
+            // treatment_radiation
+            WITH p
+            OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
+            WITH
+              p,
+              trad,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: trad.radiation_therapy_type,
+                    treatment_agent: trad.beam_radiation_type,
+                    age_at_treatment_start: trad.age_at_treatment_start,
+                    age_at_treatment_end: trad.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatment_filters
+            WITH
+              p,
+              CASE
+                WHEN trad IS NOT NULL
+                THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+            RETURN
+              p.guid AS guid,
+              treatment_filters
+          }
           WITH
-            p,
-            tchemo,
-            coalesce(
-              [item in collect(
-                DISTINCT {
-                  treatment_type: tchemo.chemotherapy_type,
-                  treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
-                  age_at_treatment_start: tchemo.age_at_treatment_start,
-                  age_at_treatment_end: tchemo.age_at_treatment_end
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS treatment_filters
+            guid,
+            collect(treatment_filters) AS treatment_filters_superlist
           WITH
-            p,
-            CASE
-              WHEN tchemo IS NOT NULL
-              THEN treatment_filters
-              ELSE []
-            END AS treatment_filters
+            guid,
+            reduce(all_filters = [], filters IN treatment_filters_superlist | all_filters + filters) AS treatment_filters
           RETURN
-            p.guid AS guid,
-            treatment_filters
-        page_size: 500
-      - name: "treatment_radiation_filters"
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
-          WITH
-            p,
-            trad,
-            coalesce(
-              [item in collect(
-                DISTINCT {
-                  treatment_type: trad.radiation_therapy_type,
-                  treatment_agent: trad.beam_radiation_type,
-                  age_at_treatment_start: trad.age_at_treatment_start,
-                  age_at_treatment_end: trad.age_at_treatment_end
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS treatment_filters
-          WITH
-            p,
-            CASE
-              WHEN trad IS NOT NULL
-              THEN treatment_filters
-              ELSE []
-            END AS treatment_filters
-          RETURN
-            p.guid AS guid,
+            guid,
             treatment_filters
         page_size: 500
 
