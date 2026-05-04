@@ -1650,8 +1650,8 @@ Indices:
               coalesce(
                 [item in collect(
                   DISTINCT {
-                    treatment_type: trad.radiation_therapy_type,
-                    treatment_agent: trad.beam_radiation_type,
+                    treatment_type: trad.treatment_type,
+                    treatment_agent: trad.radiation_therapy_type,
                     age_at_treatment_start: trad.age_at_treatment_start,
                     age_at_treatment_end: trad.age_at_treatment_end
                   }
@@ -1662,6 +1662,36 @@ Indices:
               p,
               CASE
                 WHEN trad IS NOT NULL
+                THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+            RETURN
+              p.guid AS guid,
+              treatment_filters
+
+            UNION
+
+            // treatment_surgery
+            WITH p
+            OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
+            WITH
+              p,
+              tsurg,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: tsurg.treatment_type,
+                    treatment_agent: tsurg.surgery_type,
+                    age_at_treatment_start: tsurg.age_at_treatment_start,
+                    age_at_treatment_end: tsurg.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatment_filters
+            WITH
+              p,
+              CASE
+                WHEN tsurg IS NOT NULL
                 THEN treatment_filters
                 ELSE []
               END AS treatment_filters
