@@ -1770,6 +1770,355 @@ Indices:
             p.guid AS guid,
             treatment_response_filters
         page_size: 500
+      - name: "sample_diagnosis_genetic_analysis_file_filters"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip
+          LIMIT $limit
+
+          // Build a superlist of sample_diagnosis_genetic_analysis_file filters
+          CALL {
+            // combination 1
+            WITH p
+            OPTIONAL MATCH (p)<--(sm:sample)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH DISTINCT p, sm, file, ga, dg
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 2
+            WITH p
+            OPTIONAL MATCH (p)<--(sm:sample)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 3
+            WITH p
+            OPTIONAL MATCH (p)<--(sm:sample)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 4
+            WITH p
+            OPTIONAL MATCH (p)<--(sm:sample)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 5
+            WITH p
+            OPTIONAL MATCH (p)<--(sm:sample)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:methylation_array_file OR
+                file:pathology_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 6
+            WITH p
+            OPTIONAL MATCH (p)<--(sm:sample)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:methylation_array_file OR
+                file:pathology_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 7
+            WITH p
+            OPTIONAL MATCH (p)<--(sm:sample)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:methylation_array_file OR
+                file:pathology_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 8
+            WITH p
+            OPTIONAL MATCH (p)<--(sm:sample)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:methylation_array_file OR
+                file:pathology_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 9 (similar to combination 1, just need to group sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 10 (similar to combination 3, just need to group sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm1)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+          }
+          WITH
+            guid,
+            collect(sample_diagnosis_genetic_analysis_file_filter) AS sample_diagnosis_genetic_analysis_file_filters_superlist
+          WITH
+            guid,
+            reduce(
+              all_filters = [],
+              filters IN
+              sample_diagnosis_genetic_analysis_file_filters_superlist |
+                all_filters + filters) AS sample_diagnosis_genetic_analysis_file_filters
+          UNWIND sample_diagnosis_genetic_analysis_file_filters AS row
+          WITH
+            guid,
+            collect(
+              DISTINCT
+              {
+                // Sample facets
+                sample_anatomic_site: coalesce(row.sm.anatomic_site),
+                participant_age_at_collection: coalesce(row.sm.participant_age_at_collection),
+                sample_tumor_status: coalesce(row.sm.sample_tumor_status),
+                tumor_classification: coalesce(row.sm.tumor_classification),
+
+                // Diagnosis facets
+                age_at_diagnosis: coalesce(row.dg.age_at_diagnosis),
+                diagnosis_anatomic_site: coalesce(row.dg.anatomic_site),
+                disease_phase: coalesce(row.dg.disease_phase),
+                diagnosis_classification_system: coalesce(row.dg.diagnosis_classification_system),
+                diagnosis_category: coalesce(row.dg.diagnosis_category),
+                diagnosis_basis: coalesce(row.dg.diagnosis_basis),
+                diagnosis: coalesce(row.dg.diagnosis),
+
+                // Genetic Analysis facets
+                reported_significance: coalesce(row.ga.reported_significance),
+                reported_significance_system: coalesce(row.ga.reported_significance_system),
+                gene_symbol: coalesce(row.ga.gene_symbol),
+                alteration: coalesce(row.ga.alteration),
+                fusion_partner_gene: coalesce(row.ga.fusion_partner_gene),
+                alteration_type: coalesce(row.ga.alteration_type),
+                status: coalesce(row.ga.status),
+
+                // File facets
+                data_category: coalesce(row.file.data_category),
+                file_type: coalesce(row.file.file_type),
+                file_mapping_level: coalesce(row.file.file_mapping_level),
+                library_selection:
+                  CASE
+                    WHEN
+                      row.file IS NOT NULL AND
+                      size(labels(row.file)) > 0 AND
+                      labels(row.file)[0] = 'sequencing_file'
+                      THEN row.file.library_selection
+                    ELSE null
+                  END,
+                library_source_material:
+                  CASE
+                    WHEN
+                      row.file IS NOT NULL AND
+                      size(labels(row.file)) > 0 AND
+                      labels(row.file)[0] = 'sequencing_file'
+                      THEN row.file.library_source_material
+                    ELSE null
+                  END,
+                library_source_molecule:
+                  CASE
+                    WHEN
+                      row.file IS NOT NULL AND
+                      size(labels(row.file)) > 0 AND
+                      labels(row.file)[0] = 'sequencing_file'
+                      THEN row.file.library_source_molecule
+                    ELSE null
+                  END,
+                library_strategy:
+                  CASE
+                    WHEN
+                      row.file IS NOT NULL AND
+                      size(labels(row.file)) > 0 AND
+                      labels(row.file)[0] = 'sequencing_file'
+                      THEN row.file.library_strategy
+                    ELSE null
+                  END
+              }) AS sample_diagnosis_genetic_analysis_file_filters
+          RETURN guid, sample_diagnosis_genetic_analysis_file_filters
+        page_size: 500
 
   - index_name: survivals_table
     type: neo4j
