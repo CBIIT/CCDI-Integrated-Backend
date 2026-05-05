@@ -1739,6 +1739,37 @@ Indices:
             guid,
             treatment_filters
         page_size: 500
+      - name: "treatment_response_filters"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
+          WITH
+            p,
+            tresp,
+            coalesce(
+              [item IN collect(
+                DISTINCT {
+                  age_at_response: tresp.age_at_response,
+                  response: tresp.response,
+                  response_category: tresp.response_category,
+                  response_system: tresp.response_system
+                }
+              ) WHERE item IS NOT NULL],
+              []
+            ) AS treatment_response_filters
+          WITH
+            p,
+            CASE
+              WHEN tresp IS NOT NULL
+              THEN treatment_response_filters
+              ELSE []
+            END AS treatment_response_filters
+          RETURN
+            p.guid AS guid,
+            treatment_response_filters
+        page_size: 500
 
   - index_name: survivals_table
     type: neo4j
