@@ -2035,6 +2035,1088 @@ Indices:
                 ELSE []
               END AS sample_diagnosis_genetic_analysis_file_filter
             RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 11 (group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm2)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 12 (similar to combination 4, just need to group sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (sm1)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 13 (similar to combination 2, just need to group sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (sm1)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm1)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 14 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (sm1)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm2)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 15 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (sm2)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 16 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (sm2)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm1)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 17 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (sm2)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm2)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 18 (similar to combination 5, just need to group sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm1)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 19 (similar to combination 8, just need to group sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm1)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm1)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 20 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm1)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm2)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 21 (similar to combination 7, just need to group sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm1)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm1)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 22 (similar to combination 6, just need to group sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm1)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm1)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm1)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 23 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm1)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm1)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm2)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 24 (Need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm1)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm2)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 25 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm1)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm2)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm1)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 26 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm1)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm2)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm2)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 27 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm2)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 28 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm2)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm1)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 29 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm2)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm2)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 30 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm2)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm1)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 31 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm2)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm1)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm1)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 32 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm2)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm1)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm2)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 33 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm2)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm2)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 34 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm2)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm2)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm1)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 35 (need to group both sm1 and sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sm1:sample)<--(cl)<--(sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm2)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm2)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm2)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm1) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm1_filter,
+              collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_sm2_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
+            WITH
+              guid,
+              CASE
+                WHEN has_sm1_filter THEN sm1_filters
+                ELSE []
+              END AS sm1_filters,
+              CASE
+                WHEN has_sm2_filter THEN sm2_filters
+                ELSE []
+              END AS sm2_filters
+            WITH
+              guid,
+              sm1_filters + sm2_filters AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 36
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)<--(sm:sample)
+            OPTIONAL MATCH (st)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 37
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)<--(sm:sample)
+            OPTIONAL MATCH (st)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file)
+            OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 38
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)<--(sm:sample)
+            OPTIONAL MATCH (st)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 39
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)<--(sm:sample)
+            OPTIONAL MATCH (st)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file)
+            OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+          // combination 40 (similar to combination 36, just need to group sm2 with file, ga, and dg)
+            WITH p
+            OPTIONAL MATCH
+              (st:study)<--
+              (:consent_group)<--
+              (p)<-[:of_sample]-
+              (sm1:sample)<--
+              (cl)<--
+              (sm2:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (st)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            WITH
+              p.guid AS guid,
+              collect(sm2) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
           }
           WITH
             guid,
