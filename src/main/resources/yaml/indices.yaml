@@ -1746,8 +1746,8 @@ Indices:
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
           WITH
-            p,
-            tresp,
+            p.guid AS guid,
+            count(tresp) AS treatment_response_count,
             coalesce(
               [item IN collect(
                 DISTINCT {
@@ -1760,15 +1760,13 @@ Indices:
               []
             ) AS treatment_response_filters
           WITH
-            p,
+            guid,
             CASE
-              WHEN tresp IS NOT NULL
+              WHEN treatment_response_count > 0
               THEN treatment_response_filters
               ELSE []
             END AS treatment_response_filters
-          RETURN
-            p.guid AS guid,
-            treatment_response_filters
+          RETURN guid, treatment_response_filters
         page_size: 500
       - name: "sample_diagnosis_genetic_analysis_file_filters"
         query: |
@@ -3089,7 +3087,7 @@ Indices:
 
             UNION
 
-          // combination 40 (similar to combination 36, just need to group sm2 with file, ga, and dg)
+            // combination 40 (similar to combination 36, just need to group sm2 with file, ga, and dg)
             WITH p
             OPTIONAL MATCH
               (st:study)<--
