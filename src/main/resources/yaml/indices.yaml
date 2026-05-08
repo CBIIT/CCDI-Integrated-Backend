@@ -3463,6 +3463,286 @@ Indices:
                 ELSE []
               END AS sample_diagnosis_genetic_analysis_file_filter
             RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 51
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+            OPTIONAL MATCH (st)<-[:of_cell_line|of_pdx]-(cl)<--(sm:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (st)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 52
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+            OPTIONAL MATCH (st)<-[:of_cell_line|of_pdx]-(cl)<--(sm:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (st)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 53
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (st)<-[:of_cell_line|of_pdx]-(cl)<--(sm:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 54
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (st)<-[:of_cell_line|of_pdx]-(cl)<--(sm:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 55
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (st)<-[:of_cell_line|of_pdx]-(cl)<--(sm:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 56
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+            OPTIONAL MATCH (p)<--(file)
+            WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            OPTIONAL MATCH (st)<-[:of_cell_line|of_pdx]-(cl)<--(sm:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 57
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+            OPTIONAL MATCH (st)<-[:of_cell_line|of_pdx]-(cl)<--(sm:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 58
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+            OPTIONAL MATCH (st)<-[:of_cell_line|of_pdx]-(cl)<--(sm:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 59
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+            OPTIONAL MATCH (st)<-[:of_cell_line|of_pdx]-(cl)<--(sm:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (sm)<--(dg:diagnosis)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
+
+            UNION
+
+            // combination 60
+            WITH p
+            OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+            OPTIONAL MATCH (st)<-[:of_cell_line|of_pdx]-(cl)<--(sm:sample)
+            WHERE (cl:cell_line OR cl:pdx)
+            OPTIONAL MATCH (sm)<--(file)
+            WHERE
+              (file:sequencing_file OR
+                file:generic_file OR
+                file:pathology_file OR
+                file:methylation_array_file OR
+                file:cytogenomic_file)
+            OPTIONAL MATCH (p)<--(dg:diagnosis)
+            OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+            WITH
+              p.guid AS guid,
+              collect(sm) <> [] OR
+              collect(file) <> [] OR
+              collect(ga) <> [] OR
+              collect(dg) <> [] AS has_filter,
+              collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
+            WITH
+              guid,
+              CASE
+                WHEN has_filter THEN sample_diagnosis_genetic_analysis_file_filter
+                ELSE []
+              END AS sample_diagnosis_genetic_analysis_file_filter
+            RETURN guid, sample_diagnosis_genetic_analysis_file_filter
           }
           WITH
             guid,
