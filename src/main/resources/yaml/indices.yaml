@@ -1579,8 +1579,8 @@ Indices:
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
           WITH
-            p,
-            sur,
+            p.guid AS guid,
+            count(sur) AS survival_count,
             coalesce(
               [item IN collect(
                 DISTINCT {
@@ -1591,17 +1591,15 @@ Indices:
                 }
               ) WHERE item IS NOT NULL],
               []
-            ) AS survival_filters_pre
+            ) AS survival_filters
           WITH
-            p,
+            guid,
             CASE
-              WHEN sur IS NOT NULL
-              THEN survival_filters_pre
+              WHEN survival_count >0
+              THEN survival_filters
               ELSE []
             END AS survival_filters
-          RETURN
-            p.guid AS guid,
-            survival_filters
+          RETURN guid, survival_filters
         page_size: 500
       - name: "treatment_filters"
         query: |
