@@ -471,7 +471,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Unit tests: Surefire excludes *IntegrationTest / *IT (Failsafe runs those) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -479,10 +478,6 @@
                 <configuration>
                     <useModulePath>false</useModulePath>
                     <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-                    <excludes>
-                        <exclude>**/*IntegrationTest.java</exclude>
-                        <exclude>**/*IT.java</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
 
@@ -491,6 +486,20 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <jvmArguments>-Xms1g -Xmx2g</jvmArguments>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Surefire Plugin - for Unit Tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <!-- Exclude integration tests from unit test runs -->
+                    <excludes>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
