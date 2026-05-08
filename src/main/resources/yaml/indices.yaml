@@ -1613,8 +1613,8 @@ Indices:
             WITH p
             OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
             WITH
-              p,
-              tchemo,
+              p.guid AS guid,
+              count(tchemo) AS tchemo_count,
               coalesce(
                 [item in collect(
                   DISTINCT {
@@ -1627,15 +1627,13 @@ Indices:
                 []
               ) AS treatment_filters
             WITH
-              p,
+              guid,
               CASE
-                WHEN tchemo IS NOT NULL
+                WHEN tchemo_count > 0
                 THEN treatment_filters
                 ELSE []
               END AS treatment_filters
-            RETURN
-              p.guid AS guid,
-              treatment_filters
+            RETURN guid, treatment_filters
 
             UNION
 
@@ -1643,8 +1641,8 @@ Indices:
             WITH p
             OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
             WITH
-              p,
-              trad,
+              p.guid AS guid,
+              count(trad) AS trad_count,
               coalesce(
                 [item in collect(
                   DISTINCT {
@@ -1657,15 +1655,13 @@ Indices:
                 []
               ) AS treatment_filters
             WITH
-              p,
+              guid,
               CASE
-                WHEN trad IS NOT NULL
+                WHEN trad_count > 0
                 THEN treatment_filters
                 ELSE []
               END AS treatment_filters
-            RETURN
-              p.guid AS guid,
-              treatment_filters
+            RETURN guid, treatment_filters
 
             UNION
 
@@ -1673,8 +1669,8 @@ Indices:
             WITH p
             OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
             WITH
-              p,
-              tsurg,
+              p.guid AS guid,
+              count(tsurg) AS tsurg_count,
               coalesce(
                 [item in collect(
                   DISTINCT {
@@ -1687,15 +1683,13 @@ Indices:
                 []
               ) AS treatment_filters
             WITH
-              p,
+              guid,
               CASE
-                WHEN tsurg IS NOT NULL
+                WHEN tsurg_count > 0
                 THEN treatment_filters
                 ELSE []
               END AS treatment_filters
-            RETURN
-              p.guid AS guid,
-              treatment_filters
+            RETURN guid, treatment_filters
 
             UNION
 
@@ -1703,8 +1697,8 @@ Indices:
             WITH p
             OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
             WITH
-              p,
-              toth,
+              p.guid AS guid,
+              count(toth) AS toth_count,
               coalesce(
                 [item in collect(
                   DISTINCT {
@@ -1717,15 +1711,13 @@ Indices:
                 []
               ) AS treatment_filters
             WITH
-              p,
+              guid,
               CASE
-                WHEN toth IS NOT NULL
+                WHEN toth_count > 0
                 THEN treatment_filters
                 ELSE []
               END AS treatment_filters
-            RETURN
-              p.guid AS guid,
-              treatment_filters
+            RETURN guid, treatment_filters
           }
           WITH
             guid,
@@ -1733,9 +1725,7 @@ Indices:
           WITH
             guid,
             reduce(all_filters = [], filters IN treatment_filters_superlist | all_filters + filters) AS treatment_filters
-          RETURN
-            guid,
-            treatment_filters
+          RETURN guid, treatment_filters
         page_size: 500
       - name: "treatment_response_filters"
         query: |
