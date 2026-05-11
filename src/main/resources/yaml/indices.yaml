@@ -3826,6 +3826,28 @@ Indices:
               }) AS sample_diagnosis_genetic_analysis_file_filters
           RETURN guid, sample_diagnosis_genetic_analysis_file_filters
         page_size: 500
+      - name: "files"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (p)<-[*..4]-(file)
+          WHERE
+            file:clinical_measure_file OR
+            file:generic_file OR
+            file:sequencing_file OR
+            file:pathology_file OR
+            file:radiology_file OR
+            file:methylation_array_file OR
+            file:cytogenomic_file
+          WITH
+            p.guid AS guid,
+            collect(DISTINCT file.dcf_indexd_guid) AS files
+          RETURN
+            guid,
+            files AS files,
+            size(files) AS file_count 
+        page_size: 5000
 
   - index_name: survivals_table
     type: neo4j
