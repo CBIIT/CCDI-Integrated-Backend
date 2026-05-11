@@ -1772,13 +1772,12 @@ Indices:
             WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
             OPTIONAL MATCH (p)<--(ga:genetic_analysis)
             OPTIONAL MATCH (p)<--(dg:diagnosis)
-            WITH DISTINCT p, sm, file, ga, dg
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -1799,10 +1798,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -1823,10 +1822,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -1847,10 +1846,10 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -1875,10 +1874,10 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -1903,10 +1902,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -1931,10 +1930,10 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -1959,10 +1958,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -1984,10 +1983,10 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -2009,10 +2008,10 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -2034,15 +2033,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2071,10 +2070,10 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -2096,10 +2095,10 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -2121,15 +2120,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2158,15 +2157,15 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2195,15 +2194,15 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2232,15 +2231,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2274,15 +2273,15 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2316,10 +2315,10 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -2346,15 +2345,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2388,10 +2387,10 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -2418,10 +2417,10 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -2448,15 +2447,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2490,15 +2489,15 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2532,15 +2531,15 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2574,15 +2573,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2616,15 +2615,15 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2658,15 +2657,15 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2700,15 +2699,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2742,15 +2741,15 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2784,15 +2783,15 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2826,15 +2825,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2868,15 +2867,15 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2910,15 +2909,15 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2952,15 +2951,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -2988,10 +2987,10 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3012,10 +3011,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3036,10 +3035,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3060,10 +3059,10 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3091,10 +3090,10 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3122,10 +3121,10 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3153,15 +3152,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -3196,10 +3195,10 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3227,10 +3226,10 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3258,15 +3257,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -3301,15 +3300,15 @@ Indices:
             OPTIONAL MATCH (p)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -3344,15 +3343,15 @@ Indices:
             OPTIONAL MATCH (sm1)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -3387,15 +3386,15 @@ Indices:
             OPTIONAL MATCH (sm2)<--(dg:diagnosis)
             WITH
               p.guid AS guid,
-              collect(sm1) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm1_filter,
+              count(sm1) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm1_filter,
               collect(DISTINCT {sm: sm1, file: file, dg: dg, ga: ga}) AS sm1_filters,
-              collect(sm2) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_sm2_filter,
+              count(sm2) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_sm2_filter,
               collect(DISTINCT {sm: sm2, file: file, dg: dg, ga: ga}) AS sm2_filters
             WITH
               guid,
@@ -3425,10 +3424,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3451,10 +3450,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3477,10 +3476,10 @@ Indices:
             OPTIONAL MATCH (p)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3503,10 +3502,10 @@ Indices:
             OPTIONAL MATCH (p)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3529,10 +3528,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3555,10 +3554,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3581,10 +3580,10 @@ Indices:
             OPTIONAL MATCH (p)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3607,10 +3606,10 @@ Indices:
             OPTIONAL MATCH (p)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3638,10 +3637,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3669,10 +3668,10 @@ Indices:
             OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3700,10 +3699,10 @@ Indices:
             OPTIONAL MATCH (p)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
@@ -3731,10 +3730,10 @@ Indices:
             OPTIONAL MATCH (p)<--(ga:genetic_analysis)
             WITH
               p.guid AS guid,
-              collect(sm) <> [] OR
-              collect(file) <> [] OR
-              collect(ga) <> [] OR
-              collect(dg) <> [] AS has_filter,
+              count(sm) <> 0 OR
+              count(file) <> 0 OR
+              count(ga) <> 0 OR
+              count(dg) <> 0 AS has_filter,
               collect(DISTINCT {sm: sm, file: file, dg: dg, ga: ga}) AS sample_diagnosis_genetic_analysis_file_filter
             WITH
               guid,
