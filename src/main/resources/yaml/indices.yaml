@@ -3761,18 +3761,18 @@ Indices:
               DISTINCT
               {
                 // Sample facets
-                sample_anatomic_site: coalesce(row.sm.anatomic_site),
+                sample_anatomic_site: row.sm.anatomic_site,
                 participant_age_at_collection: coalesce(row.sm.participant_age_at_collection),
                 sample_tumor_status: coalesce(row.sm.sample_tumor_status),
                 tumor_classification: coalesce(row.sm.tumor_classification),
 
                 // Diagnosis facets
                 age_at_diagnosis: coalesce(row.dg.age_at_diagnosis),
-                diagnosis_anatomic_site: coalesce(row.dg.anatomic_site),
+                diagnosis_anatomic_site: row.dg.anatomic_site,
                 disease_phase: coalesce(row.dg.disease_phase),
-                diagnosis_classification_system: coalesce(row.dg.diagnosis_classification_system),
-                diagnosis_category: coalesce(row.dg.diagnosis_category),
-                diagnosis_basis: coalesce(row.dg.diagnosis_basis),
+                diagnosis_classification_system: row.dg.diagnosis_classification_system,
+                diagnosis_category: row.dg.diagnosis_category,
+                diagnosis_basis: row.dg.diagnosis_basis,
                 diagnosis: coalesce(row.dg.diagnosis),
 
                 // Genetic Analysis facets
