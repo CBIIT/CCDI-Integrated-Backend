@@ -3754,78 +3754,95 @@ Indices:
               sample_diagnosis_genetic_analysis_file_filters_superlist |
                 all_filters + filters) AS sample_diagnosis_genetic_analysis_file_filters
           UNWIND sample_diagnosis_genetic_analysis_file_filters AS row
-          WITH
+          WITH DISTINCT
             guid,
-            collect(
-              DISTINCT
-              {
-                // Sample facets
-                sample_anatomic_site: row.sm.anatomic_site,
-                participant_age_at_collection: coalesce(row.sm.participant_age_at_collection),
-                sample_tumor_status: coalesce(row.sm.sample_tumor_status),
-                tumor_classification: coalesce(row.sm.tumor_classification),
 
-                // Diagnosis facets
-                age_at_diagnosis: coalesce(row.dg.age_at_diagnosis),
-                diagnosis_anatomic_site: row.dg.anatomic_site,
-                disease_phase: coalesce(row.dg.disease_phase),
-                diagnosis_classification_system: row.dg.diagnosis_classification_system,
-                diagnosis_category: row.dg.diagnosis_category,
-                diagnosis_basis: row.dg.diagnosis_basis,
-                diagnosis: coalesce(row.dg.diagnosis),
+            // Sample facets
+            row.sm.anatomic_site AS sample_anatomic_site,
+            row.sm.participant_age_at_collection AS participant_age_at_collection,
+            row.sm.sample_tumor_status AS sample_tumor_status,
+            row.sm.tumor_classification AS tumor_classification,
 
-                // Genetic Analysis facets
-                reported_significance: coalesce(row.ga.reported_significance),
-                reported_significance_system: coalesce(row.ga.reported_significance_system),
-                gene_symbol: coalesce(row.ga.gene_symbol),
-                alteration: coalesce(row.ga.alteration),
-                fusion_partner_gene: coalesce(row.ga.fusion_partner_gene),
-                alteration_type: coalesce(row.ga.alteration_type),
-                status: coalesce(row.ga.status),
+            // Diagnosis facets
+            row.dg.age_at_diagnosis AS age_at_diagnosis,
+            row.dg.anatomic_site AS diagnosis_anatomic_site,
+            row.dg.disease_phase AS disease_phase,
+            row.dg.diagnosis_classification_system AS diagnosis_classification_system,
+            row.dg.diagnosis_category AS diagnosis_category,
+            row.dg.diagnosis_basis AS diagnosis_basis,
+            row.dg.diagnosis AS diagnosis,
 
-                // File facets
-                data_category: coalesce(row.file.data_category),
-                file_type: coalesce(row.file.file_type),
-                file_mapping_level: coalesce(row.file.file_mapping_level),
-                library_selection:
-                  CASE
-                    WHEN
-                      row.file IS NOT NULL AND
-                      size(labels(row.file)) > 0 AND
-                      labels(row.file)[0] = 'sequencing_file'
-                      THEN row.file.library_selection
-                    ELSE null
-                  END,
-                library_source_material:
-                  CASE
-                    WHEN
-                      row.file IS NOT NULL AND
-                      size(labels(row.file)) > 0 AND
-                      labels(row.file)[0] = 'sequencing_file'
-                      THEN row.file.library_source_material
-                    ELSE null
-                  END,
-                library_source_molecule:
-                  CASE
-                    WHEN
-                      row.file IS NOT NULL AND
-                      size(labels(row.file)) > 0 AND
-                      labels(row.file)[0] = 'sequencing_file'
-                      THEN row.file.library_source_molecule
-                    ELSE null
-                  END,
-                library_strategy:
-                  CASE
-                    WHEN
-                      row.file IS NOT NULL AND
-                      size(labels(row.file)) > 0 AND
-                      labels(row.file)[0] = 'sequencing_file'
-                      THEN row.file.library_strategy
-                    ELSE null
-                  END
-              }) AS sample_diagnosis_genetic_analysis_file_filters
-          RETURN guid, sample_diagnosis_genetic_analysis_file_filters
-        page_size: 500
+            // Genetic Analysis facets
+            row.ga.reported_significance AS reported_significance,
+            row.ga.reported_significance_system AS reported_significance_system,
+            row.ga.gene_symbol AS gene_symbol,
+            row.ga.alteration AS alteration,
+            row.ga.fusion_partner_gene AS fusion_partner_gene,
+            row.ga.alteration_type AS alteration_type,
+            row.ga.status AS status,
+
+            // File facets
+            row.file.data_category AS data_category,
+            row.file.file_type AS file_type,
+            row.file.file_mapping_level AS file_mapping_level,
+            CASE
+              WHEN row.file IS NOT NULL
+              AND size(labels(row.file)) > 0
+              AND labels(row.file)[0] = 'sequencing_file'
+              THEN row.file.library_selection
+              ELSE null
+            END AS library_selection,
+            CASE
+              WHEN row.file IS NOT NULL
+              AND size(labels(row.file)) > 0
+              AND labels(row.file)[0] = 'sequencing_file'
+              THEN row.file.library_source_material
+              ELSE null
+            END AS library_source_material,
+            CASE
+              WHEN row.file IS NOT NULL
+              AND size(labels(row.file)) > 0
+              AND labels(row.file)[0] = 'sequencing_file'
+              THEN row.file.library_source_molecule
+              ELSE null
+            END AS library_source_molecule,
+            CASE
+              WHEN row.file IS NOT NULL
+              AND size(labels(row.file)) > 0
+              AND labels(row.file)[0] = 'sequencing_file'
+              THEN row.file.library_strategy
+              ELSE null
+            END AS library_strategy
+          RETURN
+            guid,
+            collect({
+              sample_anatomic_site: sample_anatomic_site,
+              participant_age_at_collection: participant_age_at_collection,
+              sample_tumor_status: sample_tumor_status,
+              tumor_classification: tumor_classification,
+              age_at_diagnosis: age_at_diagnosis,
+              diagnosis_anatomic_site: diagnosis_anatomic_site,
+              disease_phase: disease_phase,
+              diagnosis_classification_system: diagnosis_classification_system,
+              diagnosis_category: diagnosis_category,
+              diagnosis_basis: diagnosis_basis,
+              diagnosis: diagnosis,
+              reported_significance: reported_significance,
+              reported_significance_system: reported_significance_system,
+              gene_symbol: gene_symbol,
+              alteration: alteration,
+              fusion_partner_gene: fusion_partner_gene,
+              alteration_type: alteration_type,
+              status: status,
+              data_category: data_category,
+              file_type: file_type,
+              file_mapping_level: file_mapping_level,
+              library_selection: library_selection,
+              library_source_material: library_source_material,
+              library_source_molecule: library_source_molecule,
+              library_strategy: library_strategy
+            }) AS sample_diagnosis_genetic_analysis_file_filters
+        page_size: 50
       - name: "files"
         query: |
           MATCH (p:participant)
