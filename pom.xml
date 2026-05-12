@@ -471,6 +471,27 @@
                 </configuration>
             </plugin>
 
+            <!-- Additional unit tests under tests/java (see tests/README) -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>add-tests-java-source</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>tests/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Unit tests: Surefire excludes *IntegrationTest / *IT (Failsafe runs those) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
