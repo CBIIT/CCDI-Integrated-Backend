@@ -6312,81 +6312,155 @@ Indices:
         type: integer
       num_of_publications:
         type: integer
-    # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
-    cypher_queries:
-      - query: |
-          MATCH (st:study)<-[:of_consent_group]-(cg:consent_group)<-[:of_participant]-(p:participant)
-          with st, count(p) as num_p
-          MATCH (st:study)<-[*..6]-(dg:diagnosis)
-          with st, num_p, count(dg) as num_diag
-          MATCH (st:study)<-[*..6]-(dg:diagnosis)
-          with st, num_p, num_diag, dg.diagnosis as dg_cancers, count(dg.diagnosis) as num_cancers
-          ORDER BY num_cancers desc
-          with st, num_p, num_diag, collect(dg_cancers + ' (' + toString(num_cancers) + ')') as cancers
-          MATCH (st)<-[*..6]-(diag:diagnosis)
-          with st, num_p, num_diag, cancers, apoc.text.split(diag.anatomic_site, ';') as dg_sites
-          unwind dg_sites as dg_site
-          with st, num_p, num_diag, cancers, dg_site
-          with st, num_p, num_diag, cancers, dg_site, count(dg_site) as num_sites
-          ORDER BY num_sites desc
-          with st, num_p, num_diag, cancers, collect(dg_site + ' (' + toString(num_sites) + ')') as sites
-          MATCH (st)<-[*..6]-(fl)
-          WHERE (fl:clinical_measure_file or fl: generic_file OR fl: sequencing_file OR fl:pathology_file OR fl:radiology_file OR fl:methylation_array_file OR fl:cytogenomic_file)
-          with st, num_p, num_diag, cancers, sites, fl.file_type as ft, count(distinct fl.dcf_indexd_guid) as num_ft, collect(distinct fl.dcf_indexd_guid) as ft_guids
-          ORDER BY num_ft desc
-          with st, num_p, num_diag, cancers, sites, collect(ft + ' (' + toString(num_ft) + ')') as file_types, apoc.coll.toSet(apoc.coll.flatten(collect(ft_guids))) as all_guids
-          with st, num_p, num_diag, cancers, sites, file_types, size(all_guids) as num_files
-          OPTIONAL MATCH (st)<-[*..2]-(pcp)<-[:of_sample]-(sm1:sample)
-          WHERE (pcp:participant or pcp:cell_line or pcp:pdx)
-          WITH st, num_p, num_diag, cancers, sites, file_types, num_files, count(distinct sm1.sample_id) as num_samples_1
-          OPTIONAL MATCH (st)<-[:of_consent_group]-(cg:consent_group)<-[:of_participant]-(participant)<-[:of_sample]-(sm1:sample)<--(cp)<--(sm2:sample)
-          WHERE (cp:cell_line or cp:pdx)
-          WITH st, num_p, num_diag, cancers, sites, file_types, num_files, num_samples_1, count(distinct sm2.sample_id) as num_samples_2
-          WITH st, num_p, num_diag, cancers, sites, file_types, num_files, num_samples_1 + num_samples_2 as num_samples
-          MATCH (st)<-[*..6]-(file)
-          WHERE (file:clinical_measure_file or file: generic_file OR file: sequencing_file OR file:pathology_file OR file:radiology_file OR file:methylation_array_file OR file:cytogenomic_file)
-          WITH st, num_p, num_diag, cancers, sites, file_types, num_files, num_samples,
-               file.dcf_indexd_guid as file_id,
-               file.file_mapping_level as file_level
-          WITH st, num_p, num_diag, cancers, sites, file_types, num_files, num_samples,
-               COLLECT(DISTINCT file_id) as all_file_ids,
-               COUNT(DISTINCT CASE WHEN file_level = 'Study' THEN file_id END) as num_study_files,
-               COUNT(DISTINCT CASE WHEN file_level = 'Participant' THEN file_id END) as num_participant_files,
-               COUNT(DISTINCT CASE WHEN file_level = 'Sample' THEN file_id END) as num_sample_files
-          OPTIONAL MATCH (st)<-[:of_publication]-(pub:publication)
-          WITH st, num_p, num_diag, cancers, sites, file_types, num_files, num_samples, all_file_ids, num_study_files, num_participant_files, num_sample_files, COLLECT(DISTINCT pub.pubmed_id) as pub_ids
-          WITH st, num_p, num_diag, cancers, sites, file_types, num_files, num_samples, all_file_ids, num_study_files, num_participant_files, num_sample_files, pub_ids, SIZE([p IN pub_ids WHERE p IS NOT NULL]) as num_publications
+    # Cypher queries will be used to retrieve data from Neo4j, and index into Elasticsearch.
+    # Uses the GC initial_query + update_queries pattern: initial_query seeds the index with
+    # primary keys, then each update_query is applied independently and merged into the
+    # corresponding OS document by `id`.
+    initial_query:
+      query: |
+        MATCH (st:study)
+        WITH st
+        SKIP $skip LIMIT $limit
+        RETURN st.id AS id
+      page_size: 500
+    update_queries:
+      - name: "study_properties"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
+          RETURN
+            st.id AS id,
+            st.study_id AS study_id,
+            st.dbgap_accession AS dbgap_accession,
+            st.study_status AS study_status,
+            st.study_name AS study_name,
+            st.study_description AS study_description,
+            st.study_acronym AS study_acronym,
+            st.study_id AS study_id_gs,
+            st.study_name AS study_name_gs,
+            st.study_status AS study_status_gs
+        page_size: 500
+      - name: "study_funding"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (st)<-[:of_study_funding]-(stf:study_funding)
+          WITH st, COLLECT(DISTINCT stf.grant_id) AS grant_ids
+          RETURN
+            st.id AS id,
+            apoc.text.join([g IN grant_ids WHERE g IS NOT NULL], ';') AS grant_id
+        page_size: 500
+      - name: "study_personnel"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
           OPTIONAL MATCH (st)<-[:of_study_personnel]-(stp:study_personnel)
           WHERE stp.personnel_type = 'PI'
-          OPTIONAL MATCH (st)<-[:of_study_funding]-(stf:study_funding)
-          WITH st, num_p, num_diag, cancers, sites, file_types, num_files, num_samples, all_file_ids, num_study_files, num_participant_files, num_sample_files, pub_ids, num_publications, stf, stp
-          RETURN DISTINCT
-            st.id as id,
-            st.study_id as study_id,
-            apoc.text.join(COLLECT(DISTINCT stf.grant_id), ';') as grant_id,
-            apoc.text.join([p IN pub_ids WHERE p IS NOT NULL], ';') as pubmed_ids,
-            st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
-            st.study_name as study_name,
-            st.study_description as study_description,
-            st.study_acronym as study_acronym,
-            apoc.text.join(COLLECT(DISTINCT stp.personnel_name), ';') as PIs,
-            st.study_id as study_id_gs,
-            st.study_name as study_name_gs,
-            st.study_status as study_status_gs,
-            num_p as num_of_participants,
-            num_diag as num_of_diagnoses,
-            cancers as diagnosis_cancer,
-            sites as diagnosis_anatomic_site,
-            file_types as file_types,
-            num_samples as num_of_samples,
-            num_files as num_of_files,
-            all_file_ids as files,
-            num_study_files as num_of_study_files,
-            num_participant_files as num_of_participant_files,
-            num_sample_files as num_of_sample_files,
-            num_publications as num_of_publications
-  
+          WITH st, COLLECT(DISTINCT stp.personnel_name) AS pis
+          RETURN
+            st.id AS id,
+            apoc.text.join([n IN pis WHERE n IS NOT NULL], ';') AS PIs
+        page_size: 500
+      - name: "study_publications"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (st)<-[:of_publication]-(pub:publication)
+          WITH st, [pid IN COLLECT(DISTINCT pub.pubmed_id) WHERE pid IS NOT NULL] AS pub_ids
+          RETURN
+            st.id AS id,
+            apoc.text.join(pub_ids, ';') AS pubmed_ids,
+            SIZE(pub_ids) AS num_of_publications
+        page_size: 500
+      - name: "num_of_participants"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (st)<-[:of_consent_group]-(:consent_group)<-[:of_participant]-(p:participant)
+          RETURN
+            st.id AS id,
+            COUNT(DISTINCT p) AS num_of_participants
+        page_size: 500
+      - name: "num_of_samples"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
+          // direct-from-participant samples + cell_line/pdx-derived samples
+          OPTIONAL MATCH (st)<-[*..2]-(pcp)<-[:of_sample]-(sm1:sample)
+          WHERE (pcp:participant OR pcp:cell_line OR pcp:pdx)
+          WITH st, COUNT(DISTINCT sm1.sample_id) AS num_samples_1
+          OPTIONAL MATCH
+            (st)<-[:of_consent_group]-(:consent_group)<-[:of_participant]-(:participant)<-[:of_sample]-(:sample)<--(cp)<--(sm2:sample)
+          WHERE (cp:cell_line OR cp:pdx)
+          WITH st, num_samples_1, COUNT(DISTINCT sm2.sample_id) AS num_samples_2
+          RETURN
+            st.id AS id,
+            num_samples_1 + num_samples_2 AS num_of_samples
+        page_size: 500
+      - name: "diagnosis_aggregations"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (st)<-[*..6]-(dg:diagnosis)
+          WITH st, COUNT(DISTINCT dg) AS num_diag
+          OPTIONAL MATCH (st)<-[*..6]-(dg:diagnosis)
+          WITH st, num_diag, dg.diagnosis AS dg_cancer, COUNT(dg.diagnosis) AS num_cancers
+          ORDER BY num_cancers DESC
+          WITH st, num_diag, COLLECT(dg_cancer + ' (' + toString(num_cancers) + ')') AS cancers
+          OPTIONAL MATCH (st)<-[*..6]-(diag:diagnosis)
+          WITH st, num_diag, cancers, apoc.text.split(diag.anatomic_site, ';') AS dg_sites
+          UNWIND dg_sites AS dg_site
+          WITH st, num_diag, cancers, dg_site, COUNT(dg_site) AS num_sites
+          ORDER BY num_sites DESC
+          WITH st, num_diag, cancers, COLLECT(dg_site + ' (' + toString(num_sites) + ')') AS sites
+          RETURN
+            st.id AS id,
+            num_diag AS num_of_diagnoses,
+            cancers AS diagnosis_cancer,
+            sites AS diagnosis_anatomic_site
+        page_size: 500
+      - name: "file_aggregations"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (st)<-[*..6]-(fl)
+          WHERE (fl:clinical_measure_file OR fl:generic_file OR fl:sequencing_file OR fl:pathology_file OR fl:radiology_file OR fl:methylation_array_file OR fl:cytogenomic_file)
+          WITH st,
+               fl.file_type AS ft,
+               COUNT(DISTINCT fl.dcf_indexd_guid) AS num_ft,
+               COLLECT(DISTINCT fl.dcf_indexd_guid) AS ft_guids
+          ORDER BY num_ft DESC
+          WITH st,
+               COLLECT(ft + ' (' + toString(num_ft) + ')') AS file_types,
+               apoc.coll.toSet(apoc.coll.flatten(COLLECT(ft_guids))) AS all_guids
+          OPTIONAL MATCH (st)<-[*..6]-(file)
+          WHERE (file:clinical_measure_file OR file:generic_file OR file:sequencing_file OR file:pathology_file OR file:radiology_file OR file:methylation_array_file OR file:cytogenomic_file)
+          WITH st, file_types, all_guids,
+               file.dcf_indexd_guid AS file_id,
+               file.file_mapping_level AS file_level
+          WITH st, file_types, all_guids,
+               COLLECT(DISTINCT file_id) AS all_file_ids,
+               COUNT(DISTINCT CASE WHEN file_level = 'Study'       THEN file_id END) AS num_study_files,
+               COUNT(DISTINCT CASE WHEN file_level = 'Participant' THEN file_id END) AS num_participant_files,
+               COUNT(DISTINCT CASE WHEN file_level = 'Sample'      THEN file_id END) AS num_sample_files
+          RETURN
+            st.id AS id,
+            file_types AS file_types,
+            SIZE(all_guids) AS num_of_files,
+            all_file_ids AS files,
+            num_study_files       AS num_of_study_files,
+            num_participant_files AS num_of_participant_files,
+            num_sample_files      AS num_of_sample_files
+        page_size: 500
+
   - index_name: samples_table
     type: neo4j
     mapping:
@@ -6524,321 +6598,353 @@ Indices:
         fields:
           keyword:
             type: keyword
-    # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
-    cypher_queries:
-      - query: |
+    # Cypher queries will be used to retrieve data from Neo4j, and index into Elasticsearch.
+    # Uses the GC initial_query + update_queries pattern: initial_query seeds the index with
+    # primary keys, then each update_query is applied independently and merged into the
+    # corresponding OS document by `id`.
+    initial_query:
+      query: |
+        MATCH (sm:sample)
+        WITH sm
+        SKIP $skip LIMIT $limit
+        RETURN sm.id AS id
+      page_size: 100
+    update_queries:
+      - name: "sample_properties"
+        query: |
           MATCH (sm:sample)
-          WITH sm, {
-            id: sm.id,
-            sample_id: sm.sample_id,
-            sample_anatomic_site: apoc.text.split(sm.anatomic_site, ';'),
-            sample_anatomic_site_str: sm.anatomic_site,
-            participant_age_at_collection: sm.participant_age_at_collection,
-            sample_tumor_status: sm.sample_tumor_status,
-            tumor_classification: sm.tumor_classification
-          } AS opensearch_data
-          MATCH (sm)-[*..3]->(p:participant)
-          WITH sm, apoc.map.merge(opensearch_data, {
-            pid: p.id,
-            participant_id: p.participant_id,
-            race: apoc.text.split(p.race, ';'),
-            sex_at_birth: p.sex_at_birth
-          }) AS opensearch_data
+          WITH sm
           SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (sm)-[*..3]->(:participant)<--(dg:diagnosis)
-          WITH sm, opensearch_data, CASE WHEN dg IS NOT NULL THEN COLLECT(DISTINCT {
-            age_at_diagnosis: dg.age_at_diagnosis,
-            diagnosis_anatomic_site: apoc.text.split(dg.anatomic_site, ';'),
-            disease_phase: dg.disease_phase,
-            diagnosis_classification_system: dg.diagnosis_classification_system,
-            diagnosis_category: apoc.text.split(dg.diagnosis_category, ';'),
-            diagnosis_basis: dg.diagnosis_basis,
-            tumor_grade_source: dg.tumor_grade_source,
-            tumor_stage_source: dg.tumor_stage_source,
-            diagnosis: dg.diagnosis
-          }) ELSE [] END AS diagnosis_filter
-          OPTIONAL MATCH (sm)<-[*..3]-(dg:diagnosis)
-          WITH sm, apoc.map.merge(opensearch_data, {
-            diagnosis_filters: apoc.coll.union(diagnosis_filter, CASE WHEN dg IS NOT NULL THEN COLLECT(DISTINCT{
-              age_at_diagnosis: dg.age_at_diagnosis,
-              diagnosis_anatomic_site: apoc.text.split(dg.anatomic_site, ';'),
-              disease_phase: dg.disease_phase,
-              diagnosis_classification_system: dg.diagnosis_classification_system,
-              diagnosis_category: apoc.text.split(dg.diagnosis_category, ';'),
-              diagnosis_basis: dg.diagnosis_basis,
-              tumor_grade_source: dg.tumor_grade_source,
-              tumor_stage_source: dg.tumor_stage_source,
-              diagnosis: dg.diagnosis
-            }) ELSE [] END)
-          }) AS opensearch_data
-          OPTIONAL MATCH (sm)-[*..3]->(:participant)<--(ga:genetic_analysis)
-          WITH sm, opensearch_data, CASE WHEN ga IS NOT NULL THEN COLLECT(DISTINCT {
-            reported_significance: ga.reported_significance,
-            reported_significance_system: ga.reported_significance_system,
-            gene_symbol: case when ga is not null then apoc.coll.toSet(CASE
-                                  WHEN ga.gene_symbol STARTS WITH '[' AND ga.gene_symbol ENDS WITH ']' THEN
-                                    [x IN split(replace(substring(ga.gene_symbol, 1, size(ga.gene_symbol)-2), "'", ""), ",") | 
-                                      CASE 
-                                        WHEN apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') = '' 
-                                        THEN 'Not Reported' 
-                                        ELSE apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') 
-                                      END
-                                    ]
-                                  ELSE
-                                    [CASE 
-                                      WHEN apoc.text.replace(trim(ga.gene_symbol), '^[^A-Za-z0-9]+', '') = '' 
-                                      THEN 'Not Reported' 
-                                      ELSE apoc.text.replace(trim(ga.gene_symbol), '^[^A-Za-z0-9]+', '') 
-                                    END]
-                                END) else null end,
-            alteration: ga.alteration,
-            fusion_partner_gene: ga.fusion_partner_gene,
-            alteration_type: ga.alteration_type,
-            status: ga.status
-          }) ELSE [] END AS genetic_analysis_filter
-          OPTIONAL MATCH (sm)<-[*..3]-(ga:genetic_analysis)
-          WITH sm, apoc.map.merge(opensearch_data, {
-            genetic_analysis_filters: apoc.coll.union(genetic_analysis_filter, CASE WHEN ga IS NOT NULL THEN COLLECT(DISTINCT{
-              reported_significance: ga.reported_significance,
-              reported_significance_system: ga.reported_significance_system,
-              gene_symbol: case when ga is not null then apoc.coll.toSet(CASE
-                                  WHEN ga.gene_symbol STARTS WITH '[' AND ga.gene_symbol ENDS WITH ']' THEN
-                                    [x IN split(replace(substring(ga.gene_symbol, 1, size(ga.gene_symbol)-2), "'", ""), ",") | 
-                                      CASE 
-                                        WHEN apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') = '' 
-                                        THEN 'Not Reported' 
-                                        ELSE apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') 
-                                      END
-                                    ]
-                                  ELSE
-                                    [CASE 
-                                      WHEN apoc.text.replace(trim(ga.gene_symbol), '^[^A-Za-z0-9]+', '') = '' 
-                                      THEN 'Not Reported' 
-                                      ELSE apoc.text.replace(trim(ga.gene_symbol), '^[^A-Za-z0-9]+', '') 
-                                    END]
-                                END) else null end,
-              alteration: ga.alteration,
-              fusion_partner_gene: ga.fusion_partner_gene,
-              alteration_type: ga.alteration_type,
-              status: ga.status
-            }) ELSE [] END)
-          }) AS opensearch_data
-          OPTIONAL MATCH (st:study)<-[*..5]-(sm)
-          optional match (st)<--(file)
-          where (file: clinical_measure_file or file: generic_file)
-          WITH sm, opensearch_data, CASE WHEN file IS NOT NULL THEN COLLECT(DISTINCT {
-            data_category: apoc.text.split(file.data_category, ';'),
-            file_type: file.file_type,
-            file_mapping_level: file.file_mapping_level,
+          RETURN
+            sm.id AS id,
+            sm.sample_id AS sample_id,
+            apoc.text.split(sm.anatomic_site, ';') AS sample_anatomic_site,
+            sm.anatomic_site AS sample_anatomic_site_str,
+            sm.participant_age_at_collection AS participant_age_at_collection,
+            sm.sample_tumor_status AS sample_tumor_status,
+            sm.tumor_classification AS tumor_classification
+        page_size: 100
+      - name: "participant_properties"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (sm)-[*..3]->(p:participant)
+          RETURN
+            sm.id AS id,
+            p.id AS pid,
+            p.participant_id AS participant_id,
+            apoc.text.split(p.race, ';') AS race,
+            p.sex_at_birth AS sex_at_birth
+        page_size: 100
+      - name: "study_properties"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+          // study reachable via participant->consent_group OR via cell_line/pdx
+          OPTIONAL MATCH (sm)-[*..5]->(st:study)
+          WITH sm, st LIMIT 1
+          RETURN
+            sm.id AS id,
+            st.study_id AS study_id,
+            st.dbgap_accession AS dbgap_accession,
+            st.study_status AS study_status,
+            st.study_acronym AS study_acronym,
+            st.study_name AS study_name
+        page_size: 100
+      - name: "diagnosis_filters"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (sm)-[*..3]->(:participant)<--(dg1:diagnosis)
+          WITH sm, COLLECT(DISTINCT {
+            age_at_diagnosis: dg1.age_at_diagnosis,
+            diagnosis_anatomic_site: apoc.text.split(dg1.anatomic_site, ';'),
+            disease_phase: dg1.disease_phase,
+            diagnosis_classification_system: dg1.diagnosis_classification_system,
+            diagnosis_category: apoc.text.split(dg1.diagnosis_category, ';'),
+            diagnosis_basis: dg1.diagnosis_basis,
+            tumor_grade_source: dg1.tumor_grade_source,
+            tumor_stage_source: dg1.tumor_stage_source,
+            diagnosis: dg1.diagnosis
+          }) AS dg1_filters
+          OPTIONAL MATCH (sm)<-[*..3]-(dg2:diagnosis)
+          WITH sm, dg1_filters, COLLECT(DISTINCT {
+            age_at_diagnosis: dg2.age_at_diagnosis,
+            diagnosis_anatomic_site: apoc.text.split(dg2.anatomic_site, ';'),
+            disease_phase: dg2.disease_phase,
+            diagnosis_classification_system: dg2.diagnosis_classification_system,
+            diagnosis_category: apoc.text.split(dg2.diagnosis_category, ';'),
+            diagnosis_basis: dg2.diagnosis_basis,
+            tumor_grade_source: dg2.tumor_grade_source,
+            tumor_stage_source: dg2.tumor_stage_source,
+            diagnosis: dg2.diagnosis
+          }) AS dg2_filters
+          WITH sm,
+               [f IN apoc.coll.union(dg1_filters, dg2_filters) WHERE f.diagnosis IS NOT NULL OR f.age_at_diagnosis IS NOT NULL] AS diagnosis_filters
+          RETURN
+            sm.id AS id,
+            diagnosis_filters AS diagnosis_filters
+        page_size: 100
+      - name: "genetic_analysis_filters"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (sm)-[*..3]->(:participant)<--(ga1:genetic_analysis)
+          WITH sm, COLLECT(DISTINCT {
+            reported_significance: ga1.reported_significance,
+            reported_significance_system: ga1.reported_significance_system,
+            gene_symbol: CASE WHEN ga1 IS NOT NULL THEN apoc.coll.toSet(CASE
+                                WHEN ga1.gene_symbol STARTS WITH '[' AND ga1.gene_symbol ENDS WITH ']' THEN
+                                  [x IN split(replace(substring(ga1.gene_symbol, 1, size(ga1.gene_symbol)-2), "'", ""), ",") |
+                                    CASE
+                                      WHEN apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') = ''
+                                      THEN 'Not Reported'
+                                      ELSE apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '')
+                                    END
+                                  ]
+                                ELSE
+                                  [CASE
+                                    WHEN apoc.text.replace(trim(ga1.gene_symbol), '^[^A-Za-z0-9]+', '') = ''
+                                    THEN 'Not Reported'
+                                    ELSE apoc.text.replace(trim(ga1.gene_symbol), '^[^A-Za-z0-9]+', '')
+                                  END]
+                              END) ELSE null END,
+            alteration: ga1.alteration,
+            fusion_partner_gene: ga1.fusion_partner_gene,
+            alteration_type: ga1.alteration_type,
+            status: ga1.status
+          }) AS ga1_filters
+          OPTIONAL MATCH (sm)<-[*..3]-(ga2:genetic_analysis)
+          WITH sm, ga1_filters, COLLECT(DISTINCT {
+            reported_significance: ga2.reported_significance,
+            reported_significance_system: ga2.reported_significance_system,
+            gene_symbol: CASE WHEN ga2 IS NOT NULL THEN apoc.coll.toSet(CASE
+                                WHEN ga2.gene_symbol STARTS WITH '[' AND ga2.gene_symbol ENDS WITH ']' THEN
+                                  [x IN split(replace(substring(ga2.gene_symbol, 1, size(ga2.gene_symbol)-2), "'", ""), ",") |
+                                    CASE
+                                      WHEN apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') = ''
+                                      THEN 'Not Reported'
+                                      ELSE apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '')
+                                    END
+                                  ]
+                                ELSE
+                                  [CASE
+                                    WHEN apoc.text.replace(trim(ga2.gene_symbol), '^[^A-Za-z0-9]+', '') = ''
+                                    THEN 'Not Reported'
+                                    ELSE apoc.text.replace(trim(ga2.gene_symbol), '^[^A-Za-z0-9]+', '')
+                                  END]
+                              END) ELSE null END,
+            alteration: ga2.alteration,
+            fusion_partner_gene: ga2.fusion_partner_gene,
+            alteration_type: ga2.alteration_type,
+            status: ga2.status
+          }) AS ga2_filters
+          WITH sm,
+               [f IN apoc.coll.union(ga1_filters, ga2_filters) WHERE f.alteration IS NOT NULL OR f.gene_symbol IS NOT NULL OR f.alteration_type IS NOT NULL OR f.status IS NOT NULL OR f.reported_significance IS NOT NULL] AS genetic_analysis_filters
+          RETURN
+            sm.id AS id,
+            genetic_analysis_filters AS genetic_analysis_filters
+        page_size: 100
+      - name: "file_filters_and_files"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+          // Study-level files (clinical_measure / generic) reachable via either path
+          OPTIONAL MATCH (sm)-[*..5]->(st:study)<--(stfile)
+          WHERE (stfile:clinical_measure_file OR stfile:generic_file)
+          WITH sm, COLLECT(DISTINCT {
+            data_category: apoc.text.split(stfile.data_category, ';'),
+            file_type: stfile.file_type,
+            file_mapping_level: stfile.file_mapping_level,
             library_selection: null,
             library_source_material: null,
             library_source_molecule: null,
             library_strategy: null
-          }) ELSE [] END AS file_filter
-          optional match (sm)-[*..3]->(p:participant)
-          optional match (p)<--(file)
-          where (file: clinical_measure_file or file: generic_file or file: radiology_file)
-          WITH sm, opensearch_data, apoc.coll.union(file_filter, CASE WHEN file IS NOT NULL THEN COLLECT(DISTINCT {
-            data_category: apoc.text.split(file.data_category, ';'),
-            file_type: file.file_type,
-            file_mapping_level: file.file_mapping_level,
+          }) AS f_study,
+          COLLECT(DISTINCT stfile.dcf_indexd_guid) AS guid_study
+          // Participant-level files (clinical_measure / generic / radiology)
+          OPTIONAL MATCH (sm)-[*..3]->(:participant)<--(pfile)
+          WHERE (pfile:clinical_measure_file OR pfile:generic_file OR pfile:radiology_file)
+          WITH sm, f_study, guid_study, COLLECT(DISTINCT {
+            data_category: apoc.text.split(pfile.data_category, ';'),
+            file_type: pfile.file_type,
+            file_mapping_level: pfile.file_mapping_level,
             library_selection: null,
             library_source_material: null,
             library_source_molecule: null,
             library_strategy: null
-          }) ELSE [] END) AS file_filter
-          OPTIONAL MATCH (sm)<-[*..3]-(file:sequencing_file)
-          WITH sm, opensearch_data, apoc.coll.union(file_filter, CASE WHEN file IS NOT NULL THEN COLLECT(DISTINCT {
-            data_category: apoc.text.split(file.data_category, ';'),
-            file_type: file.file_type,
-            file_mapping_level: file.file_mapping_level,
-            library_selection: file.library_selection,
-            library_source_material: file.library_source_material,
-            library_source_molecule: file.library_source_molecule,
-            library_strategy: file.library_strategy
-          }) ELSE [] END) AS file_filter,
-          COLLECT(DISTINCT file.dcf_indexd_guid) AS files
-          OPTIONAL MATCH (sm)<-[*..3]-(file:generic_file)
-          WITH sm, opensearch_data, apoc.coll.union(file_filter, CASE WHEN file IS NOT NULL THEN COLLECT(DISTINCT {
-            data_category: apoc.text.split(file.data_category, ';'),
-            file_type: file.file_type,
-            file_mapping_level: file.file_mapping_level,
+          }) AS f_part,
+          COLLECT(DISTINCT pfile.dcf_indexd_guid) AS guid_part
+          // Sample-level sequencing files (with library_*)
+          OPTIONAL MATCH (sm)<-[*..3]-(seqfile:sequencing_file)
+          WITH sm, f_study, f_part, guid_study, guid_part, COLLECT(DISTINCT {
+            data_category: apoc.text.split(seqfile.data_category, ';'),
+            file_type: seqfile.file_type,
+            file_mapping_level: seqfile.file_mapping_level,
+            library_selection: seqfile.library_selection,
+            library_source_material: seqfile.library_source_material,
+            library_source_molecule: seqfile.library_source_molecule,
+            library_strategy: seqfile.library_strategy
+          }) AS f_seq,
+          COLLECT(DISTINCT seqfile.dcf_indexd_guid) AS guid_seq
+          // Sample-level non-sequencing files (generic / pathology / cytogenomic / methylation_array)
+          OPTIONAL MATCH (sm)<-[*..3]-(otherfile)
+          WHERE (otherfile:generic_file OR otherfile:pathology_file OR otherfile:cytogenomic_file OR otherfile:methylation_array_file)
+          WITH sm, f_study, f_part, f_seq, guid_study, guid_part, guid_seq, COLLECT(DISTINCT {
+            data_category: apoc.text.split(otherfile.data_category, ';'),
+            file_type: otherfile.file_type,
+            file_mapping_level: otherfile.file_mapping_level,
             library_selection: null,
             library_source_material: null,
             library_source_molecule: null,
             library_strategy: null
-          }) ELSE [] END) AS file_filter,
-          apoc.coll.union(files, COLLECT(DISTINCT file.dcf_indexd_guid)) AS files
-          OPTIONAL MATCH (sm)<-[*..3]-(file:pathology_file)
-          WITH sm, opensearch_data, apoc.coll.union(file_filter, CASE WHEN file IS NOT NULL THEN COLLECT(DISTINCT {
-            data_category: apoc.text.split(file.data_category, ';'),
-            file_type: file.file_type,
-            file_mapping_level: file.file_mapping_level,
-            library_selection: null,
-            library_source_material: null,
-            library_source_molecule: null,
-            library_strategy: null
-          }) ELSE [] END) AS file_filter,
-          apoc.coll.union(files, COLLECT(DISTINCT file.dcf_indexd_guid)) AS files
-          OPTIONAL MATCH (sm)<-[*..3]-(file:cytogenomic_file)
-          WITH sm, opensearch_data, apoc.coll.union(file_filter, CASE WHEN file IS NOT NULL THEN COLLECT(DISTINCT {
-            data_category: apoc.text.split(file.data_category, ';'),
-            file_type: file.file_type,
-            file_mapping_level: file.file_mapping_level,
-            library_selection: null,
-            library_source_material: null,
-            library_source_molecule: null,
-            library_strategy: null
-          }) ELSE [] END) AS file_filter,
-          apoc.coll.union(files, COLLECT(DISTINCT file.dcf_indexd_guid)) AS files
-          OPTIONAL MATCH (sm)<-[*..3]-(file:methylation_array_file)
-          WITH sm, opensearch_data, apoc.coll.union(file_filter, CASE WHEN file IS NOT NULL THEN COLLECT(DISTINCT {
-            data_category: apoc.text.split(file.data_category, ';'),
-            file_type: file.file_type,
-            file_mapping_level: file.file_mapping_level,
-            library_selection: null,
-            library_source_material: null,
-            library_source_molecule: null,
-            library_strategy: null
-          }) ELSE [] END) AS file_filter,
-          apoc.coll.union(files, COLLECT(DISTINCT file.dcf_indexd_guid)) AS files
-          WITH sm, apoc.map.merge(opensearch_data, {
-            file_filters: file_filter,
-            files: files,
-            file_count: SIZE(files)
-          }) AS opensearch_data
-          MATCH (sm)-[*..3]->(:participant)-[:of_participant]->(cg:consent_group)-[:of_consent_group]->(st:study)
-          WITH sm, apoc.map.merge(opensearch_data, {
-            study_id: st.study_id,
-            dbgap_accession: st.dbgap_accession,
-            study_status: st.study_status,
-            study_acronym: st.study_acronym,
-            study_name: st.study_name
-          }) AS opensearch_data
+          }) AS f_other,
+          COLLECT(DISTINCT otherfile.dcf_indexd_guid) AS guid_other
+          WITH sm,
+               [f IN apoc.coll.union(apoc.coll.union(apoc.coll.union(f_study, f_part), f_seq), f_other) WHERE f.file_type IS NOT NULL] AS file_filters,
+               [g IN apoc.coll.toSet(apoc.coll.flatten([guid_study, guid_part, guid_seq, guid_other])) WHERE g IS NOT NULL] AS files
+          RETURN
+            sm.id AS id,
+            file_filters AS file_filters,
+            files AS files,
+            SIZE(files) AS file_count
+        page_size: 100
+      - name: "direct_file_count"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
           OPTIONAL MATCH (sm)<--(direct_file)
-          where (direct_file: sequencing_file or direct_file: generic_file or direct_file: pathology_file or direct_file: methylation_array_file or direct_file: cytogenomic_file)
-          WITH sm, apoc.map.merge(opensearch_data, {
-            direct_file_count: COUNT(DISTINCT direct_file.dcf_indexd_guid)
-          }) AS opensearch_data
+          WHERE (direct_file:sequencing_file OR direct_file:generic_file OR direct_file:pathology_file OR direct_file:methylation_array_file OR direct_file:cytogenomic_file)
+          RETURN
+            sm.id AS id,
+            COUNT(DISTINCT direct_file.dcf_indexd_guid) AS direct_file_count
+        page_size: 100
+      - name: "survival_filters"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
           OPTIONAL MATCH (sm)-[*..3]->(:participant)<-[:of_survival]-(su:survival)
-          WITH sm, opensearch_data, CASE WHEN su IS NOT NULL THEN COLLECT(DISTINCT {last_known_survival_status: su.last_known_survival_status, 
-              cause_of_death: su.cause_of_death, 
-              first_event: su.first_event,
-              age_at_last_known_survival_status: su.age_at_last_known_survival_status} ) ELSE [] END AS survival_filters
-          WITH sm, apoc.map.merge(opensearch_data, {
-            survival_filters: survival_filters
-          }) AS opensearch_data
-          OPTIONAL MATCH (sm)-[*..3]->(:participant)<-[:of_treatment]-(tr:treatment)
-          WITH sm, opensearch_data, CASE WHEN tr IS NOT NULL THEN COLLECT(DISTINCT{
-              treatment_type: apoc.text.split(tr.treatment_type, ';'),
-              treatment_agent: apoc.text.split(tr.treatment_agent, ';'),
-              age_at_treatment_start: tr.age_at_treatment_start,
-              age_at_treatment_end: tr.age_at_treatment_end}) ELSE [] END AS treatment_filters
-          WITH sm, apoc.map.merge(opensearch_data, {
-            treatment_filters: treatment_filters
-          }) AS opensearch_data
+          WITH sm, COLLECT(DISTINCT {
+            last_known_survival_status: su.last_known_survival_status,
+            cause_of_death: su.cause_of_death,
+            first_event: su.first_event,
+            age_at_last_known_survival_status: su.age_at_last_known_survival_status
+          }) AS survival_filters
+          RETURN
+            sm.id AS id,
+            [f IN survival_filters WHERE f.last_known_survival_status IS NOT NULL OR f.cause_of_death IS NOT NULL OR f.first_event IS NOT NULL OR f.age_at_last_known_survival_status IS NOT NULL] AS survival_filters
+        page_size: 100
+      - name: "treatment_filters"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+          // Walk to participants reachable from this sample (direct or via cell_line/pdx)
+          OPTIONAL MATCH (sm)-[*..3]->(p:participant)
+          WITH sm, COLLECT(DISTINCT p) AS parts
+
+          // Build a superlist of treatment filters across the 4 treatment subtypes
+          CALL {
+            WITH parts
+            UNWIND parts AS p
+            // treatment_chemotherapy
+            OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
+            WITH p, tchemo
+            WITH coalesce(
+              [item IN collect(DISTINCT {
+                treatment_type: tchemo.chemotherapy_type,
+                treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
+                age_at_treatment_start: tchemo.age_at_treatment_start,
+                age_at_treatment_end: tchemo.age_at_treatment_end
+              }) WHERE item.treatment_type IS NOT NULL OR item.treatment_agent IS NOT NULL OR item.age_at_treatment_start IS NOT NULL OR item.age_at_treatment_end IS NOT NULL],
+              []
+            ) AS treatment_filters
+            RETURN treatment_filters
+
+            UNION ALL
+
+            WITH parts
+            UNWIND parts AS p
+            // treatment_radiation
+            OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
+            WITH p, trad
+            WITH coalesce(
+              [item IN collect(DISTINCT {
+                treatment_type: trad.treatment_type,
+                treatment_agent: trad.radiation_therapy_type,
+                age_at_treatment_start: trad.age_at_treatment_start,
+                age_at_treatment_end: trad.age_at_treatment_end
+              }) WHERE item.treatment_type IS NOT NULL OR item.treatment_agent IS NOT NULL OR item.age_at_treatment_start IS NOT NULL OR item.age_at_treatment_end IS NOT NULL],
+              []
+            ) AS treatment_filters
+            RETURN treatment_filters
+
+            UNION ALL
+
+            WITH parts
+            UNWIND parts AS p
+            // treatment_surgery
+            OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
+            WITH p, tsurg
+            WITH coalesce(
+              [item IN collect(DISTINCT {
+                treatment_type: tsurg.treatment_type,
+                treatment_agent: tsurg.surgery_type,
+                age_at_treatment_start: tsurg.age_at_treatment_start,
+                age_at_treatment_end: tsurg.age_at_treatment_end
+              }) WHERE item.treatment_type IS NOT NULL OR item.treatment_agent IS NOT NULL OR item.age_at_treatment_start IS NOT NULL OR item.age_at_treatment_end IS NOT NULL],
+              []
+            ) AS treatment_filters
+            RETURN treatment_filters
+
+            UNION ALL
+
+            WITH parts
+            UNWIND parts AS p
+            // treatment_other
+            OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
+            WITH p, toth
+            WITH coalesce(
+              [item IN collect(DISTINCT {
+                treatment_type: toth.treatment_type,
+                treatment_agent: toth.other_treatment_type,
+                age_at_treatment_start: toth.age_at_treatment_start,
+                age_at_treatment_end: toth.age_at_treatment_end
+              }) WHERE item.treatment_type IS NOT NULL OR item.treatment_agent IS NOT NULL OR item.age_at_treatment_start IS NOT NULL OR item.age_at_treatment_end IS NOT NULL],
+              []
+            ) AS treatment_filters
+            RETURN treatment_filters
+          }
+          WITH sm, collect(treatment_filters) AS treatment_filters_superlist
+          WITH sm,
+               reduce(all_filters = [], filters IN treatment_filters_superlist | all_filters + filters) AS treatment_filters
+          RETURN
+            sm.id AS id,
+            treatment_filters AS treatment_filters
+        page_size: 100
+      - name: "treatment_response_filters"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
           OPTIONAL MATCH (sm)-[*..3]->(:participant)<-[:of_treatment_response]-(tresp:treatment_response)
-          WITH sm, opensearch_data, CASE WHEN tresp IS NOT NULL THEN COLLECT(DISTINCT{
+          WITH sm, COLLECT(DISTINCT {
             age_at_response: tresp.age_at_response,
             response: tresp.response,
             response_category: tresp.response_category,
-            response_system: tresp.response_system}) ELSE [] END AS treatment_response_filters
-          WITH sm, apoc.map.merge(opensearch_data, {
-            treatment_response_filters: treatment_response_filters
-          }) AS opensearch_data
-          return opensearch_data
+            response_system: tresp.response_system
+          }) AS treatment_response_filters
+          RETURN
+            sm.id AS id,
+            [f IN treatment_response_filters WHERE f.response IS NOT NULL OR f.age_at_response IS NOT NULL OR f.response_category IS NOT NULL OR f.response_system IS NOT NULL] AS treatment_response_filters
         page_size: 100
-      - query: |
-          MATCH (sm:sample)
-          MATCH (st:study)<-[:of_cell_line|of_pdx]-(cl)<--(sm)
-          Where (cl:cell_line or cl:pdx)
-          optional match (st)<--(file)
-          where (file: clinical_measure_file or file: generic_file)
-          with sm, CASE WHEN file IS NOT NULL THEN COLLECT(DISTINCT {
-            data_category: apoc.text.split(file.data_category, ';'),
-            file_type: file.file_type,
-            file_mapping_level: file.file_mapping_level,
-            library_selection: null,
-            library_source_material: null,
-            library_source_molecule: null,
-            library_strategy: null
-          }) ELSE [] END AS file_filter
-          optional Match (sm)<--(file)
-          WHERE (file: sequencing_file or file: generic_file OR file:pathology_file OR file:methylation_array_file OR file:cytogenomic_file)
-          WITH sm, apoc.coll.union(file_filter, CASE WHEN file IS NOT NULL THEN COLLECT(DISTINCT {
-            data_category: apoc.text.split(file.data_category, ';'),
-            file_type: file.file_type,
-            file_mapping_level: file.file_mapping_level,
-            library_selection: null,
-            library_source_material: null,
-            library_source_molecule: null,
-            library_strategy: null
-          }) ELSE [] END) AS file_filter
-          optional match (st:study)<-[*..5]-(sm)
-          optional match (sm)<--(file)
-          where (file: sequencing_file or file: generic_file or file: pathology_file or file: methylation_array_file or file: cytogenomic_file)
-          OPTIONAL MATCH (sm)<-[:of_diagnosis]-(dg:diagnosis)
-          optional match (sm)<-[:of_genetic_analysis]-(ga:genetic_analysis)
-          WITH sm, file, file_filter, st, dg, ga
-          RETURN DISTINCT
-            sm.id as id,
-            sm.sample_id as sample_id,
-            null as pid,
-            null as participant_id,
-            null as race,
-            null as sex_at_birth,
-            apoc.text.split(sm.anatomic_site, ';') as sample_anatomic_site,
-            sm.anatomic_site as sample_anatomic_site_str,
-            sm.participant_age_at_collection as participant_age_at_collection,
-            sm.sample_tumor_status as sample_tumor_status,
-            sm.tumor_classification as tumor_classification,
-            st.study_id as study_id,
-            st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
-            st.study_acronym as study_acronym,
-            st.study_name as study_name,
-            COLLECT(DISTINCT {
-                age_at_diagnosis: dg.age_at_diagnosis,
-                diagnosis_anatomic_site: apoc.text.split(dg.anatomic_site, ';'),
-                disease_phase: dg.disease_phase,
-                diagnosis_classification_system: dg.diagnosis_classification_system,
-                diagnosis_category: apoc.text.split(dg.diagnosis_category, ';'),
-                diagnosis_basis: dg.diagnosis_basis,
-                tumor_grade_source: dg.tumor_grade_source,
-                tumor_stage_source: dg.tumor_stage_source,
-                diagnosis: dg.diagnosis
-            }) AS diagnosis_filters,
-            COLLECT(DISTINCT {
-              reported_significance: ga.reported_significance,
-              reported_significance_system: ga.reported_significance_system,
-              gene_symbol: case when ga is not null then apoc.coll.toSet(CASE
-                                  WHEN ga.gene_symbol STARTS WITH '[' AND ga.gene_symbol ENDS WITH ']' THEN
-                                    [x IN split(replace(substring(ga.gene_symbol, 1, size(ga.gene_symbol)-2), "'", ""), ",") | 
-                                      CASE 
-                                        WHEN apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') = '' 
-                                        THEN 'Not Reported' 
-                                        ELSE apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') 
-                                      END
-                                    ]
-                                  ELSE
-                                    [CASE 
-                                      WHEN apoc.text.replace(trim(ga.gene_symbol), '^[^A-Za-z0-9]+', '') = '' 
-                                      THEN 'Not Reported' 
-                                      ELSE apoc.text.replace(trim(ga.gene_symbol), '^[^A-Za-z0-9]+', '') 
-                                    END]
-                                END) else null end,
-              alteration: ga.alteration,
-              fusion_partner_gene: ga.fusion_partner_gene,
-              alteration_type: ga.alteration_type,
-              status: ga.status
-            }) AS genetic_analysis_filters,
-            null AS survival_filters,
-            null as treatment_filters,
-            null as treatment_response_filters,
-            file_filter AS file_filters,
-            COUNT(DISTINCT file.dcf_indexd_guid) as file_count,
-            COUNT(DISTINCT file.dcf_indexd_guid) as direct_file_count,
-            COLLECT(DISTINCT file.dcf_indexd_guid) as files
 
   - index_name: files_table
     type: neo4j
