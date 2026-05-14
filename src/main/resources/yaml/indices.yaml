@@ -1551,7 +1551,7 @@ Indices:
             p.guid AS guid,
             stu.study_id AS study_id,
             stu.dbgap_accession AS dbgap_accession,
-            stu.study_status AS study_status,
+            stu.study_phase AS study_status,
             stu.study_acronym AS study_acronym,
             stu.study_name AS study_name
         page_size: 1000
