@@ -1758,7 +1758,7 @@ Indices:
         page_size: 500
       - name: "sample_diagnosis_genetic_analysis_file_filters"
         query: |
-          MATCH (p:participant)
+          MATCH (p:participant)          MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
 
@@ -1766,10 +1766,7 @@ Indices:
           OPTIONAL MATCH (p)<--(s1:sample)
           WITH
             p,
-            collect(DISTINCT {
-              sm: s1,
-              source_sm: s1
-            }) AS direct_contexts
+            collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
 
           // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
           OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
@@ -1777,23 +1774,21 @@ Indices:
 
           WITH
             p,
-            direct_contexts +
-            collect(DISTINCT {
-              sm: s1_model,
-              source_sm: s1_model
-            }) +
-            collect(DISTINCT {
-              sm: s2,
-              source_sm: s2
-            }) +
-            collect(DISTINCT {
-              sm: s1_model,
-              source_sm: s2
-            }) +
-            collect(DISTINCT {
-              sm: s2,
-              source_sm: s1_model
-            }) AS sample_contexts
+            [ctx IN (
+              direct_contexts
+              + collect(DISTINCT { sm: s1_model, source_sm: s1_model })
+              + collect(DISTINCT { sm: s2, source_sm: s2 })
+              + collect(DISTINCT { sm: s1_model, source_sm: s2 })
+              + collect(DISTINCT { sm: s2, source_sm: s1_model })
+            )
+            WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
+
+          WITH
+            p,
+            CASE
+              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
+              ELSE sample_contexts
+            END AS sample_contexts
 
           // Study-level files
           OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
@@ -1813,9 +1808,6 @@ Indices:
             ctx.sm AS sm,
             ctx.source_sm AS source_sm,
             study_files
-
-          WHERE sm IS NOT NULL
-            AND source_sm IS NOT NULL
 
           // Source sample-level files
           OPTIONAL MATCH (source_sm)<--(sample_file)
@@ -1973,7 +1965,7 @@ Indices:
             collect({
               sample_anatomic_site: sample_anatomic_site,
               participant_age_at_collection: participant_age_at_collection,
-              sample_tumor_status: sample_tumor_status,
+              sample_tumor_statusr sample_tumor_status,
               tumor_classification: tumor_classification,
               age_at_diagnosis: age_at_diagnosis,
               diagnosis_anatomic_site: diagnosis_anatomic_site,
@@ -1997,7 +1989,7 @@ Indices:
               library_source_molecule: library_source_molecule,
               library_strategy: library_strategy
             }) AS sample_diagnosis_genetic_analysis_file_filters
-        page_size: 50
+        page_size: 1000
       - name: "files"
         query: |
           MATCH (p:participant)
