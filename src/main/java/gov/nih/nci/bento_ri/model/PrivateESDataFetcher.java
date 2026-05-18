@@ -11,6 +11,7 @@ import graphql.schema.idl.RuntimeWiring;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.client.Request;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,9 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 
@@ -54,6 +58,9 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String OFFSET = "offset";
     final String ORDER_BY = "order_by";
     final String SORT_DIRECTION = "sort_direction";
+
+    /** Maximum number of threads for async CPI batches in idsLists (C3DC-aligned). */
+    final int THREAD_POOL_SIZE = 8;
 
     final String COHORTS_END_POINT = "/cohorts/_search";
     final String PARTICIPANTS_END_POINT = "/participants_table/_search";
@@ -146,7 +153,12 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         return RuntimeWiring.newRuntimeWiring()
                 .type(newTypeWiring("QueryType")
                         .dataFetchers(yamlQueryFactory.createYamlQueries(Const.ES_ACCESS_TYPE.PRIVATE))
-                        .dataFetcher("idsLists", env -> idsLists())
+                        .dataFetcher("idsLists", env -> {
+                            Map<String, Object> args = new HashMap<>(env.getArguments());
+                            args.putIfAbsent("cpi_batch_size", 2500);
+                            args.putIfAbsent("use_cache", true);
+                            return idsLists(args);
+                        })
                         .dataFetcher("searchParticipants", env -> {
                             Map<String, Object> args = env.getArguments();
                             return searchParticipants(args);
@@ -698,53 +710,140 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         return data;
     }
 
-    private Map<String, String[]> idsLists() throws IOException {
-        Map<String, String[][]> indexProperties = Map.of(
-            PARTICIPANTS_END_POINT, new String[][]{
-                    new String[]{"participantIds", "participant_id"}
+    private Map<String, List<Object>> idsLists(Map<String, Object> params) throws IOException {
+        String cacheKey = "idsLists".concat(generateCacheKey(params));
+        Object cachedResultsRaw = null;
+        boolean useCache = (boolean) params.get("use_cache");
+
+        List<Object> allAssociatedIds = new ArrayList<>();
+        List<Object> allParticipantIds = new ArrayList<>();
+        List<Map<String, Object>> allParticipants;
+        ExecutorService executorService;
+        List<Future<List<Map<String, Object>>>> cpiFutures = new ArrayList<>();
+        int maxParticipantsPerCPIRequest = (int) params.get("cpi_batch_size");
+        int numCpiRequests = 0;
+        int participantCount = 0;
+        Map<String, List<Object>> results = null;
+
+        final String[][] participantProperties = new String[][]{
+            new String[]{"id", "id"},
+            new String[]{"study_id", "study_id"},
+            new String[]{"participant_id", "participant_id"}
+        };
+        Map<String, Object> participantParams = new HashMap<>(Map.of(
+            OFFSET, 0,
+            ORDER_BY, "participant_id",
+            SORT_DIRECTION, "asc"
+        ));
+
+        if (useCache) {
+            cachedResultsRaw = caffeineCache.asMap().get(cacheKey);
+
+            if (cachedResultsRaw instanceof Map<?, ?>) {
+                @SuppressWarnings("unchecked")
+                Map<String, List<Object>> castedCachedResults = (Map<String, List<Object>>) cachedResultsRaw;
+                results = castedCachedResults;
             }
-        );
-        //Generic Query
-        Map<String, Object> query = esService.buildListQuery();
-        //Results Map
-        Map<String, String[]> results = new HashMap<>();
-        //Iterate through each index properties map and make a request to each endpoint then format the results as
-        // String arrays
-        String cacheKey = "participantIDs";
-        Map<String, String[]> data = (Map<String, String[]>)caffeineCache.asMap().get(cacheKey);
-        if (data != null) {
+        }
+
+        if (results != null) {
             logger.info("hit cache!");
-            return data;
-        } else {
-            for (String endpoint: indexProperties.keySet()){
-                Request request = new Request("GET", endpoint);
-                String[][] properties = indexProperties.get(endpoint);
-                List<String> fields = new ArrayList<>();
-                for (String[] prop: properties) {
-                    fields.add(prop[1]);
+            return results;
+        }
+
+        participantParams.put(PAGE_SIZE, ESService.MAX_ES_SIZE);
+
+        Map<String, String> idsMapping = Map.of(
+            "participant_id", "participant_id",
+            "study_id", "study_id",
+            "id", "id"
+        );
+
+        allParticipants = overview(
+            PARTICIPANTS_END_POINT,
+            participantParams,
+            participantProperties,
+            "participant_id",
+            idsMapping,
+            Set.of(),
+            "nested_filters",
+            "participants_table"
+        );
+
+        participantCount = allParticipants.size();
+
+        if (participantCount == 0) {
+            logger.error("No participants found!");
+            return Map.of("participantIds", List.of(), "associatedIds", List.of());
+        }
+
+        numCpiRequests = (int) Math.ceil((double) participantCount / maxParticipantsPerCPIRequest);
+
+        executorService = Executors.newFixedThreadPool(Math.min(numCpiRequests, THREAD_POOL_SIZE));
+
+        try {
+            for (int i = 0; i < numCpiRequests; i++) {
+                int fromIndex = i * maxParticipantsPerCPIRequest;
+                int toIndex = Math.min((i + 1) * maxParticipantsPerCPIRequest, participantCount);
+                List<Map<String, Object>> participants = allParticipants.subList(fromIndex, toIndex);
+
+                Future<List<Map<String, Object>>> future = executorService.submit(() -> {
+                    insertCPIDataIntoParticipants(participants);
+                    return participants;
+                });
+
+                cpiFutures.add(future);
+            }
+
+            for (Future<List<Map<String, Object>>> future : cpiFutures) {
+                List<Object> associatedIds = new ArrayList<>();
+                List<Object> participantIds = new ArrayList<>();
+                List<Map<String, Object>> participants;
+
+                try {
+                    participants = future.get();
+                } catch (Exception e) {
+                    logger.error("Error processing batch in async CPI requests", e);
+                    continue;
                 }
-                query.put("_source", fields);
-                
-                List<Map<String, Object>> result = esService.collectPage(request, query, properties, 200000,
-                        0);
-                Map<String, List<String>> indexResults = new HashMap<>();
-                Arrays.asList(properties).forEach(x -> indexResults.put(x[0], new ArrayList<>()));
-                for(Map<String, Object> resultElement: result){
-                    for(String key: indexResults.keySet()){
-                        List<String> tmp = indexResults.get(key);
-                        String v = (String) resultElement.get(key);
-                        if (!tmp.contains(v)) {
-                            tmp.add(v);
-                        }
+
+                for (Map<String, Object> participant : participants) {
+                    List<Map<String, Object>> cpiEntries;
+                    Object cpiEntriesRaw = participant.get("cpi_data");
+
+                    participantIds.add(participant.get("participant_id"));
+
+                    if (cpiEntriesRaw instanceof List<?>) {
+                        @SuppressWarnings("unchecked")
+                        List<Map<String, Object>> castedCpiEntries = (List<Map<String, Object>>) cpiEntriesRaw;
+                        cpiEntries = castedCpiEntries;
+                    } else {
+                        continue;
+                    }
+
+                    for (Map<String, Object> cpiEntry : cpiEntries) {
+                        associatedIds.add(Map.of(
+                            "associated_id", cpiEntry.get("associated_id"),
+                            "participant_id", participant.get("participant_id")
+                        ));
                     }
                 }
-                for(String key: indexResults.keySet()){
-                    results.put(key, indexResults.get(key).toArray(new String[indexResults.size()]));
-                }
+                allParticipantIds.addAll(participantIds);
+                allAssociatedIds.addAll(associatedIds);
             }
-            caffeineCache.put(cacheKey, results);
+        } catch (Exception e) {
+            logger.error("Error processing batches in async CPI requests", e);
+        } finally {
+            executorService.shutdown();
         }
-        
+
+        results = new HashMap<>(Map.of(
+            "participantIds", allParticipantIds,
+            "associatedIds", allAssociatedIds
+        ));
+
+        caffeineCache.put(cacheKey, results);
+
         return results;
     }
 
@@ -1044,39 +1143,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         
         // Get the participant list from overview
         List<Map<String, Object>> participant_list = overview(PARTICIPANTS_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "participants_table");
-        
-        // Extract IDs using helper function
-        List<ParticipantRequest> extracted_ids = extractIDs(participant_list);
-        
-        // Check if CPIFetcherService is properly injected
-        if (cpiFetcherService == null) {
-            logger.warn("CPIFetcherService is not properly injected. CPI integration will be skipped.");
-        } else {
-            try {
-                List<FormattedCPIResponse> cpi_data = cpiFetcherService.fetchAssociatedParticipantIds(extracted_ids);
-                logger.info("CPI data received: " + cpi_data.size() + " records");
-                
-                // Print the first value as JSON
-                if (cpi_data != null && !cpi_data.isEmpty()) {
-                    // System.out.println("First CPI data value BEFORE enrichment: " + gson.toJson(cpi_data.get(0)));
-                    
-                    // Enrich CPI data with additional participant information
-                    enrichCPIDataWithParticipantInfo(cpi_data);
-                    
-                    // Print the first enriched CPI data value
-                    // System.out.println("First enriched CPI data value AFTER enrichment: " + gson.toJson(cpi_data.get(0)));
-                    
-                    // Update the participant_list with the enriched CPI data
-                    updateParticipantListWithEnrichedCPIData(participant_list, cpi_data);
-                    
-                } else {
-                    // System.out.println("CPI data is empty or null");
-                }
-            } catch (Exception e) {
-                // System.err.println("Error fetching CPI data: " + e.getMessage());
-                logger.error("Error fetching CPI data", e);
-            }   
-        }
+
+        insertCPIDataIntoParticipants(participant_list);
 
         // System.out.println("Participant list size after enrichment: " + gson.toJson(participant_list));
         return participant_list;
@@ -1105,6 +1173,45 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         }
         
         return ids;
+    }
+
+    /**
+     * Puts CPI data into participants (C3DC-aligned).
+     */
+    private void insertCPIDataIntoParticipants(List<Map<String, Object>> participants) {
+        insertCPIDataIntoParticipants(participants, null);
+    }
+
+    /**
+     * Puts CPI data into participants.
+     *
+     * @param participants list of participant maps
+     * @param synPropName  optional field name to store CPI payload (e.g. synonyms); null uses {@code cpi_data}
+     */
+    private void insertCPIDataIntoParticipants(List<Map<String, Object>> participants, String synPropName) {
+        List<ParticipantRequest> cpiIDs = extractIDs(participants);
+
+        if (cpiFetcherService == null) {
+            logger.warn("CPIFetcherService is not properly injected. CPI integration will be skipped.");
+            return;
+        }
+
+        try {
+            List<FormattedCPIResponse> cpiData = cpiFetcherService.fetchAssociatedParticipantIds(cpiIDs);
+            logger.info("CPI data received: " + cpiData.size() + " records");
+
+            if (cpiData != null && !cpiData.isEmpty()) {
+                enrichCPIDataWithParticipantInfo(cpiData);
+
+                if (synPropName == null) {
+                    updateParticipantListWithEnrichedCPIData(participants, cpiData);
+                } else {
+                    updateParticipantListWithEnrichedCPIData(participants, cpiData, synPropName);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error fetching CPI data", e);
+        }
     }
 
     /**
@@ -2434,30 +2541,58 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         List<String> keys = new ArrayList<>();
         for (String key: params.keySet()) {
             if (RANGE_PARAMS.contains(key)) {
-                // Range parameters, should contain two doubles, first lower bound, then upper bound
-                // Any other values after those two will be ignored
-                List<Integer> bounds = (List<Integer>) params.get(key);
-                if (bounds.size() >= 2) {
+                List<Integer> bounds = null;
+                Object boundsRaw = params.get(key);
+
+                if (boundsRaw instanceof List<?> rawBounds) {
+                    List<Integer> casted = new ArrayList<>();
+                    for (Object o : rawBounds) {
+                        if (o instanceof Number) {
+                            casted.add(((Number) o).intValue());
+                        } else if (o == null) {
+                            casted.add(null);
+                        }
+                    }
+                    bounds = casted;
+                }
+
+                if (bounds != null && bounds.size() >= 2) {
                     Integer lower = bounds.get(0);
                     Integer higher = bounds.get(1);
                     if (lower == null && higher == null) {
                         throw new IOException("Lower bound and Upper bound can't be both null!");
                     }
-                    keys.add(key.concat(lower.toString()).concat(higher.toString()));
+                    keys.add(key.concat(String.valueOf(lower)).concat(String.valueOf(higher)));
                 }
             } else {
-                List<String> valueSet = (List<String>) params.get(key);
-                // list with only one empty string [""] means return all records
-                if (valueSet.size() > 0 && !(valueSet.size() == 1 && valueSet.get(0).equals(""))) {
-                    keys.add(key.concat(valueSet.toString()));
+                List<String> valueSet = null;
+                Object valueSetRaw = params.get(key);
+
+                if (valueSetRaw instanceof List<?> rawList) {
+                    List<String> asStrings = new ArrayList<>();
+                    for (Object o : rawList) {
+                        asStrings.add(o != null ? o.toString() : "null");
+                    }
+                    valueSet = asStrings;
+                } else if (valueSetRaw instanceof String s) {
+                    valueSet = List.of(s);
+                } else if (valueSetRaw instanceof Number n) {
+                    valueSet = List.of(n.toString());
+                } else if (valueSetRaw instanceof Boolean b) {
+                    valueSet = List.of(b.toString());
+                }
+
+                if (valueSet != null) {
+                    if (valueSet.size() > 0 && !(valueSet.size() == 1 && valueSet.get(0).equals(""))) {
+                        keys.add(key.concat(valueSet.toString()));
+                    }
                 }
             }
         }
-        if (keys.size() == 0){
-            // System.out.println("all");
+
+        if (keys.isEmpty()) {
             return "all";
         } else {
-            // System.out.println(keys.toString());
             return keys.toString();
         }
     }
@@ -2618,33 +2753,47 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
 
     /**
-     * Updates the participant_list with enriched CPI data by matching participant_id and study_id
+     * Updates the participant_list with enriched CPI data by matching participant_id and study_id (C3DC-aligned).
      */
-    private void updateParticipantListWithEnrichedCPIData(List<Map<String, Object>> participant_list, List<FormattedCPIResponse> enriched_cpi_data) {
+    private void updateParticipantListWithEnrichedCPIData(
+            List<Map<String, Object>> participant_list,
+            List<FormattedCPIResponse> enriched_cpi_data
+    ) {
+        updateParticipantListWithEnrichedCPIData(participant_list, enriched_cpi_data, null);
+    }
+
+    /**
+     * Updates the participant_list with enriched CPI data by matching participant_id and study_id.
+     *
+     * @param synPropName optional property key on each participant map; if null/empty, uses {@code cpi_data}
+     */
+    private void updateParticipantListWithEnrichedCPIData(
+            List<Map<String, Object>> participant_list,
+            List<FormattedCPIResponse> enriched_cpi_data,
+            String synPropName
+    ) {
         if (participant_list == null || participant_list.isEmpty() || enriched_cpi_data == null || enriched_cpi_data.isEmpty()) {
             return;
         }
 
-        // Create a map for quick lookup of enriched CPI data by participant_id + study_id combination
+        String synonymsPropertyKey = (synPropName != null && !synPropName.isEmpty()) ? synPropName : "cpi_data";
+
         Map<String, Object> enrichedCPILookup = new HashMap<>();
-        
+
         for (FormattedCPIResponse cpiResponse : enriched_cpi_data) {
             try {
-                // Extract participant_id and study_id from the CPI response
                 Object participantIdObj = getFieldValue(cpiResponse, "participantId");
                 Object studyIdObj = getFieldValue(cpiResponse, "studyId");
-                
+
                 String participantId = participantIdObj != null ? participantIdObj.toString() : null;
                 String studyId = studyIdObj != null ? studyIdObj.toString() : null;
-                
+
                 if (participantId != null && studyId != null) {
                     String lookupKey = participantId + "_" + studyId;
-                    
-                    // Extract the enriched cpiData array from the response (this is the array with enriched objects)
+
                     Object enrichedCpiDataArray = getFieldValue(cpiResponse, "cpiData");
                     if (enrichedCpiDataArray != null) {
                         enrichedCPILookup.put(lookupKey, enrichedCpiDataArray);
-                        // System.out.println("Added enriched CPI data array for participant: " + participantId + ", study: " + studyId);
                     }
                 }
             } catch (Exception e) {
@@ -2652,32 +2801,23 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             }
         }
 
-        // Update each participant in the participant_list with enriched CPI data
         for (Map<String, Object> participant : participant_list) {
             try {
                 String participantId = getStringValue(participant, "participant_id");
                 String studyId = getStringValue(participant, "study_id");
-                
+
                 if (participantId != null && studyId != null) {
                     String lookupKey = participantId + "_" + studyId;
-                    
-                    // Check if we have enriched CPI data for this participant
+
                     if (enrichedCPILookup.containsKey(lookupKey)) {
                         Object enrichedCpiDataArray = enrichedCPILookup.get(lookupKey);
-                        
-                        // Update the cpi_data field in the participant record with the enriched array
-                        participant.put("cpi_data", enrichedCpiDataArray);
-                        // System.out.println("Updated participant " + participantId + " with enriched CPI data array");
-                    } else {
-                        // System.out.println("No enriched CPI data found for participant: " + participantId + ", study: " + studyId);
+                        participant.put(synonymsPropertyKey, enrichedCpiDataArray);
                     }
                 }
             } catch (Exception e) {
                 logger.error("Error updating participant with enriched CPI data: " + e.getMessage(), e);
             }
         }
-        
-        // System.out.println("Completed updating participant_list with enriched CPI data");
     }
 
     /**
@@ -2779,5 +2919,15 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         // Property not found
         logger.warn("No configuration found for property: " + propertyName);
         return null;
+    }
+
+    @PostConstruct
+    public void onStartup() {
+        try {
+            idsLists(Map.of("cpi_batch_size", 2500, "use_cache", true));
+            logger.info("idsLists cache preloaded on application startup");
+        } catch (IOException e) {
+            logger.error("Failed to preload idsLists cache on startup: " + e.getMessage(), e);
+        }
     }
 }
