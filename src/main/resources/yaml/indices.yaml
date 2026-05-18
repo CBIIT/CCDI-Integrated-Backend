@@ -6106,27 +6106,20 @@ Indices:
     mapping:
       keyword:
         - guid
-        - file_id
-        - pid
-        - participant_id
-        - sample_id
         - study_id
-        - dbgap_accession
-        - study_status
-        - study_acronym
         - study_name
-        - dcf_indexd_guid
+        - study_acronym
         - file_name
-        - file_access
         - data_category
         - file_type
-        - file_mapping_level
         - file_description
         - md5sum
+        - file_mapping_level
+        - file_access
         - library_selection
+        - library_strategy
         - library_source_material
         - library_source_molecule
-        - library_strategy
       #   - combined_filters.participant_id
       #   - combined_filters.race
       #   - combined_filters.sex_at_birth
@@ -6215,18 +6208,18 @@ Indices:
             f:pathology_file,
             f:methylation_array_file
           ] WHERE bool)
-          WITH DISTINCT f.dcf_indexd_guid AS guid, head(collect(file)) AS first_file
+          WITH DISTINCT f.dcf_indexd_guid AS guid, head(collect(f)) AS first_file
           SKIP $skip LIMIT $limit
           RETURN
             guid,
             first_file.file_name AS file_name,
-            first_file.file_access AS file_access,
             first_file.data_category AS data_category,
             first_file.file_type AS file_type,
-            first_file.file_mapping_level AS file_mapping_level,
             first_file.file_description AS file_description,
             first_file.file_size AS file_size,
             first_file.md5sum AS md5sum,
+            first_file.file_mapping_level AS file_mapping_level,
+            first_file.file_access AS file_access,
             first_file.library_selection AS library_selection,
             first_file.library_source_material AS library_source_material,
             first_file.library_source_molecule AS library_source_molecule,
