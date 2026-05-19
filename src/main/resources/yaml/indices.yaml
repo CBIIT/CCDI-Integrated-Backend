@@ -1758,7 +1758,7 @@ Indices:
         page_size: 500
       - name: "sample_diagnosis_genetic_analysis_file_filters"
         query: |
-          MATCH (p:participant)          MATCH (p:participant)
+          MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
 
