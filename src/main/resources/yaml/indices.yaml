@@ -6228,24 +6228,178 @@ Indices:
         page_size: 5000
       - name: "combined_filters"
         query: |
-          MATCH (f)
-          WHERE any(bool IN [
-            f:clinical_measure_file,
-            f:generic_file,
-            f:radiology_file,
-            f:cytogenomic_file,
-            f:sequencing_file,
-            f:pathology_file,
-            f:methylation_array_file
-          ] WHERE bool)
-          WITH DISTINCT f.dcf_indexd_guid AS guid, collect(DISTINCT f) as files
+          // TODO - replace Treatment node with the various types of DCC treatment nodes
+          // Improve performance
+
+          // file batch
+          MATCH (file)
+          WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+          MATCH (p:participant)<--(file)
+          WITH DISTINCT file.dcf_indexd_guid AS file_guid
           SKIP $skip LIMIT $limit
-          UNWIND files as file
-          // study-level file
-          WITH guid, [] as combined_filters
-          // participant-level file
-          // sample-level file
-          RETURN
+
+          MATCH (file)
+          WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            AND file.dcf_indexd_guid = file_guid
+          WITH DISTINCT file
+
+          // -------- combination 1 --------
+          MATCH (p:participant)<--(file)
+          OPTIONAL MATCH (p)<--(sm:sample)
+          OPTIONAL MATCH (p)<--(dg:diagnosis)
+          OPTIONAL MATCH (p)<--(ga:genetic_analysis)
+          WITH file, p,
+              collect(DISTINCT sm) AS sms,
+              collect(DISTINCT dg) AS dgs,
+              collect(DISTINCT ga) AS gas
+          WITH file, p,
+              CASE
+                WHEN sms <> [] OR dgs <> [] OR gas <> []
+                THEN [x IN range(0, size(sms) - 1) |
+                        {sm: sms[x], dg: head(dgs), ga: head(gas)}]
+                ELSE []
+              END AS c1
+
+          // -------- combination 2 --------
+          MATCH (p:participant)<--(file)
+          OPTIONAL MATCH (p)<--(sm:sample)
+          OPTIONAL MATCH (p)<--(dg:diagnosis)
+          OPTIONAL MATCH (sm)<--(ga:genetic_analysis)
+          WITH file, p, c1,
+              collect(DISTINCT sm) AS sms,
+              collect(DISTINCT dg) AS dgs,
+              collect(DISTINCT ga) AS gas
+          WITH file, p, c1,
+              CASE
+                WHEN sms <> [] OR dgs <> [] OR gas <> []
+                THEN [x IN range(0, size(sms) - 1) |
+                        {sm: sms[x], dg: head(dgs), ga: head(gas)}]
+                ELSE []
+              END AS c2
+
+          WITH file, p,
+              reduce(acc = c1, x IN c2 |
+                CASE WHEN x IN acc THEN acc ELSE acc + x END
+              ) AS sample_diagnosis_genetic_analysis_filter
+
+          // Repeat the same pattern for combinations 3 through 23:
+          //   - collect first
+          //   - CASE only checks list emptiness
+          //   - merge lists with reduce(...)
+
+          // After all combinations are merged:
+          WITH file, p,
+              CASE
+                WHEN size(sample_diagnosis_genetic_analysis_filter) > 0
+                THEN sample_diagnosis_genetic_analysis_filter
+                ELSE [null]
+              END AS sample_diagnosis_genetic_analysis_filter
+          UNWIND sample_diagnosis_genetic_analysis_filter AS row
+
+          WITH file, p, collect(DISTINCT {
+            sample_anatomic_site: CASE WHEN row.sm IS NOT NULL THEN row.sm.anatomic_site ELSE null END,
+            participant_age_at_collection: CASE WHEN row.sm IS NOT NULL THEN row.sm.participant_age_at_collection ELSE null END,
+            sample_tumor_status: CASE WHEN row.sm IS NOT NULL THEN row.sm.sample_tumor_status ELSE null END,
+            tumor_classification: CASE WHEN row.sm IS NOT NULL THEN row.sm.tumor_classification ELSE null END,
+
+            age_at_diagnosis: CASE WHEN row.dg IS NOT NULL THEN row.dg.age_at_diagnosis ELSE null END,
+            diagnosis_anatomic_site: CASE WHEN row.dg IS NOT NULL THEN row.dg.anatomic_site ELSE null END,
+            disease_phase: CASE WHEN row.dg IS NOT NULL THEN row.dg.disease_phase ELSE null END,
+            diagnosis_classification_system: CASE WHEN row.dg IS NOT NULL THEN row.dg.diagnosis_classification_system ELSE null END,
+            diagnosis_category: CASE WHEN row.dg IS NOT NULL THEN row.dg.diagnosis_category ELSE null END,
+            diagnosis_basis: CASE WHEN row.dg IS NOT NULL THEN row.dg.diagnosis_basis ELSE null END,
+            diagnosis: CASE WHEN row.dg IS NOT NULL THEN row.dg.diagnosis ELSE null END,
+
+            reported_significance: CASE WHEN row.ga IS NOT NULL THEN row.ga.reported_significance ELSE null END,
+            reported_significance_system: CASE WHEN row.ga IS NOT NULL THEN row.ga.reported_significance_system ELSE null END,
+            gene_symbol: CASE WHEN row.ga IS NOT NULL THEN row.ga.gene_symbol ELSE null END,
+            alteration: CASE WHEN row.ga IS NOT NULL THEN row.ga.alteration ELSE null END,
+            fusion_partner_gene: CASE WHEN row.ga IS NOT NULL THEN row.ga.fusion_partner_gene ELSE null END,
+            alteration_type: CASE WHEN row.ga IS NOT NULL THEN row.ga.alteration_type ELSE null END,
+            status: CASE WHEN row.ga IS NOT NULL THEN row.ga.status ELSE null END
+          }) AS sample_diagnosis_genetic_analysis_filter
+
+          MATCH (p)<--(file)
+          OPTIONAL MATCH (p)<-[:of_survival]-(su:survival)
+          OPTIONAL MATCH (p)<-[:of_treatment]-(tr:treatment)
+          OPTIONAL MATCH (p)<-[:of_treatment_response]-(tresp:treatment_response)
+          WITH file, p, sample_diagnosis_genetic_analysis_filter,
+              collect(DISTINCT su) AS sus,
+              collect(DISTINCT tr) AS trs,
+              collect(DISTINCT tresp) AS tresps
+          WITH file, p, sample_diagnosis_genetic_analysis_filter,
+              CASE
+                WHEN sus <> []
+                THEN [s IN sus |
+                        {last_known_survival_status: s.last_known_survival_status,
+                        cause_of_death: s.cause_of_death,
+                        first_event: s.first_event,
+                        age_at_last_known_survival_status: s.age_at_last_known_survival_status}]
+                ELSE []
+              END AS survival_filters,
+              CASE
+                WHEN trs <> []
+                THEN [t IN trs |
+                        {treatment_type: t.treatment_type,
+                        treatment_agent: t.treatment_agent,
+                        age_at_treatment_start: t.age_at_treatment_start,
+                        age_at_treatment_end: t.age_at_treatment_end}]
+                ELSE []
+              END AS treatment_filters,
+              CASE
+                WHEN tresps <> []
+                THEN [r IN tresps |
+                        {response_category: r.response_category,
+                        age_at_response: r.age_at_response,
+                        response: r.response,
+                        response_system: r.response_system}]
+                ELSE []
+              END AS treatment_response_filters
+
+          WITH file.dcf_indexd_guid AS guid, p,
+              coalesce(sample_diagnosis_genetic_analysis_filter, []) AS sdgaf,
+              coalesce(survival_filters, []) AS svf,
+              coalesce(treatment_filters, []) AS tf,
+              coalesce(treatment_response_filters, []) AS trf
+
+          WITH guid, p,
+              [sdgaf] AS sdgaf_lists,
+              [svf] AS svf_lists,
+              [tf] AS tf_lists,
+              [trf] AS trf_lists
+
+          WITH guid, p, {
+            participant_id: p.participant_id,
+            race: p.race,
+            sex_at_birth: p.sex_at_birth,
+            sample_diagnosis_genetic_analysis_filters:
+              reduce(flat = [], lst IN sdgaf_lists | flat + lst),
+            survival_filters:
+              reduce(flat = [], lst IN svf_lists | flat + lst),
+            treatment_filters:
+              reduce(flat = [], lst IN tf_lists | flat + lst),
+            treatment_response_filters:
+              reduce(flat = [], lst IN trf_lists | flat + lst)
+          } AS rowmap
+
+          WITH guid,
+              collect(DISTINCT p.id) AS pids,
+              collect(DISTINCT p.participant_id) AS participant_ids,
+              collect(DISTINCT rowmap) AS combined_filters
+
+          OPTIONAL MATCH (file)-->(:participant)-->(:consent_group)-->(:study)
+          WHERE (file:clinical_measure_file OR file:generic_file OR file:radiology_file)
+            AND file.dcf_indexd_guid = guid
+
+          WITH guid, pids, participant_ids, combined_filters,
+              head(collect(file)) AS file
+
+          RETURN DISTINCT
             guid,
-            combined_filters
+            guid AS file_id,
+            pids AS pid,
+            participant_ids AS participant_id,
+            null AS sample_id,
+            [guid] AS files,
+            combined_filters AS combined_filters
         page_size: 50
