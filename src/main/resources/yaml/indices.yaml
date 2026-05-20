@@ -6160,16 +6160,15 @@ Indices:
         - files
     initial_query:
       query: |
-        MATCH (f)
-        WHERE any(bool IN [
-          f:clinical_measure_file,
-          f:generic_file,
-          f:radiology_file,
-          f:cytogenomic_file,
-          f:sequencing_file,
-          f:pathology_file,
-          f:methylation_array_file
-        ] WHERE bool)
+        MATCH (f:
+          clinical_measure_file |
+          generic_file |
+          radiology_file |
+          cytogenomic_file |
+          sequencing_file |
+          pathology_file |
+          methylation_array_file
+        )
         WITH DISTINCT f.dcf_indexd_guid AS guid
         SKIP $skip LIMIT $limit
         RETURN
@@ -6178,16 +6177,15 @@ Indices:
     update_queries:
       - name: "study_properties"
         query: |
-          MATCH (f)-[*..6]->(st:study)
-          WHERE any(bool IN [
-            f:clinical_measure_file,
-            f:generic_file,
-            f:radiology_file,
-            f:cytogenomic_file,
-            f:sequencing_file,
-            f:pathology_file,
-            f:methylation_array_file
-          ] WHERE bool)
+          MATCH (f:
+            clinical_measure_file |
+            generic_file |
+            radiology_file |
+            cytogenomic_file |
+            sequencing_file |
+            pathology_file |
+            methylation_array_file
+          )-[*..6]->(st:study)
           WITH DISTINCT f.dcf_indexd_guid AS guid, head(collect(st)) as first_study
           SKIP $skip LIMIT $limit
           RETURN
@@ -6198,16 +6196,15 @@ Indices:
         page_size: 5000
       - name: "file_properties"
         query: |
-          MATCH (f)
-          WHERE any(bool IN [
-            f:clinical_measure_file,
-            f:generic_file,
-            f:radiology_file,
-            f:cytogenomic_file,
-            f:sequencing_file,
-            f:pathology_file,
-            f:methylation_array_file
-          ] WHERE bool)
+          MATCH (f:
+            clinical_measure_file |
+            generic_file |
+            radiology_file |
+            cytogenomic_file |
+            sequencing_file |
+            pathology_file |
+            methylation_array_file
+          )
           WITH DISTINCT f.dcf_indexd_guid AS guid, head(collect(f)) AS first_file
           SKIP $skip LIMIT $limit
           RETURN
