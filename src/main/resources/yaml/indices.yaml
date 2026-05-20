@@ -7565,3 +7565,4 @@ Indices:
             sample_ids AS sample_id,
             [file_guid] AS files,
             combined_filters AS combined_filters
+        page_size: 100
