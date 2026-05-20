@@ -1536,7 +1536,7 @@ Indices:
         WITH p
         SKIP $skip LIMIT $limit
         RETURN p.guid AS guid
-      page_size: 1000
+      page_size: 5000
     update_queries:
       - name: "study_properties"
         query: |
@@ -1571,7 +1571,7 @@ Indices:
               END
             ) AS race_str,
             p.sex_at_birth AS sex_at_birth
-        page_size: 1000
+        page_size: 5000
       - name: "survival_filters"
         query: |
           MATCH (p:participant)
@@ -1600,7 +1600,7 @@ Indices:
               ELSE []
             END AS survival_filters
           RETURN guid, survival_filters
-        page_size: 500
+        page_size: 5000
       - name: "treatment_filters"
         query: |
           MATCH (p:participant)
@@ -1726,7 +1726,7 @@ Indices:
             guid,
             reduce(all_filters = [], filters IN treatment_filters_superlist | all_filters + filters) AS treatment_filters
           RETURN guid, treatment_filters
-        page_size: 500
+        page_size: 5000
       - name: "treatment_response_filters"
         query: |
           MATCH (p:participant)
@@ -1755,7 +1755,7 @@ Indices:
               ELSE []
             END AS treatment_response_filters
           RETURN guid, treatment_response_filters
-        page_size: 500
+        page_size: 5000
       - name: "sample_diagnosis_genetic_analysis_file_filters"
         query: |
           MATCH (p:participant)
@@ -1989,7 +1989,7 @@ Indices:
               library_source_molecule: library_source_molecule,
               library_strategy: library_strategy
             }) AS sample_diagnosis_genetic_analysis_file_filters
-        page_size: 1000
+        page_size: 5000
       - name: "files"
         query: |
           MATCH (p:participant)
@@ -6402,4 +6402,4 @@ Indices:
             null AS sample_id,
             [guid] AS files,
             combined_filters AS combined_filters
-        page_size: 50
+        page_size: 10
