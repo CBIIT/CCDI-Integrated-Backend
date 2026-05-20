@@ -6798,7 +6798,7 @@ Indices:
             sample_ids AS sample_id,
             [file_guid] AS files,
             combined_filters AS combined_filters
-        page_size: 5000
+        page_size: 100
       - name: "combined_filters_sample_level"
         query: |
           // TODO - replace Treatment node with the various types of DCC treatment nodes
