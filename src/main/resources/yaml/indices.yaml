@@ -4817,14 +4817,14 @@ Indices:
           WITH ga,
                CASE WHEN ga.gene_symbol STARTS WITH '[' AND ga.gene_symbol ENDS WITH ']' THEN
                     [x IN split(replace(substring(ga.gene_symbol, 1, size(ga.gene_symbol)-2), "'", ""), ",") |
-                      CASE WHEN apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') = ''
+                CASE WHEN trim(x) = ''
                            THEN 'Not Reported'
-                           ELSE apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') END
+                  ELSE trim(x) END
                     ]
                   ELSE
-                    [CASE WHEN apoc.text.replace(trim(ga.gene_symbol), '^[^A-Za-z0-9]+', '') = ''
+              [CASE WHEN trim(ga.gene_symbol) = ''
                           THEN 'Not Reported'
-                          ELSE apoc.text.replace(trim(ga.gene_symbol), '^[^A-Za-z0-9]+', '') END]
+                 ELSE trim(ga.gene_symbol) END]
                 END AS gene_symbol_arr
           RETURN
             ga.guid AS guid,
@@ -4832,7 +4832,11 @@ Indices:
             ga.alteration AS alteration,
             ga.cytoband AS cytoband,
             apoc.coll.toSet(gene_symbol_arr) AS gene_symbol,
-            apoc.text.join(apoc.coll.toSet(gene_symbol_arr), ';') AS gene_symbol_str,
+            CASE
+              WHEN size(apoc.coll.toSet(gene_symbol_arr)) = 0 THEN null
+              ELSE reduce(s = '', item IN apoc.coll.toSet(gene_symbol_arr) |
+                CASE WHEN s = '' THEN item ELSE s + ';' + item END)
+            END AS gene_symbol_str,
             ga.genomic_source_category AS genomic_source_category,
             ga.hgvs_coding AS hgvs_coding,
             ga.hgvs_genome AS hgvs_genome,
@@ -5165,10 +5169,7 @@ Indices:
             st.study_status AS study_status,
             st.study_name AS study_name,
             st.study_description AS study_description,
-            st.study_acronym AS study_acronym,
-            st.study_id AS study_id_gs,
-            st.study_name AS study_name_gs,
-            st.study_status AS study_status_gs
+            st.study_acronym AS study_acronym
         page_size: 1000
       - name: "study_funding"
         query: |
