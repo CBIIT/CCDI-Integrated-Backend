@@ -6268,7 +6268,7 @@ Indices:
           )
 
           WITH
-            f.dcf_indexd_guid AS file_guid,
+            distinct f.dcf_indexd_guid AS file_guid,
             collect(DISTINCT f) AS file_nodes
 
           ORDER BY file_guid
@@ -6347,7 +6347,7 @@ Indices:
             file_guid,
             p,
             CASE
-              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
+              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: null }]
               ELSE sample_contexts
             END AS sample_contexts
 
@@ -6507,8 +6507,7 @@ Indices:
                 age_at_treatment_start: x.age_at_treatment_start,
                 age_at_treatment_end: x.age_at_treatment_end
               }
-            ]
-            +
+            ] AS chemo_filters,
             [x IN radiation_nodes WHERE x IS NOT NULL |
               {
                 treatment_type: coalesce(x.treatment_type, x.radiation_type, 'radiation'),
@@ -6516,8 +6515,7 @@ Indices:
                 age_at_treatment_start: x.age_at_treatment_start,
                 age_at_treatment_end: x.age_at_treatment_end
               }
-            ]
-            +
+            ] AS radiation_filters,
             [x IN surgery_nodes WHERE x IS NOT NULL |
               {
                 treatment_type: coalesce(x.treatment_type, x.surgery_type, 'surgery'),
@@ -6525,8 +6523,7 @@ Indices:
                 age_at_treatment_start: x.age_at_treatment_start,
                 age_at_treatment_end: x.age_at_treatment_end
               }
-            ]
-            +
+            ] AS surgery_filters,
             [x IN other_treatment_nodes WHERE x IS NOT NULL |
               {
                 treatment_type: coalesce(x.treatment_type, x.other_treatment_type, 'other'),
@@ -6534,7 +6531,15 @@ Indices:
                 age_at_treatment_start: x.age_at_treatment_start,
                 age_at_treatment_end: x.age_at_treatment_end
               }
-            ] AS treatment_filters
+            ] AS other_filters
+
+          WITH 
+            file_guid,
+            p,
+            sm,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            chemo_filters + radiation_filters + surgery_filters + other_filters AS treatment_filters
 
           OPTIONAL MATCH (p)<-[:of_treatment_response]-(tresp:treatment_response)
 
@@ -6649,7 +6654,7 @@ Indices:
             file_guid AS file_id,
             pids AS pid,
             participant_ids AS participant_id,
-            sample_ids AS sample_id,
+            null AS sample_id, // No sample ids for participant level files
             [file_guid] AS files,
             combined_filters AS combined_filters
         page_size: 100
