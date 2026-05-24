@@ -6234,177 +6234,31 @@ Indices:
           MATCH (f:
             clinical_measure_file |
             generic_file
-          )
+          )-->(st:study)
           WITH
-            f.dcf_indexd_guid AS file_guid,
-            collect(DISTINCT f) AS file_nodes
+            distinct f.dcf_indexd_guid AS file_guid
 
           ORDER BY file_guid
           SKIP $skip
           LIMIT $limit
-
-          UNWIND file_nodes AS f
-
-          // ------------------------------------------------------------------
-          // Study-level files.
-          // Only preserve study -> model -> sample contexts.
-          // No traversal from study to participants.
-          // ------------------------------------------------------------------
-
-          MATCH (f)-[:of_clinical_measure_file|of_generic_file]->(st:study)
-
-          OPTIONAL MATCH (model)-[:of_cell_line|of_pdx]->(st)
-          WHERE model:cell_line OR model:pdx
-
-          OPTIONAL MATCH (sm:sample)-[:of_sample]->(model)
-
-          WITH
-            file_guid,
-            collect(DISTINCT CASE
-              WHEN sm IS NOT NULL THEN {
-                sm: sm,
-                source_sm: sm
-              }
-            END) AS raw_sample_contexts
-
-          WITH
-            file_guid,
-            [
-              ctx IN raw_sample_contexts
-              WHERE ctx IS NOT NULL
-                AND ctx.sm IS NOT NULL
-                AND ctx.source_sm IS NOT NULL
-            ] AS sample_contexts
-
-          UNWIND CASE
-            WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: null }]
-            ELSE sample_contexts
-          END AS ctx
-
-          WITH
-            file_guid,
-            ctx.sm AS sm,
-            ctx.source_sm AS source_sm
-
-          // ------------------------------------------------------------------
-          // Sample-level diagnosis and genetic analysis only.
-          // ------------------------------------------------------------------
-
-          OPTIONAL MATCH (source_sm)<-[:of_diagnosis]-(dg:diagnosis)
-
-          WITH
-            file_guid,
-            sm,
-            source_sm,
-            collect(DISTINCT dg) AS diagnosis_nodes
-
-          OPTIONAL MATCH (source_sm)<-[:of_genetic_analysis]-(ga:genetic_analysis)
-
-          WITH
-            file_guid,
-            sm,
-            [x IN diagnosis_nodes WHERE x IS NOT NULL] AS diagnoses,
-            collect(DISTINCT ga) AS ga_nodes
-
-          WITH
-            file_guid,
-            sm,
-            diagnoses,
-            [x IN ga_nodes WHERE x IS NOT NULL] AS gas
-
-          UNWIND CASE
-            WHEN size(diagnoses) = 0 THEN [null]
-            ELSE diagnoses
-          END AS dg
-
-          UNWIND CASE
-            WHEN size(gas) = 0 THEN [null]
-            ELSE gas
-          END AS ga
-
-          WITH
-            file_guid,
-            collect(DISTINCT sm.sample_id) AS raw_sample_ids,
-            collect(DISTINCT {
-              sample_anatomic_site: CASE WHEN sm IS NOT NULL THEN sm.anatomic_site ELSE null END,
-              participant_age_at_collection: CASE WHEN sm IS NOT NULL THEN sm.participant_age_at_collection ELSE null END,
-              sample_tumor_status: CASE WHEN sm IS NOT NULL THEN sm.sample_tumor_status ELSE null END,
-              tumor_classification: CASE WHEN sm IS NOT NULL THEN sm.tumor_classification ELSE null END,
-
-              age_at_diagnosis: CASE WHEN dg IS NOT NULL THEN dg.age_at_diagnosis ELSE null END,
-              diagnosis_anatomic_site: CASE WHEN dg IS NOT NULL THEN dg.anatomic_site ELSE null END,
-              disease_phase: CASE WHEN dg IS NOT NULL THEN dg.disease_phase ELSE null END,
-              diagnosis_classification_system: CASE WHEN dg IS NOT NULL THEN dg.diagnosis_classification_system ELSE null END,
-              diagnosis_category: CASE WHEN dg IS NOT NULL THEN dg.diagnosis_category ELSE null END,
-              diagnosis_basis: CASE WHEN dg IS NOT NULL THEN dg.diagnosis_basis ELSE null END,
-              diagnosis: CASE WHEN dg IS NOT NULL THEN dg.diagnosis ELSE null END,
-
-              reported_significance: CASE WHEN ga IS NOT NULL THEN ga.reported_significance ELSE null END,
-              reported_significance_system: CASE WHEN ga IS NOT NULL THEN ga.reported_significance_system ELSE null END,
-              gene_symbol: CASE WHEN ga IS NOT NULL THEN ga.gene_symbol ELSE null END,
-              alteration: CASE WHEN ga IS NOT NULL THEN ga.alteration ELSE null END,
-              fusion_partner_gene: CASE WHEN ga IS NOT NULL THEN ga.fusion_partner_gene ELSE null END,
-              alteration_type: CASE WHEN ga IS NOT NULL THEN ga.alteration_type ELSE null END,
-              status: CASE WHEN ga IS NOT NULL THEN ga.status ELSE null END
-            }) AS raw_sdga_filters
-
-          WITH
-            file_guid,
-            [x IN raw_sample_ids WHERE x IS NOT NULL] AS sample_ids,
-            reduce(acc = [], x IN raw_sdga_filters |
-              CASE
-                WHEN x IS NULL OR x IN acc THEN acc
-                ELSE acc + [x]
-              END
-            ) AS sample_diagnosis_genetic_analysis_filters
-
-          WITH
-            file_guid,
-            {
-              participant_id: null,
-              race: null,
-              sex_at_birth: null,
-              sample_diagnosis_genetic_analysis_filters: sample_diagnosis_genetic_analysis_filters,
-              survival_filters: [],
-              treatment_filters: [],
-              treatment_response_filters: []
-            } AS rowmap,
-            sample_ids
-
-          WITH
-            file_guid,
-            collect(DISTINCT rowmap) AS raw_combined_filters,
-            collect(DISTINCT sample_ids) AS sample_id_lists
-
-          WITH
-            file_guid,
-            reduce(acc = [], xs IN sample_id_lists | acc + xs) AS raw_sample_ids,
-            raw_combined_filters
-
-          WITH
-            file_guid,
-            reduce(acc = [], x IN raw_sample_ids |
-              CASE
-                WHEN x IS NULL OR x IN acc THEN acc
-                ELSE acc + [x]
-              END
-            ) AS sample_ids,
-            reduce(acc = [], x IN raw_combined_filters |
-              CASE
-                WHEN x IS NULL OR x IN acc THEN acc
-                ELSE acc + [x]
-              END
-            ) AS combined_filters
 
           RETURN
             file_guid AS guid,
             file_guid AS file_id,
             [] AS pid,
             [] AS participant_id,
-            sample_ids AS sample_id,
+            [] AS sample_id,
             [file_guid] AS files,
-            combined_filters AS combined_filters
-        page_size: 2000000 # There were only 140 results in my local Memgraph, so we can use page size 2M to do all 1.2M dcf guids
+            [{
+              participant_id: null,
+              race: null,
+              sex_at_birth: null,
+              sample_diagnosis_genetic_analysis_filters: [],
+              survival_filters: [],
+              treatment_filters: [],
+              treatment_response_filters: []
+            }] AS combined_filters
+        page_size: 10000 # There were only 140 results in my local Memgraph, so we can use page size 10k or more to collect all study level files
       - name: "combined_filters_participant_level"
         query: |
           MATCH (f:
