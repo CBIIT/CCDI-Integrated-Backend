@@ -6126,40 +6126,40 @@ Indices:
         - library_strategy
         - library_source_material
         - library_source_molecule
-      #   - combined_filters.participant_id
-      #   - combined_filters.race
-      #   - combined_filters.sex_at_birth
-      #   - combined_filters.survival_filters.last_known_survival_status
-      #   - combined_filters.survival_filters.cause_of_death
-      #   - combined_filters.survival_filters.first_event
-      #   - combined_filters.treatment_filters.treatment_type
-      #   - combined_filters.treatment_filters.treatment_agent
-      #   - combined_filters.treatment_response_filters.response
-      #   - combined_filters.treatment_response_filters.response_category
-      #   - combined_filters.treatment_response_filters.response_system
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.sample_anatomic_site
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.sample_tumor_status
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.tumor_classification
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_anatomic_site
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.disease_phase
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_classification_system
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_basis
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_category
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.reported_significance
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.reported_significance_system
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.gene_symbol
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.alteration
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.fusion_partner_gene
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.alteration_type
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.status
-      # integer:
-      #   - combined_filters.survival_filters.age_at_last_known_survival_status
-      #   - combined_filters.treatment_filters.age_at_treatment_start
-      #   - combined_filters.treatment_filters.age_at_treatment_end
-      #   - combined_filters.treatment_response_filters.age_at_response
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.participant_age_at_collection
-      #   - combined_filters.sample_diagnosis_genetic_analysis_filters.age_at_diagnosis
+        - combined_filters.participant_id
+        - combined_filters.race
+        - combined_filters.sex_at_birth
+        - combined_filters.survival_filters.last_known_survival_status
+        - combined_filters.survival_filters.cause_of_death
+        - combined_filters.survival_filters.first_event
+        - combined_filters.treatment_filters.treatment_type
+        - combined_filters.treatment_filters.treatment_agent
+        - combined_filters.treatment_response_filters.response
+        - combined_filters.treatment_response_filters.response_category
+        - combined_filters.treatment_response_filters.response_system
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.sample_anatomic_site
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.sample_tumor_status
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.tumor_classification
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_anatomic_site
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.disease_phase
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_classification_system
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_basis
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_category
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.reported_significance
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.reported_significance_system
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.gene_symbol
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.alteration
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.fusion_partner_gene
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.alteration_type
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.status
+      integer:
+        - combined_filters.survival_filters.age_at_last_known_survival_status
+        - combined_filters.treatment_filters.age_at_treatment_start
+        - combined_filters.treatment_filters.age_at_treatment_end
+        - combined_filters.treatment_response_filters.age_at_response
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.participant_age_at_collection
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.age_at_diagnosis
       long:
         - file_size
       text:
