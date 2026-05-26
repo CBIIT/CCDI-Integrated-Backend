@@ -5771,7 +5771,7 @@ Indices:
           WITH st
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (st)<-[*..6]-(dg:diagnosis)
-          WITH st, COUNT(DISTINCT dg) AS num_diag
+          WITH st, COUNT(DISTINCT dg.diagnosis) AS num_diag
           OPTIONAL MATCH (st)<-[*..6]-(dg:diagnosis)
           WITH st, num_diag, dg.diagnosis AS dg_cancer, COUNT(dg.diagnosis) AS num_cancers
           ORDER BY num_cancers DESC
@@ -5797,21 +5797,16 @@ Indices:
           WHERE (fl:clinical_measure_file OR fl:generic_file OR fl:sequencing_file OR fl:pathology_file OR fl:radiology_file OR fl:methylation_array_file OR fl:cytogenomic_file)
           WITH st,
                fl.file_type AS ft,
-               COUNT(DISTINCT fl.dcf_indexd_guid) AS num_ft,
-               COLLECT(DISTINCT fl.dcf_indexd_guid) AS ft_guids
+               COUNT(DISTINCT fl.dcf_indexd_guid) AS num_ft
           ORDER BY num_ft DESC
           WITH st,
-               COLLECT(ft + ' (' + toString(num_ft) + ')') AS file_types,
-            COLLECT(ft_guids) AS nested_guids
-          UNWIND nested_guids AS guid_list
-          UNWIND guid_list AS guid
-          WITH st, file_types, [g IN COLLECT(DISTINCT guid) WHERE g IS NOT NULL] AS all_guids
+               COLLECT(ft + ' (' + toString(num_ft) + ')') AS file_types
           OPTIONAL MATCH (st)<-[*..6]-(file)
           WHERE (file:clinical_measure_file OR file:generic_file OR file:sequencing_file OR file:pathology_file OR file:radiology_file OR file:methylation_array_file OR file:cytogenomic_file)
-          WITH st, file_types, all_guids,
+          WITH st, file_types,
                file.dcf_indexd_guid AS file_id,
                file.file_mapping_level AS file_level
-          WITH st, file_types, all_guids,
+          WITH st, file_types,
                COLLECT(DISTINCT file_id) AS all_file_ids,
                COUNT(DISTINCT CASE WHEN file_level = 'Study'       THEN file_id END) AS num_study_files,
                COUNT(DISTINCT CASE WHEN file_level = 'Participant' THEN file_id END) AS num_participant_files,
@@ -5819,12 +5814,12 @@ Indices:
           RETURN
             st.guid AS guid,
             file_types AS file_types,
-            size(all_guids) AS num_of_files,
+            num_study_files + num_participant_files + num_sample_files AS num_of_files,
             all_file_ids AS files,
             num_study_files       AS num_of_study_files,
             num_participant_files AS num_of_participant_files,
             num_sample_files      AS num_of_sample_files
-        page_size: 1000
+        page_size: 1
   
   - index_name: samples_table
     id_field: "guid"
