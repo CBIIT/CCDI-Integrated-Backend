@@ -5628,61 +5628,30 @@ Indices:
   - index_name: studies_table
     id_field: "guid"
     mapping:
-      guid: # a.k.a study primary key
-        type: keyword
-      study_id:
-        type: keyword
-      grant_id:
-        type: keyword
-      pubmed_ids:
-        type: keyword
-      dbgap_accession:
-        type: keyword
-      study_status:
-        type: keyword
-      study_name:
-        type: keyword
-      study_description:
-        type: keyword
-      study_acronym:
-        type: keyword
-      PIs:
-        type: keyword
-      num_of_participants:
-        type: integer
-      num_of_samples:
-        type: integer
-      num_of_files:
-        type: integer
-      diagnosis_cancer:
-        type: text
-        fields:
-          keyword:
-            type: keyword
-      diagnosis_anatomic_site:
-        type: text
-        fields:
-          keyword:
-            type: keyword
-      file_types:
-        type: text
-        fields:
-          keyword:
-            type: keyword
-      files:
-        type: text
-        fields:
-          keyword:
-            type: keyword
-      # Data availability fields for Hub Studies table
-      num_of_study_files:
-        type: integer
-      num_of_participant_files:
-        type: integer
-      num_of_sample_files:
-        type: integer
-      num_of_publications:
-        type: integer
+      keyword:
+        - guid
+        - study_id
+        - grant_id
+        - pubmed_ids
+        - dbgap_accession
+        - study_status
+        - study_name
+        - study_description
+        - study_acronym
+        - PIs
+      integer:
+        - num_of_participants
+        - num_of_samples
+        - num_of_files
+        - num_of_study_files
+        - num_of_participant_files
+        - num_of_sample_files
+        - num_of_publications
+      text:
+        - diagnosis_cancer
+        - diagnosis_anatomic_site
+        - file_types
+        - files
     # Cypher queries will be used to retrieve data from Neo4j, and index into Elasticsearch.
     # Uses the GC initial_query + update_queries pattern: initial_query seeds the index with
     # primary keys, then each update_query is applied independently and merged into the
@@ -5860,140 +5829,59 @@ Indices:
   - index_name: samples_table
     id_field: "guid"
     mapping:
-      guid: # a.k.a sample primary key
-        type: keyword
-      sample_id:
-        type: keyword
-      # Participant fields
-      pid: # a.k.a participant_pk
-        type: keyword
-      participant_id:
-        type: keyword
-      race:
-        type: keyword
-      sex_at_birth:
-        type: keyword
-      # Study fields
-      study_id:
-        type: keyword
-      dbgap_accession:
-        type: keyword
-      study_status:
-        type: keyword
-      study_acronym:
-        type: keyword
-      study_name:
-        type: keyword
-      # Sample fields
-      sample_anatomic_site:
-        type: keyword
-      sample_anatomic_site_str:
-        type: keyword     
-      participant_age_at_collection:
-        type: integer
-      sample_tumor_status:
-        type: keyword
-      tumor_classification:
-        type: keyword
-      # Diagnosis filters
-      diagnosis_filters:
-        type: nested
-        properties:
-          age_at_diagnosis:
-            type: integer
-          diagnosis_anatomic_site:
-            type: keyword
-          disease_phase:
-            type: keyword
-          diagnosis_classification_system:
-            type: keyword
-          diagnosis_basis:
-            type: keyword   
-          diagnosis:
-            type: keyword
-          diagnosis_category:
-            type: keyword
-      # Genetic Analysis filters
-      genetic_analysis_filters:
-        type: nested
-        properties:
-          reported_significance:
-            type: keyword
-          reported_significance_system:
-            type: keyword
-          gene_symbol:
-            type: keyword
-          alteration:
-            type: keyword
-          fusion_partner_gene:
-            type: keyword
-          alteration_type:
-            type: keyword
-          status:
-            type: keyword
-      # File filters
-      file_filters:
-        type: nested
-        properties:
-          data_category:
-            type: keyword
-          file_type:
-            type: keyword
-          file_mapping_level:
-            type: keyword            
-          library_selection:
-            type: keyword
-          library_source_material:
-            type: keyword
-          library_source_molecule:
-            type: keyword
-          library_strategy:
-            type: keyword
-      # Survival filters
-      survival_filters:
-        type: nested
-        properties:
-          last_known_survival_status:
-            type: keyword
-          age_at_last_known_survival_status:
-            type: integer
-          cause_of_death:
-            type: keyword
-          first_event:
-            type: keyword
-      # Treatment filters
-      treatment_filters:
-        type: nested
-        properties:
-          treatment_type:
-            type: keyword
-          treatment_agent:
-            type: keyword
-          age_at_treatment_start:
-            type: integer
-          age_at_treatment_end:
-            type: integer
-      # Treatment response filters
-      treatment_response_filters:
-        type: nested
-        properties:
-          age_at_response:
-            type: integer
-          response:
-            type: keyword
-          response_category:
-            type: keyword
-          response_system:
-            type: keyword
-      file_count:
-        type: integer
-      direct_file_count:
-        type: integer
-      files:
-        type: text
-        fields:
-          keyword:
-            type: keyword
+      keyword:
+        - guid
+        - sample_id
+        - pid
+        - participant_id
+        - race
+        - sex_at_birth
+        - study_id
+        - dbgap_accession
+        - study_status
+        - study_acronym
+        - study_name
+        - sample_anatomic_site
+        - sample_anatomic_site_str
+        - sample_tumor_status
+        - tumor_classification
+        - diagnosis_filters.diagnosis_anatomic_site
+        - diagnosis_filters.disease_phase
+        - diagnosis_filters.diagnosis_classification_system
+        - diagnosis_filters.diagnosis_basis
+        - diagnosis_filters.diagnosis
+        - diagnosis_filters.diagnosis_category
+        - genetic_analysis_filters.reported_significance
+        - genetic_analysis_filters.reported_significance_system
+        - genetic_analysis_filters.gene_symbol
+        - genetic_analysis_filters.alteration
+        - genetic_analysis_filters.fusion_partner_gene
+        - genetic_analysis_filters.alteration_type
+        - genetic_analysis_filters.status
+        - file_filters.data_category
+        - file_filters.file_type
+        - file_filters.file_mapping_level
+        - file_filters.library_selection
+        - file_filters.library_source_material
+        - file_filters.library_source_molecule
+        - file_filters.library_strategy
+        - survival_filters.last_known_survival_status
+        - survival_filters.cause_of_death
+        - survival_filters.first_event
+        - treatment_filters.treatment_type
+        - treatment_filters.treatment_agent
+        - treatment_response_filters.response
+        - treatment_response_filters.response_category
+        - treatment_response_filters.response_system
+      integer:
+        - participant_age_at_collection
+        - diagnosis_filters.age_at_diagnosis
+        - survival_filters.age_at_last_known_survival_status
+        - treatment_filters.age_at_treatment_start
+        - treatment_filters.age_at_treatment_end
+        - treatment_response_filters.age_at_response
+        - file_count
+        - direct_file_count
     # Cypher queries will be used to retrieve data from Neo4j, and index into Elasticsearch.
     # Uses the GC initial_query + update_queries pattern: initial_query seeds the index with
     # primary keys, then each update_query is applied independently and merged into the
