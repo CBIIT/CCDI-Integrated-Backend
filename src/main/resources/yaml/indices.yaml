@@ -4655,148 +4655,68 @@ Indices:
   - index_name: genetic_analyses_table
     id_field: "guid"
     mapping:
-      guid: # a.k.a genetic_analysis primary key
-        type: keyword
-      genetic_analysis_id:
-        type: keyword
-      # Participant fields
-      pid: # a.k.a participant_pk
-        type: keyword
-      participant_id:
-        type: keyword
-      race:
-        type: keyword
-      sex_at_birth:
-        type: keyword
-      # Study fields
-      dbgap_accession:
-        type: keyword
-      study_status:
-        type: keyword
-      study_id:
-        type: keyword
-      study_acronym:
-        type: keyword
-      study_name:
-        type: keyword
-      # Genetic Analysis fields
-      gene_symbol: # for display
-        type: keyword
-      gene_symbol_str: # for sorting
-        type: keyword
-      status:
-        type: keyword
-      reported_significance:
-        type: keyword
-      reported_significance_system:
-        type: keyword
-      hgvs_genome:
-        type: keyword
-      alteration:
-        type: keyword
-      hgvs_coding:
-        type: keyword
-      hgvs_protein:
-        type: keyword
-      reference_genome:
-        type: keyword
-      chromosome:
-        type: keyword
-      cytoband:
-        type: keyword
-      exon:
-        type: keyword
-      fusion_partner_exon:
-        type: keyword
-      fusion_partner_gene:
-        type: keyword
-      alteration_type:
-        type: keyword
-      alteration_effect:
-        type: keyword
-      genomic_source_category:
-        type: keyword
-      test:
-        type: keyword
-      # Survival records
-      survival_filters:
-        type: nested
-        properties:
-          last_known_survival_status:
-            type: keyword
-          age_at_last_known_survival_status:
-            type: integer
-          cause_of_death:
-            type: keyword
-          first_event:
-            type: keyword
-      # Treatment filters
-      treatment_filters:
-        type: nested
-        properties:
-          treatment_type:
-            type: keyword
-          treatment_agent:
-            type: keyword
-          age_at_treatment_start:
-            type: integer
-          age_at_treatment_end:
-            type: integer
-      # Treatment response filters
-      treatment_response_filters:
-        type: nested
-        properties:
-          age_at_response:
-            type: integer
-          response:
-            type: keyword
-          response_category:
-            type: keyword
-          response_system:
-            type: keyword
-      # Sample+Diagnosis+File filters
-      sample_diagnosis_file_filters:
-        type: nested
-        properties:
-          # Sample facets
-          sample_anatomic_site:
-            type: keyword
-          participant_age_at_collection:
-            type: integer
-          sample_tumor_status:
-            type: keyword
-          tumor_classification:
-            type: keyword
-          # Diagnosis facets
-          diagnosis:
-            type: keyword
-          diagnosis_category:
-            type: keyword
-          diagnosis_anatomic_site:
-            type: keyword
-          age_at_diagnosis:
-            type: integer
-          diagnosis_classification_system:
-            type: keyword
-          diagnosis_basis:
-            type: keyword
-          disease_phase:
-            type: keyword
-          # File facets
-          data_category:
-            type: keyword
-          file_type:
-            type: keyword
-          file_mapping_level:
-            type: keyword
-          library_selection:
-            type: keyword
-          library_source_material:
-            type: keyword
-          library_source_molecule:
-            type: keyword
-          library_strategy:
-            type: keyword
+      keyword:
+        - guid
+        - genetic_analysis_id
+        - pid
+        - participant_id
+        - race
+        - sex_at_birth
+        - dbgap_accession
+        - study_status
+        - study_id
+        - study_acronym
+        - study_name
+        - gene_symbol
+        - gene_symbol_str
+        - status
+        - reported_significance
+        - reported_significance_system
+        - hgvs_genome
+        - alteration
+        - hgvs_coding
+        - hgvs_protein
+        - reference_genome
+        - chromosome
+        - cytoband
+        - exon
+        - fusion_partner_exon
+        - fusion_partner_gene
+        - alteration_type
+        - alteration_effect
+        - genomic_source_category
+        - test
+        - survival_filters.last_known_survival_status
+        - survival_filters.cause_of_death
+        - survival_filters.first_event
+        - treatment_filters.treatment_type
+        - treatment_filters.treatment_agent
+        - treatment_response_filters.response
+        - treatment_response_filters.response_category
+        - treatment_response_filters.response_system
+        - sample_diagnosis_file_filters.sample_anatomic_site
+        - sample_diagnosis_file_filters.sample_tumor_status
+        - sample_diagnosis_file_filters.tumor_classification
+        - sample_diagnosis_file_filters.diagnosis
+        - sample_diagnosis_file_filters.diagnosis_category
+        - sample_diagnosis_file_filters.diagnosis_anatomic_site
+        - sample_diagnosis_file_filters.diagnosis_classification_system
+        - sample_diagnosis_file_filters.diagnosis_basis
+        - sample_diagnosis_file_filters.disease_phase
+        - sample_diagnosis_file_filters.data_category
+        - sample_diagnosis_file_filters.file_type
+        - sample_diagnosis_file_filters.file_mapping_level
+        - sample_diagnosis_file_filters.library_selection
+        - sample_diagnosis_file_filters.library_source_material
+        - sample_diagnosis_file_filters.library_source_molecule
+        - sample_diagnosis_file_filters.library_strategy
+      integer:
+        - survival_filters.age_at_last_known_survival_status
+        - treatment_filters.age_at_treatment_start
+        - treatment_filters.age_at_treatment_end
+        - treatment_response_filters.age_at_response
+        - sample_diagnosis_file_filters.participant_age_at_collection
+        - sample_diagnosis_file_filters.age_at_diagnosis
     # Cypher queries will be used to retrieve data from Neo4j, and index into Elasticsearch.
     # Uses the GC initial_query + update_queries pattern: initial_query seeds the index with
     # primary keys, then each update_query is applied independently and merged into the
@@ -4826,15 +4746,17 @@ Indices:
                           THEN 'Not Reported'
                  ELSE trim(ga.gene_symbol) END]
                 END AS gene_symbol_arr
+          UNWIND gene_symbol_arr AS gene
+          WITH ga, collect(DISTINCT gene) AS gene_symbol
           RETURN
             ga.guid AS guid,
             ga.genetic_analysis_id AS genetic_analysis_id,
             ga.alteration AS alteration,
             ga.cytoband AS cytoband,
-            apoc.coll.toSet(gene_symbol_arr) AS gene_symbol,
+            gene_symbol AS gene_symbol,
             CASE
-              WHEN size(apoc.coll.toSet(gene_symbol_arr)) = 0 THEN null
-              ELSE reduce(s = '', item IN apoc.coll.toSet(gene_symbol_arr) |
+              WHEN size(gene_symbol) = 0 THEN null
+              ELSE reduce(s = '', item IN gene_symbol |
                 CASE WHEN s = '' THEN item ELSE s + ';' + item END)
             END AS gene_symbol_str,
             ga.genomic_source_category AS genomic_source_category,
