@@ -71,6 +71,9 @@ type SearchParticipantsResult {
     participantCountBySexAtBirth: [SearchParticipantsReturnObject]
     participantCountByRace: [SearchParticipantsReturnObject]
     participantCountByDataCategory: [SearchParticipantsReturnObject]
+    fileCountByDataCategory: [SearchParticipantsReturnObject]
+    fileCountByFileType: [SearchParticipantsReturnObject]
+    fileCountByLibraryStrategy: [SearchParticipantsReturnObject]
 }
 
 schema {
