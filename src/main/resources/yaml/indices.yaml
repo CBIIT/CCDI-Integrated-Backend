@@ -5159,6 +5159,7 @@ Indices:
         - data_category
         - file_type
         - file_description
+        - consent_codes
         - md5sum
         - file_mapping_level
         - file_access
@@ -5293,6 +5294,7 @@ Indices:
             null AS pid,
             null AS participant_id,
             null AS sample_id,
+            null As consent_codes, // study level files should not have consent codes
             null AS anatomic_site,
             null AS participant_age_at_collection,
             null AS sample_tumor_status,
@@ -5629,9 +5631,22 @@ Indices:
             collect(DISTINCT treatment_filters) AS treatment_filter_lists,
             collect(DISTINCT treatment_response_filters) AS treatment_response_filter_lists
 
+          OPTIONAL MATCH (p)-[:of_participant]->(cg:consent_group)
+
           WITH
             file_guid,
             p,
+            raw_sample_ids,
+            sdga_filter_lists,
+            survival_filter_lists,
+            treatment_filter_lists,
+            treatment_response_filter_lists,
+            [x IN collect(DISTINCT cg.consent_group_name) WHERE x IS NOT NULL] AS consent_codes_for_participant
+
+          WITH
+            file_guid,
+            p,
+            consent_codes_for_participant,
             [x IN raw_sample_ids WHERE x IS NOT NULL] AS sample_ids_for_participant,
             reduce(acc = [], xs IN sdga_filter_lists | acc + xs) AS raw_sdga_filters,
             reduce(acc = [], xs IN survival_filter_lists | acc + xs) AS raw_survival_filters,
@@ -5643,6 +5658,7 @@ Indices:
             {
               pids: CASE WHEN p IS NOT NULL THEN [p.guid] ELSE [] END,
               participant_ids: CASE WHEN p IS NOT NULL THEN [p.participant_id] ELSE [] END,
+              consent_codes: consent_codes_for_participant,
               sample_ids: sample_ids_for_participant,
               combined_filters: [{
                 participant_id: CASE WHEN p IS NOT NULL THEN p.participant_id ELSE null END,
@@ -5679,6 +5695,7 @@ Indices:
             file_guid,
             reduce(acc = [], r IN output_rows | acc + r.pids) AS raw_pids,
             reduce(acc = [], r IN output_rows | acc + r.participant_ids) AS raw_participant_ids,
+            reduce(acc = [], r IN output_rows | acc + r.consent_codes) AS raw_consent_codes,
             reduce(acc = [], r IN output_rows | acc + r.sample_ids) AS raw_sample_ids,
             reduce(acc = [], r IN output_rows | acc + r.combined_filters) AS raw_combined_filters
 
@@ -5692,6 +5709,10 @@ Indices:
             reduce(acc = [], x IN raw_participant_ids |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
             ) AS participant_ids,
+
+            reduce(acc = [], x IN raw_consent_codes |
+              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
+            ) AS consent_codes,
 
             reduce(acc = [], x IN raw_sample_ids |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
@@ -5707,6 +5728,7 @@ Indices:
             pids AS pid,
             participant_ids AS participant_id,
             null AS sample_id, // No sample ids for participant level files
+            consent_codes AS consent_codes,
             null AS anatomic_site,
             null AS participant_age_at_collection,
             null AS sample_tumor_status,
@@ -6090,9 +6112,22 @@ Indices:
             collect(DISTINCT treatment_filters) AS treatment_filter_lists,
             collect(DISTINCT treatment_response_filters) AS treatment_response_filter_lists
 
+          OPTIONAL MATCH (p)-[:of_participant]->(cg:consent_group)
+
           WITH
             file_guid,
             p,
+            raw_sample_maps,
+            sdga_filter_lists,
+            survival_filter_lists,
+            treatment_filter_lists,
+            treatment_response_filter_lists,
+            [x IN collect(DISTINCT cg.consent_group_name) WHERE x IS NOT NULL] AS consent_codes_for_participant
+
+          WITH
+            file_guid,
+            p,
+            consent_codes_for_participant,
             [x IN raw_sample_maps WHERE x IS NOT NULL] AS sample_maps_for_participant,
             reduce(acc = [], xs IN sdga_filter_lists | acc + xs) AS raw_sdga_filters,
             reduce(acc = [], xs IN survival_filter_lists | acc + xs) AS raw_survival_filters,
@@ -6104,6 +6139,7 @@ Indices:
             {
               pids: CASE WHEN p IS NOT NULL THEN [p.guid] ELSE [] END,
               participant_ids: CASE WHEN p IS NOT NULL THEN [p.participant_id] ELSE [] END,
+              consent_codes: consent_codes_for_participant,
               sample_maps: sample_maps_for_participant,
               combined_filters: [{
                 participant_id: CASE WHEN p IS NOT NULL THEN p.participant_id ELSE null END,
@@ -6136,6 +6172,7 @@ Indices:
             file_guid,
             reduce(acc = [], r IN output_rows | acc + r.pids) AS raw_pids,
             reduce(acc = [], r IN output_rows | acc + r.participant_ids) AS raw_participant_ids,
+            reduce(acc = [], r IN output_rows | acc + r.consent_codes) AS raw_consent_codes,
             reduce(acc = [], r IN output_rows | acc + r.sample_maps) AS raw_sample_maps,
             reduce(acc = [], r IN output_rows | acc + r.combined_filters) AS raw_combined_filters
 
@@ -6147,6 +6184,9 @@ Indices:
             reduce(acc = [], x IN raw_participant_ids |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
             ) AS participant_ids,
+            reduce(acc = [], x IN raw_consent_codes |
+              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
+            ) AS consent_codes,
             reduce(acc = [], x IN raw_sample_maps |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
             ) AS sample_maps,
@@ -6162,6 +6202,7 @@ Indices:
             reduce(acc = [], x IN sample_maps |
               CASE WHEN x.sample_id IS NULL OR x.sample_id IN acc THEN acc ELSE acc + [x.sample_id] END
             ) AS sample_id,
+            consent_codes AS consent_codes,
             reduce(acc = [], x IN sample_maps |
               CASE WHEN x.anatomic_site IS NULL OR x.anatomic_site IN acc THEN acc ELSE acc + [x.anatomic_site] END
             ) AS anatomic_site,
