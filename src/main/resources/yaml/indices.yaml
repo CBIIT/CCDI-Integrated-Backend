@@ -5148,6 +5148,13 @@ Indices:
         - study_status
         - study_acronym
         - study_name
+        - anatomic_site
+        - participant_age_at_collection
+        - sample_tumor_status
+        - tumor_spatial_extent
+        - sample_description
+        - percent_tumor
+        - percent_necrosis
         - file_name
         - data_category
         - file_type
@@ -5155,10 +5162,13 @@ Indices:
         - md5sum
         - file_mapping_level
         - file_access
+        - file_size
         - library_selection
         - library_strategy
         - library_source_material
         - library_source_molecule
+        - fixation_embedding_method
+        - staining_method
         - combined_filters.participant_id
         - combined_filters.race
         - combined_filters.sex_at_birth
@@ -5260,6 +5270,8 @@ Indices:
             first_file.library_source_material AS library_source_material,
             first_file.library_source_molecule AS library_source_molecule,
             first_file.library_strategy AS library_strategy,
+            first_file.fixation_embedding_method AS fixation_embedding_method,
+            first_file.staining_method AS staining_method,
             [guid] as files
         page_size: 5000
       - name: "combined_filters_study_level"
@@ -5278,9 +5290,16 @@ Indices:
           RETURN
             file_guid AS guid,
             file_guid AS file_id,
-            [] AS pid,
-            [] AS participant_id,
-            [] AS sample_id,
+            null AS pid,
+            null AS participant_id,
+            null AS sample_id,
+            null AS anatomic_site,
+            null AS participant_age_at_collection,
+            null AS sample_tumor_status,
+            null AS tumor_spatial_extent,
+            null AS sample_description,
+            null AS percent_tumor,
+            null AS percent_necrosis,
             [file_guid] AS files,
             [{
               participant_id: null,
@@ -5688,6 +5707,13 @@ Indices:
             pids AS pid,
             participant_ids AS participant_id,
             null AS sample_id, // No sample ids for participant level files
+            null AS anatomic_site,
+            null AS participant_age_at_collection,
+            null AS sample_tumor_status,
+            null AS tumor_spatial_extent,
+            null AS sample_description,
+            null AS percent_tumor,
+            null AS percent_necrosis,
             [file_guid] AS files,
             combined_filters AS combined_filters
         page_size: 100
@@ -6047,7 +6073,18 @@ Indices:
           WITH
             file_guid,
             p,
-            collect(DISTINCT sm.sample_id) AS raw_sample_ids,
+            collect(DISTINCT CASE
+              WHEN sm IS NOT NULL THEN {
+                sample_id: sm.sample_id,
+                anatomic_site: sm.anatomic_site,
+                participant_age_at_collection: sm.participant_age_at_collection,
+                sample_tumor_status: sm.sample_tumor_status,
+                tumor_spatial_extent: sm.tumor_spatial_extent,
+                sample_description: sm.sample_description,
+                percent_tumor: sm.percent_tumor,
+                percent_necrosis: sm.percent_necrosis
+              }
+            END) AS raw_sample_maps,
             collect(DISTINCT sample_diagnosis_genetic_analysis_filters) AS sdga_filter_lists,
             collect(DISTINCT survival_filters) AS survival_filter_lists,
             collect(DISTINCT treatment_filters) AS treatment_filter_lists,
@@ -6056,7 +6093,7 @@ Indices:
           WITH
             file_guid,
             p,
-            [x IN raw_sample_ids WHERE x IS NOT NULL] AS sample_ids_for_participant,
+            [x IN raw_sample_maps WHERE x IS NOT NULL] AS sample_maps_for_participant,
             reduce(acc = [], xs IN sdga_filter_lists | acc + xs) AS raw_sdga_filters,
             reduce(acc = [], xs IN survival_filter_lists | acc + xs) AS raw_survival_filters,
             reduce(acc = [], xs IN treatment_filter_lists | acc + xs) AS raw_treatment_filters,
@@ -6067,7 +6104,7 @@ Indices:
             {
               pids: CASE WHEN p IS NOT NULL THEN [p.guid] ELSE [] END,
               participant_ids: CASE WHEN p IS NOT NULL THEN [p.participant_id] ELSE [] END,
-              sample_ids: sample_ids_for_participant,
+              sample_maps: sample_maps_for_participant,
               combined_filters: [{
                 participant_id: CASE WHEN p IS NOT NULL THEN p.participant_id ELSE null END,
                 race: CASE WHEN p IS NOT NULL THEN p.race ELSE null END,
@@ -6099,7 +6136,7 @@ Indices:
             file_guid,
             reduce(acc = [], r IN output_rows | acc + r.pids) AS raw_pids,
             reduce(acc = [], r IN output_rows | acc + r.participant_ids) AS raw_participant_ids,
-            reduce(acc = [], r IN output_rows | acc + r.sample_ids) AS raw_sample_ids,
+            reduce(acc = [], r IN output_rows | acc + r.sample_maps) AS raw_sample_maps,
             reduce(acc = [], r IN output_rows | acc + r.combined_filters) AS raw_combined_filters
 
           WITH
@@ -6110,9 +6147,9 @@ Indices:
             reduce(acc = [], x IN raw_participant_ids |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
             ) AS participant_ids,
-            reduce(acc = [], x IN raw_sample_ids |
+            reduce(acc = [], x IN raw_sample_maps |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-            ) AS sample_ids,
+            ) AS sample_maps,
             reduce(acc = [], x IN raw_combined_filters |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
             ) AS combined_filters
@@ -6122,7 +6159,30 @@ Indices:
             file_guid AS file_id,
             pids AS pid,
             participant_ids AS participant_id,
-            sample_ids AS sample_id,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.sample_id IS NULL OR x.sample_id IN acc THEN acc ELSE acc + [x.sample_id] END
+            ) AS sample_id,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.anatomic_site IS NULL OR x.anatomic_site IN acc THEN acc ELSE acc + [x.anatomic_site] END
+            ) AS anatomic_site,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.participant_age_at_collection IS NULL OR x.participant_age_at_collection IN acc THEN acc ELSE acc + [x.participant_age_at_collection] END
+            ) AS participant_age_at_collection,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.sample_tumor_status IS NULL OR x.sample_tumor_status IN acc THEN acc ELSE acc + [x.sample_tumor_status] END
+            ) AS sample_tumor_status,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.tumor_spatial_extent IS NULL OR x.tumor_spatial_extent IN acc THEN acc ELSE acc + [x.tumor_spatial_extent] END
+            ) AS tumor_spatial_extent,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.sample_description IS NULL OR x.sample_description IN acc THEN acc ELSE acc + [x.sample_description] END
+            ) AS sample_description,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.percent_tumor IS NULL OR x.percent_tumor IN acc THEN acc ELSE acc + [x.percent_tumor] END
+            ) AS percent_tumor,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.percent_necrosis IS NULL OR x.percent_necrosis IN acc THEN acc ELSE acc + [x.percent_necrosis] END
+            ) AS percent_necrosis,
             [file_guid] AS files,
             combined_filters AS combined_filters
         page_size: 1000
