@@ -5163,7 +5163,6 @@ Indices:
         - md5sum
         - file_mapping_level
         - file_access
-        - file_size
         - library_selection
         - library_strategy
         - library_source_material
