@@ -1,5 +1,5 @@
 # Indices settings
-Indices:
+indices:
   # TODO: work on the cypher queries for the index
   - index_name: cohorts
     type: neo4j
