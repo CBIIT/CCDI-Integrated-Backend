@@ -212,6 +212,8 @@ type SearchParticipantsResult {
     participantCountBySexAtBirth: [SearchParticipantsReturnObject]
     participantCountByRace: [SearchParticipantsReturnObject]
     participantCountByDataCategory: [SearchParticipantsReturnObject]
+    participantCountByDiagnosisAnatomicSite: [SearchParticipantsReturnObject]
+    participantCountByDiagnosisCategory: [SearchParticipantsReturnObject]
 }
 
 type CohortManifestResult {

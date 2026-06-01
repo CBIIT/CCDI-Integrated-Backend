@@ -30,6 +30,7 @@ type SearchParticipantsResult {
     filterParticipantCountByRace: [SearchParticipantsReturnObject]
     filterParticipantCountByDiagnosisAge: RangeCount
     filterParticipantCountByDiagnosisAnatomicSite: [SearchParticipantsReturnObject]
+    filterParticipantCountByDiagnosisCategory: [SearchParticipantsReturnObject]
     filterParticipantCountByDiseasePhase: [SearchParticipantsReturnObject]
     filterParticipantCountByDiagnosisClassificationSystem: [SearchParticipantsReturnObject]
     filterParticipantCountByDiagnosisVerificationStatus: [SearchParticipantsReturnObject]
@@ -71,6 +72,8 @@ type SearchParticipantsResult {
     participantCountBySexAtBirth: [SearchParticipantsReturnObject]
     participantCountByRace: [SearchParticipantsReturnObject]
     participantCountByDataCategory: [SearchParticipantsReturnObject]
+    participantCountByDiagnosisAnatomicSite: [SearchParticipantsReturnObject]
+    participantCountByDiagnosisCategory: [SearchParticipantsReturnObject]
 }
 
 schema {
