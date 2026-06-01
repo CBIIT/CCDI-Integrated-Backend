@@ -215,6 +215,8 @@ type SearchParticipantsResult {
     fileCountByDataCategory: [SearchParticipantsReturnObject]
     fileCountByFileType: [SearchParticipantsReturnObject]
     fileCountByLibraryStrategy: [SearchParticipantsReturnObject]
+    participantCountByDiagnosisAnatomicSite: [SearchParticipantsReturnObject]
+    participantCountByDiagnosisCategory: [SearchParticipantsReturnObject]
 }
 
 type CohortManifestResult {

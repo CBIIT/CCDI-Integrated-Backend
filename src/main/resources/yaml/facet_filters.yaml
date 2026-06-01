@@ -17,7 +17,7 @@ diagnoses_table:
   - agg_name: diagnosis_anatomic_site
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountByDiagnosisAnatomicSite
-    widget_count_name: null
+    widget_count_name: participantCountByDiagnosisAnatomicSite
   - agg_name: diagnosis_basis
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountByDiagnosisBasis
