@@ -58,11 +58,11 @@ files_table:
   - agg_name: data_category
     cardinality_agg_name: null
     filter_count_name: filterFileCountByDataCategory
-    widget_count_name: null
+    widget_count_name: fileCountByDataCategory
   - agg_name: file_type
     cardinality_agg_name: null
     filter_count_name: filterFileCountByFileType
-    widget_count_name: null
+    widget_count_name: fileCountByFileType
   - agg_name: file_mapping_level
     cardinality_agg_name: null
     filter_count_name: filterFileCountByFileMappingLevel
@@ -82,7 +82,7 @@ files_table:
   - agg_name: library_strategy
     cardinality_agg_name: null
     filter_count_name: filterFileCountByLibraryStrategy
-    widget_count_name: null
+    widget_count_name: fileCountByLibraryStrategy
 genetic_analyses_table:
   - agg_name: alteration
     cardinality_agg_name: pid
