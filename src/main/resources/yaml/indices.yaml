@@ -5737,7 +5737,7 @@ Indices:
             null AS percent_necrosis,
             [file_guid] AS files,
             combined_filters AS combined_filters
-        page_size: 100
+        page_size: 1000
       - name: "combined_filters_sample_level"
         query: |
           MATCH (f:
