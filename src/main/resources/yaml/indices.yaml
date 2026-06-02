@@ -1,5 +1,5 @@
 # Indices settings
-Indices:
+indices:
   # TODO: work on the cypher queries for the index
   - index_name: cohorts
     type: neo4j
@@ -5148,10 +5148,18 @@ Indices:
         - study_status
         - study_acronym
         - study_name
+        - anatomic_site
+        - participant_age_at_collection
+        - sample_tumor_status
+        - tumor_spatial_extent
+        - sample_description
+        - percent_tumor
+        - percent_necrosis
         - file_name
         - data_category
         - file_type
         - file_description
+        - consent_codes
         - md5sum
         - file_mapping_level
         - file_access
@@ -5159,6 +5167,8 @@ Indices:
         - library_strategy
         - library_source_material
         - library_source_molecule
+        - fixation_embedding_method
+        - staining_method
         - combined_filters.participant_id
         - combined_filters.race
         - combined_filters.sex_at_birth
@@ -5260,6 +5270,8 @@ Indices:
             first_file.library_source_material AS library_source_material,
             first_file.library_source_molecule AS library_source_molecule,
             first_file.library_strategy AS library_strategy,
+            first_file.fixation_embedding_method AS fixation_embedding_method,
+            first_file.staining_method AS staining_method,
             [guid] as files
         page_size: 5000
       - name: "combined_filters_study_level"
@@ -5278,9 +5290,17 @@ Indices:
           RETURN
             file_guid AS guid,
             file_guid AS file_id,
-            [] AS pid,
-            [] AS participant_id,
-            [] AS sample_id,
+            null AS pid,
+            null AS participant_id,
+            null AS sample_id,
+            null As consent_codes, // study level files should not have consent codes
+            null AS anatomic_site,
+            null AS participant_age_at_collection,
+            null AS sample_tumor_status,
+            null AS tumor_spatial_extent,
+            null AS sample_description,
+            null AS percent_tumor,
+            null AS percent_necrosis,
             [file_guid] AS files,
             [{
               participant_id: null,
@@ -5610,9 +5630,22 @@ Indices:
             collect(DISTINCT treatment_filters) AS treatment_filter_lists,
             collect(DISTINCT treatment_response_filters) AS treatment_response_filter_lists
 
+          OPTIONAL MATCH (p)-[:of_participant]->(cg:consent_group)
+
           WITH
             file_guid,
             p,
+            raw_sample_ids,
+            sdga_filter_lists,
+            survival_filter_lists,
+            treatment_filter_lists,
+            treatment_response_filter_lists,
+            [x IN collect(DISTINCT cg.consent_group_name) WHERE x IS NOT NULL] AS consent_codes_for_participant
+
+          WITH
+            file_guid,
+            p,
+            consent_codes_for_participant,
             [x IN raw_sample_ids WHERE x IS NOT NULL] AS sample_ids_for_participant,
             reduce(acc = [], xs IN sdga_filter_lists | acc + xs) AS raw_sdga_filters,
             reduce(acc = [], xs IN survival_filter_lists | acc + xs) AS raw_survival_filters,
@@ -5624,6 +5657,7 @@ Indices:
             {
               pids: CASE WHEN p IS NOT NULL THEN [p.guid] ELSE [] END,
               participant_ids: CASE WHEN p IS NOT NULL THEN [p.participant_id] ELSE [] END,
+              consent_codes: consent_codes_for_participant,
               sample_ids: sample_ids_for_participant,
               combined_filters: [{
                 participant_id: CASE WHEN p IS NOT NULL THEN p.participant_id ELSE null END,
@@ -5660,6 +5694,7 @@ Indices:
             file_guid,
             reduce(acc = [], r IN output_rows | acc + r.pids) AS raw_pids,
             reduce(acc = [], r IN output_rows | acc + r.participant_ids) AS raw_participant_ids,
+            reduce(acc = [], r IN output_rows | acc + r.consent_codes) AS raw_consent_codes,
             reduce(acc = [], r IN output_rows | acc + r.sample_ids) AS raw_sample_ids,
             reduce(acc = [], r IN output_rows | acc + r.combined_filters) AS raw_combined_filters
 
@@ -5673,6 +5708,10 @@ Indices:
             reduce(acc = [], x IN raw_participant_ids |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
             ) AS participant_ids,
+
+            reduce(acc = [], x IN raw_consent_codes |
+              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
+            ) AS consent_codes,
 
             reduce(acc = [], x IN raw_sample_ids |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
@@ -5688,9 +5727,17 @@ Indices:
             pids AS pid,
             participant_ids AS participant_id,
             null AS sample_id, // No sample ids for participant level files
+            consent_codes AS consent_codes,
+            null AS anatomic_site,
+            null AS participant_age_at_collection,
+            null AS sample_tumor_status,
+            null AS tumor_spatial_extent,
+            null AS sample_description,
+            null AS percent_tumor,
+            null AS percent_necrosis,
             [file_guid] AS files,
             combined_filters AS combined_filters
-        page_size: 100
+        page_size: 1000
       - name: "combined_filters_sample_level"
         query: |
           MATCH (f:
@@ -5754,7 +5801,7 @@ Indices:
             c1,
             c2,
             collect(DISTINCT CASE
-              WHEN sm1_model IS NOT NULL THEN {
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL THEN {
                 p: p,
                 sm: sm1_model,
                 source_sm: sm1_model
@@ -5762,7 +5809,7 @@ Indices:
             END)
             +
             collect(DISTINCT CASE
-              WHEN sm2_model IS NOT NULL THEN {
+              WHEN p IS NOT NULL AND sm2_model IS NOT NULL THEN {
                 p: p,
                 sm: sm2_model,
                 source_sm: sm2_model
@@ -5770,7 +5817,7 @@ Indices:
             END)
             +
             collect(DISTINCT CASE
-              WHEN sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
                 p: p,
                 sm: sm1_model,
                 source_sm: sm2_model
@@ -5778,7 +5825,7 @@ Indices:
             END)
             +
             collect(DISTINCT CASE
-              WHEN sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
                 p: p,
                 sm: sm2_model,
                 source_sm: sm1_model
@@ -5798,7 +5845,7 @@ Indices:
             c2,
             c3,
             collect(DISTINCT CASE
-              WHEN sm1_model IS NOT NULL THEN {
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL THEN {
                 p: p,
                 sm: sm1_model,
                 source_sm: sm1_model
@@ -5806,7 +5853,7 @@ Indices:
             END)
             +
             collect(DISTINCT CASE
-              WHEN sm2_model IS NOT NULL THEN {
+              WHEN p IS NOT NULL AND sm2_model IS NOT NULL THEN {
                 p: p,
                 sm: sm2_model,
                 source_sm: sm2_model
@@ -5814,7 +5861,7 @@ Indices:
             END)
             +
             collect(DISTINCT CASE
-              WHEN sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
                 p: p,
                 sm: sm1_model,
                 source_sm: sm2_model
@@ -5822,7 +5869,7 @@ Indices:
             END)
             +
             collect(DISTINCT CASE
-              WHEN sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
                 p: p,
                 sm: sm2_model,
                 source_sm: sm1_model
@@ -5876,10 +5923,14 @@ Indices:
           UNWIND CASE WHEN size(diagnoses) = 0 THEN [null] ELSE diagnoses END AS dg
           UNWIND CASE WHEN size(gas) = 0 THEN [null] ELSE gas END AS ga
 
+          // ── group by (file_guid, p) here to collapse sm rows ──────────────
+          // sample_map collected as DISTINCT to dedup across the dg×ga explosion;
+          // survival/treatment matched AFTER this point so they are collected
+          // exactly once per participant, not once per (participant, sm) row.
           WITH
             file_guid,
             p,
-            sm,
+            collect(distinct sm) AS samples,
             collect(DISTINCT {
               sample_anatomic_site: CASE WHEN sm IS NOT NULL THEN sm.anatomic_site ELSE null END,
               participant_age_at_collection: CASE WHEN sm IS NOT NULL THEN sm.participant_age_at_collection ELSE null END,
@@ -5901,21 +5952,15 @@ Indices:
               status: CASE WHEN ga IS NOT NULL THEN ga.status ELSE null END
             }) AS sample_diagnosis_genetic_analysis_filters
 
+          // ── survival/treatment matched after (file_guid, p) grouping ──────
           OPTIONAL MATCH (p)<-[:of_survival]-(su:survival)
 
           WITH
             file_guid,
             p,
-            sm,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
-            collect(DISTINCT su) AS survival_nodes
-
-          WITH
-            file_guid,
-            p,
-            sm,
-            sample_diagnosis_genetic_analysis_filters,
-            [x IN survival_nodes WHERE x IS NOT NULL |
+            [x IN collect(DISTINCT su) WHERE x IS NOT NULL |
               {
                 last_known_survival_status: x.last_known_survival_status,
                 cause_of_death: x.cause_of_death,
@@ -5929,78 +5974,67 @@ Indices:
           WITH
             file_guid,
             p,
-            sm,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
             survival_filters,
-            collect(DISTINCT tchemo) AS chemotherapy_nodes
-
-          OPTIONAL MATCH (p)<-[:of_treatment_radiation]-(trad:treatment_radiation)
-
-          WITH
-            file_guid,
-            p,
-            sm,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            chemotherapy_nodes,
-            collect(DISTINCT trad) AS radiation_nodes
-
-          OPTIONAL MATCH (p)<-[:of_treatment_surgery]-(tsurg:treatment_surgery)
-
-          WITH
-            file_guid,
-            p,
-            sm,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            chemotherapy_nodes,
-            radiation_nodes,
-            collect(DISTINCT tsurg) AS surgery_nodes
-
-          OPTIONAL MATCH (p)<-[:of_treatment_other]-(tother:treatment_other)
-
-          WITH
-            file_guid,
-            p,
-            sm,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            chemotherapy_nodes,
-            radiation_nodes,
-            surgery_nodes,
-            collect(DISTINCT tother) AS other_treatment_nodes
-
-          WITH
-            file_guid,
-            p,
-            sm,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            [x IN chemotherapy_nodes WHERE x IS NOT NULL |
+            [x IN collect(DISTINCT tchemo) WHERE x IS NOT NULL |
               {
                 treatment_type: coalesce(x.treatment_type, x.chemotherapy_type, 'chemotherapy'),
                 treatment_agent: coalesce(x.treatment_agent, x.chemotherapy_agent),
                 age_at_treatment_start: x.age_at_treatment_start,
                 age_at_treatment_end: x.age_at_treatment_end
               }
-            ] AS chemo_filters,
-            [x IN radiation_nodes WHERE x IS NOT NULL |
+            ] AS chemo_filters
+
+          OPTIONAL MATCH (p)<-[:of_treatment_radiation]-(trad:treatment_radiation)
+
+          WITH
+            file_guid,
+            p,
+            samples,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            chemo_filters,
+            [x IN collect(DISTINCT trad) WHERE x IS NOT NULL |
               {
                 treatment_type: coalesce(x.treatment_type, x.radiation_type, 'radiation'),
                 treatment_agent: coalesce(x.treatment_agent, x.radiation_agent),
                 age_at_treatment_start: x.age_at_treatment_start,
                 age_at_treatment_end: x.age_at_treatment_end
               }
-            ] AS radiation_filters,
-            [x IN surgery_nodes WHERE x IS NOT NULL |
+            ] AS radiation_filters
+
+          OPTIONAL MATCH (p)<-[:of_treatment_surgery]-(tsurg:treatment_surgery)
+
+          WITH
+            file_guid,
+            p,
+            samples,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            chemo_filters,
+            radiation_filters,
+            [x IN collect(DISTINCT tsurg) WHERE x IS NOT NULL |
               {
                 treatment_type: coalesce(x.treatment_type, x.surgery_type, 'surgery'),
                 treatment_agent: coalesce(x.treatment_agent, x.surgery_agent),
                 age_at_treatment_start: x.age_at_treatment_start,
                 age_at_treatment_end: x.age_at_treatment_end
               }
-            ] AS surgery_filters,
-            [x IN other_treatment_nodes WHERE x IS NOT NULL |
+            ] AS surgery_filters
+
+          OPTIONAL MATCH (p)<-[:of_treatment_other]-(tother:treatment_other)
+
+          WITH
+            file_guid,
+            p,
+            samples,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            chemo_filters,
+            radiation_filters,
+            surgery_filters,
+            [x IN collect(DISTINCT tother) WHERE x IS NOT NULL |
               {
                 treatment_type: coalesce(x.treatment_type, x.other_treatment_type, 'other'),
                 treatment_agent: coalesce(x.treatment_agent, x.other_treatment_agent),
@@ -6009,10 +6043,10 @@ Indices:
               }
             ] AS other_filters
 
-          WITH 
+          WITH
             file_guid,
             p,
-            sm,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
             survival_filters,
             chemo_filters + radiation_filters + surgery_filters + other_filters AS treatment_filters
@@ -6022,20 +6056,11 @@ Indices:
           WITH
             file_guid,
             p,
-            sm,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
             survival_filters,
             treatment_filters,
-            collect(DISTINCT tresp) AS response_nodes
-
-          WITH
-            file_guid,
-            p,
-            sm,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            treatment_filters,
-            [x IN response_nodes WHERE x IS NOT NULL |
+            [x IN collect(DISTINCT tresp) WHERE x IS NOT NULL |
               {
                 response_category: x.response_category,
                 age_at_response: x.age_at_response,
@@ -6044,50 +6069,33 @@ Indices:
               }
             ] AS treatment_response_filters
 
-          WITH
-            file_guid,
-            p,
-            collect(DISTINCT sm.sample_id) AS raw_sample_ids,
-            collect(DISTINCT sample_diagnosis_genetic_analysis_filters) AS sdga_filter_lists,
-            collect(DISTINCT survival_filters) AS survival_filter_lists,
-            collect(DISTINCT treatment_filters) AS treatment_filter_lists,
-            collect(DISTINCT treatment_response_filters) AS treatment_response_filter_lists
+          OPTIONAL MATCH (p)-[:of_participant]->(cg:consent_group)
 
           WITH
             file_guid,
             p,
-            [x IN raw_sample_ids WHERE x IS NOT NULL] AS sample_ids_for_participant,
-            reduce(acc = [], xs IN sdga_filter_lists | acc + xs) AS raw_sdga_filters,
-            reduce(acc = [], xs IN survival_filter_lists | acc + xs) AS raw_survival_filters,
-            reduce(acc = [], xs IN treatment_filter_lists | acc + xs) AS raw_treatment_filters,
-            reduce(acc = [], xs IN treatment_response_filter_lists | acc + xs) AS raw_treatment_response_filters
+            [x IN samples WHERE x IS NOT NULL] AS sample_maps_for_participant,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            treatment_filters,
+            treatment_response_filters,
+            [x IN collect(DISTINCT cg.consent_group_name) WHERE x IS NOT NULL] AS consent_codes_for_participant
 
           WITH
             file_guid,
             {
               pids: CASE WHEN p IS NOT NULL THEN [p.guid] ELSE [] END,
               participant_ids: CASE WHEN p IS NOT NULL THEN [p.participant_id] ELSE [] END,
-              sample_ids: sample_ids_for_participant,
+              consent_codes: consent_codes_for_participant,
+              sample_maps: sample_maps_for_participant,
               combined_filters: [{
                 participant_id: CASE WHEN p IS NOT NULL THEN p.participant_id ELSE null END,
                 race: CASE WHEN p IS NOT NULL THEN p.race ELSE null END,
                 sex_at_birth: CASE WHEN p IS NOT NULL THEN p.sex_at_birth ELSE null END,
-                sample_diagnosis_genetic_analysis_filters:
-                  reduce(acc = [], x IN raw_sdga_filters |
-                    CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-                  ),
-                survival_filters:
-                  reduce(acc = [], x IN raw_survival_filters |
-                    CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-                  ),
-                treatment_filters:
-                  reduce(acc = [], x IN raw_treatment_filters |
-                    CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-                  ),
-                treatment_response_filters:
-                  reduce(acc = [], x IN raw_treatment_response_filters |
-                    CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-                  )
+                sample_diagnosis_genetic_analysis_filters: sample_diagnosis_genetic_analysis_filters,
+                survival_filters: survival_filters,
+                treatment_filters: treatment_filters,
+                treatment_response_filters: treatment_response_filters
               }]
             } AS output_row
 
@@ -6099,7 +6107,8 @@ Indices:
             file_guid,
             reduce(acc = [], r IN output_rows | acc + r.pids) AS raw_pids,
             reduce(acc = [], r IN output_rows | acc + r.participant_ids) AS raw_participant_ids,
-            reduce(acc = [], r IN output_rows | acc + r.sample_ids) AS raw_sample_ids,
+            reduce(acc = [], r IN output_rows | acc + r.consent_codes) AS raw_consent_codes,
+            reduce(acc = [], r IN output_rows | acc + r.sample_maps) AS raw_sample_maps,
             reduce(acc = [], r IN output_rows | acc + r.combined_filters) AS raw_combined_filters
 
           WITH
@@ -6110,9 +6119,12 @@ Indices:
             reduce(acc = [], x IN raw_participant_ids |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
             ) AS participant_ids,
-            reduce(acc = [], x IN raw_sample_ids |
+            reduce(acc = [], x IN raw_consent_codes |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-            ) AS sample_ids,
+            ) AS consent_codes,
+            reduce(acc = [], x IN raw_sample_maps |
+              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
+            ) AS sample_maps,
             reduce(acc = [], x IN raw_combined_filters |
               CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
             ) AS combined_filters
@@ -6122,7 +6134,31 @@ Indices:
             file_guid AS file_id,
             pids AS pid,
             participant_ids AS participant_id,
-            sample_ids AS sample_id,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.sample_id IS NULL OR x.sample_id IN acc THEN acc ELSE acc + [x.sample_id] END
+            ) AS sample_id,
+            consent_codes AS consent_codes,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.anatomic_site IS NULL OR x.anatomic_site IN acc THEN acc ELSE acc + [x.anatomic_site] END
+            ) AS anatomic_site,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.participant_age_at_collection IS NULL OR x.participant_age_at_collection IN acc THEN acc ELSE acc + [x.participant_age_at_collection] END
+            ) AS participant_age_at_collection,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.sample_tumor_status IS NULL OR x.sample_tumor_status IN acc THEN acc ELSE acc + [x.sample_tumor_status] END
+            ) AS sample_tumor_status,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.tumor_spatial_extent IS NULL OR x.tumor_spatial_extent IN acc THEN acc ELSE acc + [x.tumor_spatial_extent] END
+            ) AS tumor_spatial_extent,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.sample_description IS NULL OR x.sample_description IN acc THEN acc ELSE acc + [x.sample_description] END
+            ) AS sample_description,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.percent_tumor IS NULL OR x.percent_tumor IN acc THEN acc ELSE acc + [x.percent_tumor] END
+            ) AS percent_tumor,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.percent_necrosis IS NULL OR x.percent_necrosis IN acc THEN acc ELSE acc + [x.percent_necrosis] END
+            ) AS percent_necrosis,
             [file_guid] AS files,
             combined_filters AS combined_filters
         page_size: 1000
