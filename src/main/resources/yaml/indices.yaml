@@ -5930,18 +5930,7 @@ indices:
           WITH
             file_guid,
             p,
-            collect(DISTINCT CASE
-              WHEN sm IS NOT NULL THEN {
-                sample_id: sm.sample_id,
-                anatomic_site: sm.anatomic_site,
-                participant_age_at_collection: sm.participant_age_at_collection,
-                sample_tumor_status: sm.sample_tumor_status,
-                tumor_spatial_extent: sm.tumor_spatial_extent,
-                sample_description: sm.sample_description,
-                percent_tumor: sm.percent_tumor,
-                percent_necrosis: sm.percent_necrosis
-              }
-            END) AS raw_sample_maps,
+            collect(distinct sm) AS samples,
             collect(DISTINCT {
               sample_anatomic_site: CASE WHEN sm IS NOT NULL THEN sm.anatomic_site ELSE null END,
               participant_age_at_collection: CASE WHEN sm IS NOT NULL THEN sm.participant_age_at_collection ELSE null END,
@@ -5969,7 +5958,7 @@ indices:
           WITH
             file_guid,
             p,
-            raw_sample_maps,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
             [x IN collect(DISTINCT su) WHERE x IS NOT NULL |
               {
@@ -5985,7 +5974,7 @@ indices:
           WITH
             file_guid,
             p,
-            raw_sample_maps,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
             survival_filters,
             [x IN collect(DISTINCT tchemo) WHERE x IS NOT NULL |
@@ -6002,7 +5991,7 @@ indices:
           WITH
             file_guid,
             p,
-            raw_sample_maps,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
             survival_filters,
             chemo_filters,
@@ -6020,7 +6009,7 @@ indices:
           WITH
             file_guid,
             p,
-            raw_sample_maps,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
             survival_filters,
             chemo_filters,
@@ -6039,7 +6028,7 @@ indices:
           WITH
             file_guid,
             p,
-            raw_sample_maps,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
             survival_filters,
             chemo_filters,
@@ -6057,7 +6046,7 @@ indices:
           WITH
             file_guid,
             p,
-            raw_sample_maps,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
             survival_filters,
             chemo_filters + radiation_filters + surgery_filters + other_filters AS treatment_filters
@@ -6067,7 +6056,7 @@ indices:
           WITH
             file_guid,
             p,
-            raw_sample_maps,
+            samples,
             sample_diagnosis_genetic_analysis_filters,
             survival_filters,
             treatment_filters,
@@ -6085,7 +6074,7 @@ indices:
           WITH
             file_guid,
             p,
-            [x IN raw_sample_maps WHERE x IS NOT NULL] AS sample_maps_for_participant,
+            [x IN samples WHERE x IS NOT NULL] AS sample_maps_for_participant,
             sample_diagnosis_genetic_analysis_filters,
             survival_filters,
             treatment_filters,
