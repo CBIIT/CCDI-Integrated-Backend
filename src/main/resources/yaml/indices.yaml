@@ -2,7 +2,7 @@
 indices:
   # TODO: work on the cypher queries for the index
   - index_name: cohorts
-    type: neo4j
+    id_field: guid
     mapping:
       keyword:
         - id
@@ -23,7 +23,7 @@ indices:
         - diagnoses.diagnosis_comment
         - diagnoses.disease_phase
         - diagnoses.toronto_childhood_cancer_staging
-        - diagnoses.tumor_spatial_extent
+        - diagnoses.tumor_classification
         - diagnoses.tumor_grade
         - diagnoses.tumor_stage_clinical_m
         - diagnoses.tumor_stage_clinical_n
@@ -67,7 +67,7 @@ indices:
         - samples.sample_id
         - samples.anatomic_site
         - samples.sample_tumor_status
-        - samples.tumor_spatial_extent
+        - samples.tumor_classification
         - samples.sample_description
         - files.id
         - files.file_id
@@ -91,172 +91,61 @@ indices:
         - treatments.age_at_treatment_start
         - treatment_responses.age_at_response
         - samples.participant_age_at_collection
-    cypher_queries:
-      - query: |
-          MATCH (p:participant)-[:of_participant]->(cg:consent_group)-[:of_consent_group]->(stu:study)
-          WITH p
+    initial_query:
+      query: |
+        MATCH (p:participant)
+        WITH p
+        SKIP $skip LIMIT $limit
+        RETURN p.guid AS guid
+      page_size: 1000
+    update_queries:
+      - name: "study_properties"
+        query: |
+          MATCH
+            // Participant -> Consent Group -> Study
+            (p:participant),
+            (cg:consent_group)<-[:of_participant]->(p),
+            (stu:study)<-[:of_consent_group]-(cg)
+          WITH p, stu
           SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (d:diagnosis)-[*..4]->(p)
-          OPTIONAL MATCH (ga:genetic_analysis)-[*..4]->(p)
-          OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
-          OPTIONAL MATCH (t:treatment)-[:of_treatment]->(p)
-          OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
-          OPTIONAL MATCH (s:sample)-[*..4]->(p)
-          OPTIONAL MATCH (file)-[*..4]->(p)
-          where (file: clinical_measure_file or file: generic_file or file: radiology_file or file: sequencing_file or file: methylation_array_file or file: pathology_file or file: cytogenomic_file)
           RETURN
-            p.id AS id,
-            p.participant_id AS participant_id,
-            p.race AS race,
-            p.sex_at_birth AS sex_at_birth,
-            cg.consent_group_name AS consent_group_name,
-            cg.consent_group_number AS consent_group_number,
+            p.guid AS guid,
             stu.study_id AS study_id,
             stu.dbgap_accession AS dbgap_accession,
-            (CASE
-              WHEN COUNT(DISTINCT d) > 0 THEN COLLECT(DISTINCT {
-                id: d.id,
-                diagnosis_id: d.diagnosis_id,
-                age_at_diagnosis: d.age_at_diagnosis,
-                anatomic_site: d.anatomic_site,
-                diagnosis: d.diagnosis,
-                diagnosis_basis: d.diagnosis_basis,
-                diagnosis_classification_system: d.diagnosis_classification_system,
-                diagnosis_comment: d.diagnosis_comment,
-                disease_phase: d.disease_phase,
-                toronto_childhood_cancer_staging: d.toronto_childhood_cancer_staging,
-                tumor_spatial_extent: d.tumor_spatial_extent,
-                diagnosis_category: d.diagnosis_category,
-                tumor_grade: d.tumor_grade,
-                tumor_stage_clinical_m: d.tumor_stage_clinical_m,
-                tumor_stage_clinical_n: d.tumor_stage_clinical_n,
-                tumor_stage_clinical_t: d.tumor_stage_clinical_t
-              })
-              ELSE []
-            END) AS diagnoses,
-            (CASE
-              WHEN COUNT(DISTINCT ga) > 0 THEN COLLECT(DISTINCT {
-                id: ga.id,
-                genetic_analysis_id: ga.genetic_analysis_id,
-                alteration: ga.alteration,
-                alteration_effect: ga.alteration_effect,
-                alteration_type: ga.alteration_type,
-                chromosome: ga.chromosome,
-                cytoband: ga.cytoband,
-                exon: ga.exon,
-                fusion_partner_exon: ga.fusion_partner_exon,
-                fusion_partner_gene: ga.fusion_partner_gene,
-                gene_symbol: case when ga is not null then apoc.coll.toSet(CASE
-                                        WHEN ga.gene_symbol STARTS WITH '[' AND ga.gene_symbol ENDS WITH ']' THEN
-                                          [x IN split(replace(substring(ga.gene_symbol, 1, size(ga.gene_symbol)-2), "'", ""), ",") | 
-                                            CASE 
-                                              WHEN apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') = '' 
-                                              THEN 'Not Reported' 
-                                              ELSE apoc.text.replace(trim(x), '^[^A-Za-z0-9]+', '') 
-                                            END
-                                          ]
-                                        ELSE
-                                          [CASE 
-                                            WHEN apoc.text.replace(trim(ga.gene_symbol), '^[^A-Za-z0-9]+', '') = '' 
-                                            THEN 'Not Reported' 
-                                            ELSE apoc.text.replace(trim(ga.gene_symbol), '^[^A-Za-z0-9]+', '') 
-                                          END]
-                                        END) else null end,
-                genomic_source_category: ga.genomic_source_category,
-                hgvs_coding: ga.hgvs_coding,
-                hgvs_genome: ga.hgvs_genome,
-                hgvs_protein: ga.hgvs_protein,
-                reference_genome: ga.reference_genome,
-                reported_significance: ga.reported_significance,
-                reported_significance_system: ga.reported_significance_system,
-                status: ga.status,
-                test: ga.test
-              })
-              ELSE []
-            END) AS genetic_analyses,
-            (CASE
-              WHEN COUNT(DISTINCT sur) > 0 THEN COLLECT(DISTINCT {
-                id: sur.id,
-                survival_id: sur.survival_id,
-                age_at_event_free_survival_status: sur.age_at_event_free_survival_status,
-                age_at_last_known_survival_status: sur.age_at_last_known_survival_status,
-                cause_of_death: sur.cause_of_death,
-                event_free_survival_status: sur.event_free_survival_status,
-                first_event: sur.first_event,
-                last_known_survival_status: sur.last_known_survival_status
-              })
-              ELSE []
-            END) AS survivals,
-            (CASE
-              WHEN COUNT(DISTINCT t) > 0 THEN COLLECT(DISTINCT {
-                id: t.id,
-                treatment_id: t.treatment_id,
-                age_at_treatment_end: t.age_at_treatment_end,
-                age_at_treatment_start: t.age_at_treatment_start,
-                treatment_agent: apoc.text.split(t.treatment_agent, ';'),
-                treatment_type: t.treatment_type
-              })
-              ELSE []
-            END) AS treatments,
-            (CASE
-              WHEN COUNT(DISTINCT tresp) > 0 THEN COLLECT(DISTINCT {
-                id: tresp.id,
-                treatment_response_id: tresp.treatment_response_id,
-                age_at_response: tresp.age_at_response,
-                response: tresp.response,
-                response_category: tresp.response_category,
-                response_system: tresp.response_system
-              })
-              ELSE []
-            END) AS treatment_responses,
-            (CASE
-              WHEN COUNT(DISTINCT s) > 0 THEN COLLECT(DISTINCT {
-                id: s.id,
-                sample_id: s.sample_id,
-                anatomic_site: s.anatomic_site,
-                participant_age_at_collection: s.participant_age_at_collection,
-                sample_tumor_status: s.sample_tumor_status,
-                tumor_spatial_extent: s.tumor_spatial_extent,
-                sample_description: s.sample_description
-              })
-              ELSE []
-            END) AS samples,
-            (CASE
-              WHEN COUNT(DISTINCT file) > 0 THEN COLLECT(DISTINCT {
-                id: file.dcf_indexd_guid,
-                file_id: CASE LABELS(file)[0]
-                      WHEN 'clinical_measure_file' THEN file.dcf_indexd_guid
-                      WHEN 'generic_file' THEN file.dcf_indexd_guid
-                      WHEN 'radiology_file' THEN file.dcf_indexd_guid
-                      WHEN 'sequencing_file' THEN file.dcf_indexd_guid
-                      WHEN 'methylation_array_file' THEN file.dcf_indexd_guid
-                      WHEN 'pathology_file' THEN file.dcf_indexd_guid
-                      WHEN 'cytogenomic_file' THEN file.dcf_indexd_guid
-                      ELSE null END,
-                dcf_indexd_guid: file.dcf_indexd_guid,
-                file_name: file.file_name,
-                file_access: file.file_access,
-                data_category: file.data_category,
-                file_type: file.file_type,
-                file_description: file.file_description,
-                file_size: file.file_size,
-                md5sum: file.md5sum,
-                library_selection: CASE LABELS(file)[0]
-                                    WHEN 'sequencing_file' THEN file.library_selection
-                                    ELSE null END,
-                library_source_material: CASE LABELS(file)[0]
-                                    WHEN 'sequencing_file' THEN file.library_source_material
-                                    ELSE null END,
-                library_source_molecule: CASE LABELS(file)[0]
-                                    WHEN 'sequencing_file' THEN file.library_source_molecule
-                                    ELSE null END,
-                library_strategy: CASE LABELS(file)[0]
-                                    WHEN 'sequencing_file' THEN file.library_strategy
-                                    ELSE null END
-              })
-              ELSE []
-            END) AS files
-        page_size: 100
+            stu.study_phase AS study_status,
+            stu.study_acronym AS study_acronym,
+            stu.study_name AS study_name
+        page_size: 1000
+      - name: "consent_group_properties"
+        query: |
+          MATCH
+            // Participant -> Consent Group
+            (p:participant),
+            (cg:consent_group)<-[:of_participant]->(p)
+          WITH p, cg
+          SKIP $skip LIMIT $limit
+          RETURN
+            p.guid AS guid,
+            cg.consent_group_name AS consent_group_name,
+            cg.consent_group_number AS consent_group_number
+        page_size: 1000
+      - name: "participant_properties"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          RETURN
+            p.guid AS guid,
+            p.participant_id AS participant_id,
+            p.race AS race,
+            reduce(result = '', x IN p.race |
+              CASE 
+                WHEN result = "" THEN x
+                ELSE result + ";" + x
+              END
+            ) AS race_str,
+            p.sex_at_birth AS sex_at_birth
+        page_size: 1000
 
   # participant centric index for study and other facets
   - index_name: study_participants_faceted
