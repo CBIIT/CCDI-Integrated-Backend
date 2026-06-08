@@ -2663,6 +2663,13 @@ indices:
         query: |
           CALL {
             MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p:participant)
+            WITH
+              p,
+              tchemo,
+              CASE
+                WHEN tchemo.chemotherapy_type IS NULL OR size(tchemo.chemotherapy_type) = 0 THEN ['chemotherapy']
+                ELSE [item IN tchemo.chemotherapy_type WHERE item IS NOT NULL | trim(item)]
+              END AS treatment_type
             RETURN
               'treatment_chemotherapy:' + coalesce(tchemo.id, tchemo.guid, tchemo.treatment_chemotherapy_id) AS id,
               coalesce(tchemo.treatment_chemotherapy_id, tchemo.id, tchemo.guid) AS treatment_id,
@@ -2670,13 +2677,17 @@ indices:
               tchemo.age_at_treatment_end AS age_at_treatment_end,
               tchemo.age_at_treatment_start AS age_at_treatment_start,
               CASE
-                WHEN coalesce(tchemo.treatment_agent, tchemo.chemotherapy_agent) IS NULL THEN NULL
-                ELSE replace(replace(replace(replace(toString(coalesce(tchemo.treatment_agent, tchemo.chemotherapy_agent)), '[', ''), ']', ''), ', ', ';'), '"', '')
-              END AS treatment_agent_str,
-              CASE
-                WHEN coalesce(tchemo.treatment_type, tchemo.chemotherapy_type, 'chemotherapy') IS NULL THEN NULL
-                ELSE replace(replace(replace(replace(toString(coalesce(tchemo.treatment_type, tchemo.chemotherapy_type, 'chemotherapy')), '[', ''), ']', ''), ', ', ';'), '"', '')
-              END AS treatment_type_str
+                WHEN tchemo.chemotherapy_agent IS NULL OR tchemo.chemotherapy_agent = '' THEN []
+                ELSE [item IN split(tchemo.chemotherapy_agent, ';') | trim(item)]
+              END AS treatment_agent,
+              tchemo.chemotherapy_agent AS treatment_agent_str,
+              treatment_type,
+              reduce(result = '', item IN treatment_type |
+                CASE
+                  WHEN result = '' THEN item
+                  ELSE result + ';' + item
+                END
+              ) AS treatment_type_str
 
             UNION
 
@@ -2688,12 +2699,17 @@ indices:
               trad.age_at_treatment_end AS age_at_treatment_end,
               trad.age_at_treatment_start AS age_at_treatment_start,
               CASE
-                WHEN coalesce(trad.treatment_agent, trad.radiation_therapy_type) IS NULL THEN NULL
-                ELSE replace(replace(replace(replace(toString(coalesce(trad.treatment_agent, trad.radiation_therapy_type)), '[', ''), ']', ''), ', ', ';'), '"', '')
-              END AS treatment_agent_str,
+                WHEN trad.radiation_therapy_type IS NULL OR trad.radiation_therapy_type = '' THEN []
+                ELSE [trim(trad.radiation_therapy_type)]
+              END AS treatment_agent,
+              trad.radiation_therapy_type AS treatment_agent_str,
               CASE
-                WHEN coalesce(trad.treatment_type, 'radiation') IS NULL THEN NULL
-                ELSE replace(replace(replace(replace(toString(coalesce(trad.treatment_type, 'radiation')), '[', ''), ']', ''), ', ', ';'), '"', '')
+                WHEN trad.treatment_type IS NULL OR trad.treatment_type = '' THEN ['radiation']
+                ELSE [item IN split(trad.treatment_type, ';') | trim(item)]
+              END AS treatment_type,
+              CASE
+                WHEN trad.treatment_type IS NULL OR trad.treatment_type = '' THEN 'radiation'
+                ELSE trad.treatment_type
               END AS treatment_type_str
 
             UNION
@@ -2706,12 +2722,17 @@ indices:
               tsurg.age_at_treatment_end AS age_at_treatment_end,
               tsurg.age_at_treatment_start AS age_at_treatment_start,
               CASE
-                WHEN coalesce(tsurg.treatment_agent, tsurg.surgery_type) IS NULL THEN NULL
-                ELSE replace(replace(replace(replace(toString(coalesce(tsurg.treatment_agent, tsurg.surgery_type)), '[', ''), ']', ''), ', ', ';'), '"', '')
-              END AS treatment_agent_str,
+                WHEN tsurg.surgery_type IS NULL OR tsurg.surgery_type = '' THEN []
+                ELSE [trim(tsurg.surgery_type)]
+              END AS treatment_agent,
+              tsurg.surgery_type AS treatment_agent_str,
               CASE
-                WHEN coalesce(tsurg.treatment_type, 'surgery') IS NULL THEN NULL
-                ELSE replace(replace(replace(replace(toString(coalesce(tsurg.treatment_type, 'surgery')), '[', ''), ']', ''), ', ', ';'), '"', '')
+                WHEN tsurg.treatment_type IS NULL OR tsurg.treatment_type = '' THEN ['surgery']
+                ELSE [item IN split(tsurg.treatment_type, ';') | trim(item)]
+              END AS treatment_type,
+              CASE
+                WHEN tsurg.treatment_type IS NULL OR tsurg.treatment_type = '' THEN 'surgery'
+                ELSE tsurg.treatment_type
               END AS treatment_type_str
 
             UNION
@@ -2724,15 +2745,20 @@ indices:
               toth.age_at_treatment_end AS age_at_treatment_end,
               toth.age_at_treatment_start AS age_at_treatment_start,
               CASE
-                WHEN coalesce(toth.treatment_agent, toth.other_treatment_type) IS NULL THEN NULL
-                ELSE replace(replace(replace(replace(toString(coalesce(toth.treatment_agent, toth.other_treatment_type)), '[', ''), ']', ''), ', ', ';'), '"', '')
-              END AS treatment_agent_str,
+                WHEN toth.other_treatment_type IS NULL OR toth.other_treatment_type = '' THEN []
+                ELSE [trim(toth.other_treatment_type)]
+              END AS treatment_agent,
+              toth.other_treatment_type AS treatment_agent_str,
               CASE
-                WHEN coalesce(toth.treatment_type, 'other') IS NULL THEN NULL
-                ELSE replace(replace(replace(replace(toString(coalesce(toth.treatment_type, 'other')), '[', ''), ']', ''), ', ', ';'), '"', '')
+                WHEN toth.treatment_type IS NULL OR toth.treatment_type = '' THEN ['other']
+                ELSE [item IN split(toth.treatment_type, ';') | trim(item)]
+              END AS treatment_type,
+              CASE
+                WHEN toth.treatment_type IS NULL OR toth.treatment_type = '' THEN 'other'
+                ELSE toth.treatment_type
               END AS treatment_type_str
           }
-          WITH id, treatment_id, p, age_at_treatment_end, age_at_treatment_start, treatment_agent_str, treatment_type_str
+          WITH id, treatment_id, p, age_at_treatment_end, age_at_treatment_start, treatment_agent, treatment_agent_str, treatment_type, treatment_type_str
           SKIP $skip LIMIT $limit
           RETURN
             id,
@@ -2757,15 +2783,9 @@ indices:
               WHEN -999 THEN 'Not Reported'
               ELSE toString(age_at_treatment_start)
             END AS age_at_treatment_start_str,
-            CASE
-              WHEN treatment_agent_str IS NULL OR treatment_agent_str = '' THEN []
-              ELSE [item IN split(treatment_agent_str, ';') | trim(item)]
-            END AS treatment_agent,
+            treatment_agent,
             treatment_agent_str,
-            CASE
-              WHEN treatment_type_str IS NULL OR treatment_type_str = '' THEN []
-              ELSE [item IN split(treatment_type_str, ';') | trim(item)]
-            END AS treatment_type,
+            treatment_type,
             treatment_type_str
         page_size: 1000
       - name: "study_properties"
