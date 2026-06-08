@@ -63,6 +63,17 @@ type GS_Files {
     file_type: String
     sample_id: String
     file_size: Float
+    anatomic_site: String
+    participant_age_at_collection: String
+    sample_tumor_status: String
+    tumor_spatial_extent: String
+    sample_description: String
+    percent_tumor: String
+    percent_necrosis: String
+    consent_codes: String
+    file_access: String
+    fixation_embedding_method: String
+    staining_method: String
 }
 
 type GS_Model {
@@ -396,6 +407,16 @@ type FileOverViewResult {
     file_mapping_level: String
     library_strategy: String
     file_access: String
+    anatomic_site: String
+    participant_age_at_collection: String
+    sample_tumor_status: String
+    tumor_spatial_extent: String
+    sample_description: String
+    percent_tumor: String
+    percent_necrosis: String
+    consent_codes: String
+    fixation_embedding_method: String
+    staining_method: String
     sample_id: String
     participant_id: String
     study_id: String
@@ -570,6 +591,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
         
         # Studies
         dbgap_accession: [String] = [""],
@@ -642,6 +674,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
         
         # Studies
         dbgap_accession: [String] = [""],
@@ -720,6 +763,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
 
         # Studies
         dbgap_accession: [String] = [""],
@@ -798,6 +852,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
 
         # Studies
         dbgap_accession: [String] = [""],
@@ -876,6 +941,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
 
         # Studies
         dbgap_accession: [String] = [""],
@@ -954,6 +1030,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
 
         # Studies
         dbgap_accession: [String] = [""],
@@ -1032,6 +1119,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
 
         # Studies
         dbgap_accession: [String] = [""],
@@ -1110,6 +1208,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
 
         # Studies
         dbgap_accession: [String] = [""],
@@ -1188,6 +1297,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
 
         # Studies
         dbgap_accession: [String] = [""],
@@ -1266,6 +1386,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
 
         # Studies
         dbgap_accession: [String] = [""],
@@ -1345,6 +1476,17 @@ type QueryType {
         library_source_material: [String] = [""],
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
+        anatomic_site: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
+        sample_description: [String] = [""],
+        percent_tumor: [String] = [""],
+        percent_necrosis: [String] = [""],
+        file_size: [String] = [""],
+        file_description: [String] = [""],
+        consent_codes: [String] = [""],
+        file_access: [String] = [""],
+        fixation_embedding_method: [String] = [""],
+        staining_method: [String] = [""],
 
         # Studies
         dbgap_accession: [String] = [""],

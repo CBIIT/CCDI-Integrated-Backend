@@ -411,7 +411,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, FILES_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "file_count",
                 GS_RESULT_FIELD, "files",
-                GS_SEARCH_FIELD, List.of("participant_id_gs","sample_id_gs","study_id_gs","file_description_gs","file_type_gs","file_name_gs","data_category_gs"),
+                GS_SEARCH_FIELD, List.of(
+                        "participant_id_gs", "sample_id_gs", "study_id_gs", "file_description_gs", "file_type_gs",
+                        "file_name_gs", "data_category_gs", "file_access", "anatomic_site", "sample_tumor_status",
+                        "tumor_spatial_extent", "sample_description", "percent_tumor", "percent_necrosis",
+                        "consent_codes", "fixation_embedding_method", "staining_method"),
                 GS_SORT_FIELD, "file_id",
                 GS_COLLECT_FIELDS, new String[][]{
                         new String[]{"id", "id"},
@@ -422,7 +426,18 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         new String[]{"data_category", "data_category"},
                         new String[]{"file_description", "file_description"},
                         new String[]{"file_type","file_type"},
-                        new String[]{"file_size","file_size"}
+                        new String[]{"file_size","file_size"},
+                        new String[]{"anatomic_site", "anatomic_site"},
+                        new String[]{"participant_age_at_collection", "participant_age_at_collection"},
+                        new String[]{"sample_tumor_status", "sample_tumor_status"},
+                        new String[]{"tumor_spatial_extent", "tumor_spatial_extent"},
+                        new String[]{"sample_description", "sample_description"},
+                        new String[]{"percent_tumor", "percent_tumor"},
+                        new String[]{"percent_necrosis", "percent_necrosis"},
+                        new String[]{"consent_codes", "consent_codes"},
+                        new String[]{"file_access", "file_access"},
+                        new String[]{"fixation_embedding_method", "fixation_embedding_method"},
+                        new String[]{"staining_method", "staining_method"}
                 },
                 GS_CATEGORY_TYPE, "file"
         ));
@@ -2136,6 +2151,16 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"library_strategy", "library_strategy"},
             new String[]{"file_mapping_level", "file_mapping_level"},
             new String[]{"file_access", "file_access"},
+            new String[]{"anatomic_site", "anatomic_site"},
+            new String[]{"participant_age_at_collection", "participant_age_at_collection"},
+            new String[]{"sample_tumor_status", "sample_tumor_status"},
+            new String[]{"tumor_spatial_extent", "tumor_spatial_extent"},
+            new String[]{"sample_description", "sample_description"},
+            new String[]{"percent_tumor", "percent_tumor"},
+            new String[]{"percent_necrosis", "percent_necrosis"},
+            new String[]{"consent_codes", "consent_codes"},
+            new String[]{"fixation_embedding_method", "fixation_embedding_method"},
+            new String[]{"staining_method", "staining_method"},
             new String[]{"study_id", "study_id"},
             new String[]{"participant_id", "participant_id"},
             new String[]{"sample_id", "sample_id"},
@@ -2160,6 +2185,16 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("library_strategy", "library_strategy.sort"),
                 Map.entry("file_mapping_level", "file_mapping_level"),
                 Map.entry("file_access", "file_access"),
+                Map.entry("anatomic_site", "anatomic_site"),
+                Map.entry("participant_age_at_collection", "participant_age_at_collection"),
+                Map.entry("sample_tumor_status", "sample_tumor_status"),
+                Map.entry("tumor_spatial_extent", "tumor_spatial_extent"),
+                Map.entry("sample_description", "sample_description"),
+                Map.entry("percent_tumor", "percent_tumor"),
+                Map.entry("percent_necrosis", "percent_necrosis"),
+                Map.entry("consent_codes", "consent_codes"),
+                Map.entry("fixation_embedding_method", "fixation_embedding_method"),
+                Map.entry("staining_method", "staining_method"),
                 Map.entry("participant_id", "participant_id"),
                 Map.entry("sample_id", "sample_id"),
                 Map.entry("md5sum", "md5sum")
@@ -2185,6 +2220,16 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 new String[]{"library_strategy", "library_strategy"},
                 new String[]{"file_mapping_level", "file_mapping_level"},
                 new String[]{"file_access", "file_access"},
+                new String[]{"anatomic_site", "anatomic_site"},
+                new String[]{"participant_age_at_collection", "participant_age_at_collection"},
+                new String[]{"sample_tumor_status", "sample_tumor_status"},
+                new String[]{"tumor_spatial_extent", "tumor_spatial_extent"},
+                new String[]{"sample_description", "sample_description"},
+                new String[]{"percent_tumor", "percent_tumor"},
+                new String[]{"percent_necrosis", "percent_necrosis"},
+                new String[]{"consent_codes", "consent_codes"},
+                new String[]{"fixation_embedding_method", "fixation_embedding_method"},
+                new String[]{"staining_method", "staining_method"},
                 new String[]{"study_id", "study_id"},
                 new String[]{"participant_id", "participant_id"},
                 new String[]{"sample_id", "sample_id"},
@@ -2209,6 +2254,16 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("library_strategy", "library_strategy.sort"),
                 Map.entry("file_mapping_level", "file_mapping_level"),
                 Map.entry("file_access", "file_access"),
+                Map.entry("anatomic_site", "anatomic_site"),
+                Map.entry("participant_age_at_collection", "participant_age_at_collection"),
+                Map.entry("sample_tumor_status", "sample_tumor_status"),
+                Map.entry("tumor_spatial_extent", "tumor_spatial_extent"),
+                Map.entry("sample_description", "sample_description"),
+                Map.entry("percent_tumor", "percent_tumor"),
+                Map.entry("percent_necrosis", "percent_necrosis"),
+                Map.entry("consent_codes", "consent_codes"),
+                Map.entry("fixation_embedding_method", "fixation_embedding_method"),
+                Map.entry("staining_method", "staining_method"),
                 Map.entry("participant_id", "participant_id"),
                 Map.entry("sample_id", "sample_id"),
                 Map.entry("md5sum", "md5sum")
@@ -2246,9 +2301,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     // library_source_material, library_strategy, library_source_molecule, file_mapping_level
                     List<String> searchFields = List.of(
                         "file_name", "data_category", "file_description", "file_type", "file_access",
-                        "study_id", "participant_id", "sample_id", "guid", "md5sum", 
-                        "library_selection", "library_source_material", "library_strategy", 
-                        "library_source_molecule", "file_mapping_level"
+                        "study_id", "participant_id", "sample_id", "guid", "md5sum",
+                        "library_selection", "library_source_material", "library_strategy",
+                        "library_source_molecule", "file_mapping_level",
+                        "anatomic_site", "sample_tumor_status", "tumor_spatial_extent", "sample_description",
+                        "consent_codes", "fixation_embedding_method", "staining_method"
                     );
                     
                     List<Map<String, Object>> shouldClauses = new ArrayList<>();
@@ -2411,7 +2468,13 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             query.put("_source", Map.of("exclude", Set.of("diagnosis_filters", "genetic_analysis_filters", "file_filters", "survival_filters", "treatment_filters", "treatment_response_filters")));
         }
         if (overviewType.equals("files_table")) {
-            query.put("_source", Map.of("includes", Set.of("id","file_id","guid","file_name","data_category","file_description","file_type","file_size","library_selection","library_source_material","library_source_molecule","library_strategy","file_mapping_level","file_access","study_id","participant_id","sample_id","md5sum","files")));
+            query.put("_source", Map.of("includes", Set.of(
+                    "id", "file_id", "guid", "file_name", "data_category", "file_description", "file_type", "file_size",
+                    "library_selection", "library_source_material", "library_source_molecule", "library_strategy",
+                    "file_mapping_level", "file_access", "anatomic_site", "participant_age_at_collection",
+                    "sample_tumor_status", "tumor_spatial_extent", "sample_description", "percent_tumor",
+                    "percent_necrosis", "consent_codes", "fixation_embedding_method", "staining_method",
+                    "study_id", "participant_id", "sample_id", "md5sum", "files")));
             //query.put("_source", Map.of("exclude", Set.of("combined_filters", "participant_filters", "sample_diagnosis_filters", "survival_filters", "treatment_filters", "treatment_response_filters")));
         }
         int pageSize = (int) params.get(PAGE_SIZE);
