@@ -411,11 +411,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, FILES_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "file_count",
                 GS_RESULT_FIELD, "files",
-                GS_SEARCH_FIELD, List.of(
-                        "participant_id_gs", "sample_id_gs", "study_id_gs", "file_description_gs", "file_type_gs",
-                        "file_name_gs", "data_category_gs", "file_access", "anatomic_site", "sample_tumor_status",
-                        "tumor_spatial_extent", "sample_description", "percent_tumor", "percent_necrosis",
-                        "consent_codes", "fixation_embedding_method", "staining_method"),
+                GS_SEARCH_FIELD, List.of("participant_id_gs","sample_id_gs","study_id_gs","file_description_gs","file_type_gs","file_name_gs","data_category_gs"),
                 GS_SORT_FIELD, "file_id",
                 GS_COLLECT_FIELDS, new String[][]{
                         new String[]{"id", "id"},
@@ -426,18 +422,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         new String[]{"data_category", "data_category"},
                         new String[]{"file_description", "file_description"},
                         new String[]{"file_type","file_type"},
-                        new String[]{"file_size","file_size"},
-                        new String[]{"anatomic_site", "anatomic_site"},
-                        new String[]{"participant_age_at_collection", "participant_age_at_collection"},
-                        new String[]{"sample_tumor_status", "sample_tumor_status"},
-                        new String[]{"tumor_spatial_extent", "tumor_spatial_extent"},
-                        new String[]{"sample_description", "sample_description"},
-                        new String[]{"percent_tumor", "percent_tumor"},
-                        new String[]{"percent_necrosis", "percent_necrosis"},
-                        new String[]{"consent_codes", "consent_codes"},
-                        new String[]{"file_access", "file_access"},
-                        new String[]{"fixation_embedding_method", "fixation_embedding_method"},
-                        new String[]{"staining_method", "staining_method"}
+                        new String[]{"file_size","file_size"}
                 },
                 GS_CATEGORY_TYPE, "file"
         ));

@@ -63,17 +63,6 @@ type GS_Files {
     file_type: String
     sample_id: String
     file_size: Float
-    anatomic_site: String
-    participant_age_at_collection: String
-    sample_tumor_status: String
-    tumor_spatial_extent: String
-    sample_description: String
-    percent_tumor: String
-    percent_necrosis: String
-    consent_codes: String
-    file_access: String
-    fixation_embedding_method: String
-    staining_method: String
 }
 
 type GS_Model {
