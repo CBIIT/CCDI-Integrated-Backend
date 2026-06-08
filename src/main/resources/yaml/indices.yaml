@@ -2669,8 +2669,14 @@ indices:
               p,
               tchemo.age_at_treatment_end AS age_at_treatment_end,
               tchemo.age_at_treatment_start AS age_at_treatment_start,
-              coalesce(tchemo.treatment_agent, tchemo.chemotherapy_agent) AS treatment_agent_str,
-              coalesce(tchemo.treatment_type, tchemo.chemotherapy_type, 'chemotherapy') AS treatment_type_str
+              CASE
+                WHEN coalesce(tchemo.treatment_agent, tchemo.chemotherapy_agent) IS NULL THEN NULL
+                ELSE replace(replace(replace(replace(toString(coalesce(tchemo.treatment_agent, tchemo.chemotherapy_agent)), '[', ''), ']', ''), ', ', ';'), '"', '')
+              END AS treatment_agent_str,
+              CASE
+                WHEN coalesce(tchemo.treatment_type, tchemo.chemotherapy_type, 'chemotherapy') IS NULL THEN NULL
+                ELSE replace(replace(replace(replace(toString(coalesce(tchemo.treatment_type, tchemo.chemotherapy_type, 'chemotherapy')), '[', ''), ']', ''), ', ', ';'), '"', '')
+              END AS treatment_type_str
 
             UNION
 
@@ -2681,8 +2687,14 @@ indices:
               p,
               trad.age_at_treatment_end AS age_at_treatment_end,
               trad.age_at_treatment_start AS age_at_treatment_start,
-              coalesce(trad.treatment_agent, trad.radiation_therapy_type) AS treatment_agent_str,
-              coalesce(trad.treatment_type, 'radiation') AS treatment_type_str
+              CASE
+                WHEN coalesce(trad.treatment_agent, trad.radiation_therapy_type) IS NULL THEN NULL
+                ELSE replace(replace(replace(replace(toString(coalesce(trad.treatment_agent, trad.radiation_therapy_type)), '[', ''), ']', ''), ', ', ';'), '"', '')
+              END AS treatment_agent_str,
+              CASE
+                WHEN coalesce(trad.treatment_type, 'radiation') IS NULL THEN NULL
+                ELSE replace(replace(replace(replace(toString(coalesce(trad.treatment_type, 'radiation')), '[', ''), ']', ''), ', ', ';'), '"', '')
+              END AS treatment_type_str
 
             UNION
 
@@ -2693,8 +2705,14 @@ indices:
               p,
               tsurg.age_at_treatment_end AS age_at_treatment_end,
               tsurg.age_at_treatment_start AS age_at_treatment_start,
-              coalesce(tsurg.treatment_agent, tsurg.surgery_type) AS treatment_agent_str,
-              coalesce(tsurg.treatment_type, 'surgery') AS treatment_type_str
+              CASE
+                WHEN coalesce(tsurg.treatment_agent, tsurg.surgery_type) IS NULL THEN NULL
+                ELSE replace(replace(replace(replace(toString(coalesce(tsurg.treatment_agent, tsurg.surgery_type)), '[', ''), ']', ''), ', ', ';'), '"', '')
+              END AS treatment_agent_str,
+              CASE
+                WHEN coalesce(tsurg.treatment_type, 'surgery') IS NULL THEN NULL
+                ELSE replace(replace(replace(replace(toString(coalesce(tsurg.treatment_type, 'surgery')), '[', ''), ']', ''), ', ', ';'), '"', '')
+              END AS treatment_type_str
 
             UNION
 
@@ -2705,8 +2723,14 @@ indices:
               p,
               toth.age_at_treatment_end AS age_at_treatment_end,
               toth.age_at_treatment_start AS age_at_treatment_start,
-              coalesce(toth.treatment_agent, toth.other_treatment_type) AS treatment_agent_str,
-              coalesce(toth.treatment_type, 'other') AS treatment_type_str
+              CASE
+                WHEN coalesce(toth.treatment_agent, toth.other_treatment_type) IS NULL THEN NULL
+                ELSE replace(replace(replace(replace(toString(coalesce(toth.treatment_agent, toth.other_treatment_type)), '[', ''), ']', ''), ', ', ';'), '"', '')
+              END AS treatment_agent_str,
+              CASE
+                WHEN coalesce(toth.treatment_type, 'other') IS NULL THEN NULL
+                ELSE replace(replace(replace(replace(toString(coalesce(toth.treatment_type, 'other')), '[', ''), ']', ''), ', ', ';'), '"', '')
+              END AS treatment_type_str
           }
           WITH id, treatment_id, p, age_at_treatment_end, age_at_treatment_start, treatment_agent_str, treatment_type_str
           SKIP $skip LIMIT $limit
