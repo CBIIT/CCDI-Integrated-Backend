@@ -186,6 +186,35 @@ indices:
             END AS diagnoses
           RETURN guid, diagnoses
         page_size: 1000
+      - name: "survivals"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
+          WITH
+            p.guid AS guid,
+            count(sur) AS survival_count,
+            coalesce(
+              [item IN collect(
+                DISTINCT {
+                  last_known_survival_status: sur.last_known_survival_status,
+                  cause_of_death: sur.cause_of_death,
+                  first_event: sur.first_event,
+                  age_at_last_known_survival_status: sur.age_at_last_known_survival_status
+                }
+              ) WHERE item IS NOT NULL],
+              []
+            ) AS survivals
+          WITH
+            guid,
+            CASE
+              WHEN survival_count >0
+              THEN survivals
+              ELSE []
+            END AS survivals
+          RETURN guid, survivals
+        page_size: 5000
       - name: "treatments"
         query: |
           MATCH (p:participant)
