@@ -2635,20 +2635,84 @@ indices:
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     initial_query:
       query: |
-        MATCH (tr:treatment)
-        WITH tr
+        CALL {
+          MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(:participant)
+          RETURN 'treatment_chemotherapy:' + coalesce(tchemo.id, tchemo.guid, tchemo.treatment_chemotherapy_id) AS id
+
+          UNION
+
+          MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(:participant)
+          RETURN 'treatment_radiation:' + coalesce(trad.id, trad.guid, trad.treatment_radiation_id) AS id
+
+          UNION
+
+          MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(:participant)
+          RETURN 'treatment_surgery:' + coalesce(tsurg.id, tsurg.guid, tsurg.treatment_surgery_id) AS id
+
+          UNION
+
+          MATCH (toth:treatment_other)-[:of_treatment_other]->(:participant)
+          RETURN 'treatment_other:' + coalesce(toth.id, toth.guid, toth.treatment_other_id) AS id
+        }
+        WITH DISTINCT id
         SKIP $skip LIMIT $limit
-        RETURN tr.id AS id
+        RETURN id
       page_size: 5000
     update_queries:
       - name: "treatment_and_participant_properties"
         query: |
-          MATCH (tr:treatment)-[:of_treatment]->(p:participant)
-          WITH tr, p
+          CALL {
+            MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p:participant)
+            RETURN
+              'treatment_chemotherapy:' + coalesce(tchemo.id, tchemo.guid, tchemo.treatment_chemotherapy_id) AS id,
+              coalesce(tchemo.treatment_chemotherapy_id, tchemo.id, tchemo.guid) AS treatment_id,
+              p,
+              tchemo.age_at_treatment_end AS age_at_treatment_end,
+              tchemo.age_at_treatment_start AS age_at_treatment_start,
+              coalesce(tchemo.treatment_agent, tchemo.chemotherapy_agent) AS treatment_agent_str,
+              coalesce(tchemo.treatment_type, tchemo.chemotherapy_type, 'chemotherapy') AS treatment_type_str
+
+            UNION
+
+            MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p:participant)
+            RETURN
+              'treatment_radiation:' + coalesce(trad.id, trad.guid, trad.treatment_radiation_id) AS id,
+              coalesce(trad.treatment_radiation_id, trad.id, trad.guid) AS treatment_id,
+              p,
+              trad.age_at_treatment_end AS age_at_treatment_end,
+              trad.age_at_treatment_start AS age_at_treatment_start,
+              coalesce(trad.treatment_agent, trad.radiation_therapy_type) AS treatment_agent_str,
+              coalesce(trad.treatment_type, 'radiation') AS treatment_type_str
+
+            UNION
+
+            MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p:participant)
+            RETURN
+              'treatment_surgery:' + coalesce(tsurg.id, tsurg.guid, tsurg.treatment_surgery_id) AS id,
+              coalesce(tsurg.treatment_surgery_id, tsurg.id, tsurg.guid) AS treatment_id,
+              p,
+              tsurg.age_at_treatment_end AS age_at_treatment_end,
+              tsurg.age_at_treatment_start AS age_at_treatment_start,
+              coalesce(tsurg.treatment_agent, tsurg.surgery_type) AS treatment_agent_str,
+              coalesce(tsurg.treatment_type, 'surgery') AS treatment_type_str
+
+            UNION
+
+            MATCH (toth:treatment_other)-[:of_treatment_other]->(p:participant)
+            RETURN
+              'treatment_other:' + coalesce(toth.id, toth.guid, toth.treatment_other_id) AS id,
+              coalesce(toth.treatment_other_id, toth.id, toth.guid) AS treatment_id,
+              p,
+              toth.age_at_treatment_end AS age_at_treatment_end,
+              toth.age_at_treatment_start AS age_at_treatment_start,
+              coalesce(toth.treatment_agent, toth.other_treatment_type) AS treatment_agent_str,
+              coalesce(toth.treatment_type, 'other') AS treatment_type_str
+          }
+          WITH id, treatment_id, p, age_at_treatment_end, age_at_treatment_start, treatment_agent_str, treatment_type_str
           SKIP $skip LIMIT $limit
           RETURN
-            tr.id AS id,
-            tr.treatment_id AS treatment_id,
+            id,
+            treatment_id,
             p.id AS pid,
             p.participant_id AS participant_id,
             p.race AS race,
@@ -2659,37 +2723,55 @@ indices:
               END
             ) AS race_str,
             p.sex_at_birth AS sex_at_birth,
-            tr.age_at_treatment_end AS age_at_treatment_end,
-            CASE tr.age_at_treatment_end
+            age_at_treatment_end AS age_at_treatment_end,
+            CASE age_at_treatment_end
               WHEN -999 THEN 'Not Reported'
-              ELSE toString(tr.age_at_treatment_end)
+              ELSE toString(age_at_treatment_end)
             END AS age_at_treatment_end_str,
-            tr.age_at_treatment_start AS age_at_treatment_start,
-            CASE tr.age_at_treatment_start
+            age_at_treatment_start AS age_at_treatment_start,
+            CASE age_at_treatment_start
               WHEN -999 THEN 'Not Reported'
-              ELSE toString(tr.age_at_treatment_start)
+              ELSE toString(age_at_treatment_start)
             END AS age_at_treatment_start_str,
             CASE
-              WHEN tr.treatment_agent IS NULL OR tr.treatment_agent = '' THEN []
-              ELSE [item IN split(tr.treatment_agent, ';') | trim(item)]
+              WHEN treatment_agent_str IS NULL OR treatment_agent_str = '' THEN []
+              ELSE [item IN split(treatment_agent_str, ';') | trim(item)]
             END AS treatment_agent,
-            tr.treatment_agent AS treatment_agent_str,
+            treatment_agent_str,
             CASE
-              WHEN tr.treatment_type IS NULL OR tr.treatment_type = '' THEN []
-              ELSE [item IN split(tr.treatment_type, ';') | trim(item)]
+              WHEN treatment_type_str IS NULL OR treatment_type_str = '' THEN []
+              ELSE [item IN split(treatment_type_str, ';') | trim(item)]
             END AS treatment_type,
-            tr.treatment_type AS treatment_type_str
+            treatment_type_str
         page_size: 1000
       - name: "study_properties"
         query: |
+          CALL {
+            MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p:participant)
+            RETURN 'treatment_chemotherapy:' + coalesce(tchemo.id, tchemo.guid, tchemo.treatment_chemotherapy_id) AS id, p
+
+            UNION
+
+            MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p:participant)
+            RETURN 'treatment_radiation:' + coalesce(trad.id, trad.guid, trad.treatment_radiation_id) AS id, p
+
+            UNION
+
+            MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p:participant)
+            RETURN 'treatment_surgery:' + coalesce(tsurg.id, tsurg.guid, tsurg.treatment_surgery_id) AS id, p
+
+            UNION
+
+            MATCH (toth:treatment_other)-[:of_treatment_other]->(p:participant)
+            RETURN 'treatment_other:' + coalesce(toth.id, toth.guid, toth.treatment_other_id) AS id, p
+          }
           MATCH
-            (tr:treatment)-[:of_treatment]->(p:participant),
             (cg:consent_group)-[:of_participant]->(p),
             (stu:study)-[:of_consent_group]->(cg)
-          WITH tr, stu
+          WITH id, stu
           SKIP $skip LIMIT $limit
           RETURN
-            tr.id AS id,
+            id,
             stu.study_id AS study_id,
             stu.dbgap_accession AS dbgap_accession,
             stu.study_phase AS study_status,
@@ -2698,12 +2780,30 @@ indices:
         page_size: 1000
       - name: "survival_filters"
         query: |
-          MATCH (tr:treatment)-[:of_treatment]->(p:participant)
-          WITH tr, p
+          CALL {
+            MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p:participant)
+            RETURN 'treatment_chemotherapy:' + coalesce(tchemo.id, tchemo.guid, tchemo.treatment_chemotherapy_id) AS id, p
+
+            UNION
+
+            MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p:participant)
+            RETURN 'treatment_radiation:' + coalesce(trad.id, trad.guid, trad.treatment_radiation_id) AS id, p
+
+            UNION
+
+            MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p:participant)
+            RETURN 'treatment_surgery:' + coalesce(tsurg.id, tsurg.guid, tsurg.treatment_surgery_id) AS id, p
+
+            UNION
+
+            MATCH (toth:treatment_other)-[:of_treatment_other]->(p:participant)
+            RETURN 'treatment_other:' + coalesce(toth.id, toth.guid, toth.treatment_other_id) AS id, p
+          }
+          WITH id, p
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
           WITH
-            tr.id AS id,
+            id,
             count(sur) AS survival_count,
             coalesce(
               [item IN collect(
@@ -2726,12 +2826,30 @@ indices:
         page_size: 1000
       - name: "treatment_response_filters"
         query: |
-          MATCH (tr:treatment)-[:of_treatment]->(p:participant)
-          WITH tr, p
+          CALL {
+            MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p:participant)
+            RETURN 'treatment_chemotherapy:' + coalesce(tchemo.id, tchemo.guid, tchemo.treatment_chemotherapy_id) AS id, p
+
+            UNION
+
+            MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p:participant)
+            RETURN 'treatment_radiation:' + coalesce(trad.id, trad.guid, trad.treatment_radiation_id) AS id, p
+
+            UNION
+
+            MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p:participant)
+            RETURN 'treatment_surgery:' + coalesce(tsurg.id, tsurg.guid, tsurg.treatment_surgery_id) AS id, p
+
+            UNION
+
+            MATCH (toth:treatment_other)-[:of_treatment_other]->(p:participant)
+            RETURN 'treatment_other:' + coalesce(toth.id, toth.guid, toth.treatment_other_id) AS id, p
+          }
+          WITH id, p
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
           WITH
-            tr.id AS id,
+            id,
             count(tresp) AS treatment_response_count,
             coalesce(
               [item IN collect(
@@ -2754,14 +2872,32 @@ indices:
         page_size: 1000
       - name: "sample_diagnosis_genetic_analysis_file_filters"
         query: |
-          MATCH (tr:treatment)-[:of_treatment]->(p:participant)
-          WITH tr, p
+          CALL {
+            MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p:participant)
+            RETURN 'treatment_chemotherapy:' + coalesce(tchemo.id, tchemo.guid, tchemo.treatment_chemotherapy_id) AS id, p
+
+            UNION
+
+            MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p:participant)
+            RETURN 'treatment_radiation:' + coalesce(trad.id, trad.guid, trad.treatment_radiation_id) AS id, p
+
+            UNION
+
+            MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p:participant)
+            RETURN 'treatment_surgery:' + coalesce(tsurg.id, tsurg.guid, tsurg.treatment_surgery_id) AS id, p
+
+            UNION
+
+            MATCH (toth:treatment_other)-[:of_treatment_other]->(p:participant)
+            RETURN 'treatment_other:' + coalesce(toth.id, toth.guid, toth.treatment_other_id) AS id, p
+          }
+          WITH id, p
           SKIP $skip LIMIT $limit
 
           // Direct participant samples: self-context
           OPTIONAL MATCH (p)<--(s1:sample)
           WITH
-            tr,
+            id,
             p,
             collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
 
@@ -2770,7 +2906,7 @@ indices:
           WHERE model:cell_line OR model:pdx
 
           WITH
-            tr,
+            id,
             p,
             [ctx IN (
               direct_contexts
@@ -2782,7 +2918,7 @@ indices:
             WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
 
           WITH
-            tr,
+            id,
             p,
             CASE
               WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
@@ -2796,7 +2932,7 @@ indices:
             OR study_file:generic_file
 
           WITH
-            tr,
+            id,
             p,
             sample_contexts,
             collect(DISTINCT study_file) AS study_files
@@ -2804,7 +2940,7 @@ indices:
           UNWIND sample_contexts AS ctx
 
           WITH
-            tr,
+            id,
             p,
             ctx.sm AS sm,
             ctx.source_sm AS source_sm,
@@ -2819,7 +2955,7 @@ indices:
             OR sample_file:cytogenomic_file
 
           WITH
-            tr,
+            id,
             p,
             sm,
             source_sm,
@@ -2833,7 +2969,7 @@ indices:
             OR participant_file:radiology_file
 
           WITH
-            tr,
+            id,
             p,
             sm,
             source_sm,
@@ -2845,7 +2981,7 @@ indices:
           OPTIONAL MATCH (source_sm)<--(sample_dg:diagnosis)
 
           WITH
-            tr,
+            id,
             p,
             sm,
             source_sm,
@@ -2858,7 +2994,7 @@ indices:
           OPTIONAL MATCH (p)<--(participant_dg:diagnosis)
 
           WITH
-            tr,
+            id,
             p,
             sm,
             source_sm,
@@ -2872,7 +3008,7 @@ indices:
           OPTIONAL MATCH (source_sm)<--(sample_ga:genetic_analysis)
 
           WITH
-            tr,
+            id,
             p,
             sm,
             source_sm,
@@ -2887,7 +3023,7 @@ indices:
           OPTIONAL MATCH (p)<--(participant_ga:genetic_analysis)
 
           WITH
-            tr,
+            id,
             sm,
             sample_files + participant_files + study_files AS files,
             sample_diagnoses + participant_diagnoses AS diagnoses,
@@ -2898,7 +3034,7 @@ indices:
           UNWIND CASE WHEN size(gas) = 0 THEN [null] ELSE gas END AS ga
 
           WITH
-            tr.id AS id,
+            id,
             collect(DISTINCT {
               sm: sm,
               file: file,
