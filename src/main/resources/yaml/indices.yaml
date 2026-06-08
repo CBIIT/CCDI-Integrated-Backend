@@ -5,7 +5,7 @@ indices:
     id_field: guid
     mapping:
       keyword:
-        - id
+        - guid
         - participant_id
         - race
         - sex_at_birth
@@ -13,7 +13,7 @@ indices:
         - consent_group_number
         - study_id
         - dbgap_accession
-        - diagnoses.id
+        - diagnoses.guid
         - diagnoses.diagnosis_id
         - diagnoses.anatomic_site
         - diagnoses.diagnosis
@@ -28,7 +28,7 @@ indices:
         - diagnoses.tumor_stage_clinical_m
         - diagnoses.tumor_stage_clinical_n
         - diagnoses.tumor_stage_clinical_t
-        - genetic_analyses.id
+        - genetic_analyses.guid
         - genetic_analyses.genetic_analysis_id
         - genetic_analyses.alteration
         - genetic_analyses.alteration_effect
@@ -48,28 +48,28 @@ indices:
         - genetic_analyses.reported_significance_system
         - genetic_analyses.status
         - genetic_analyses.test
-        - survivals.id
+        - survivals.guid
         - survivals.survival_id
         - survivals.cause_of_death
         - survivals.event_free_survival_status
         - survivals.first_event
         - survivals.last_known_survival_status
-        - treatments.id
+        - treatments.guid
         - treatments.treatment_id
         - treatments.treatment_agent
         - treatments.treatment_type
-        - treatment_responses.id
+        - treatment_responses.guid
         - treatment_responses.treatment_response_id
         - treatment_responses.response
         - treatment_responses.response_category
         - treatment_responses.response_system
-        - samples.id
+        - samples.guid
         - samples.sample_id
         - samples.anatomic_site
         - samples.sample_tumor_status
         - samples.tumor_classification
         - samples.sample_description
-        - files.id
+        - files.guid
         - files.file_id
         - files.file_name
         - files.data_category
@@ -186,6 +186,161 @@ indices:
             END AS diagnoses
           RETURN guid, diagnoses
         page_size: 1000
+      - name: "treatments"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+
+          // Build a superlist of treatments
+          CALL {
+            // treatment_chemotherapy
+            WITH p
+            OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
+            WITH
+              p.guid AS guid,
+              count(tchemo) AS tchemo_count,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: tchemo.chemotherapy_type,
+                    treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
+                    age_at_treatment_start: tchemo.age_at_treatment_start,
+                    age_at_treatment_end: tchemo.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatments
+            WITH
+              guid,
+              CASE
+                WHEN tchemo_count > 0
+                THEN treatments
+                ELSE []
+              END AS treatments
+            RETURN guid, treatments
+
+            UNION
+
+            // treatment_radiation
+            WITH p
+            OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
+            WITH
+              p.guid AS guid,
+              count(trad) AS trad_count,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: trad.treatment_type,
+                    treatment_agent: trad.radiation_therapy_type,
+                    age_at_treatment_start: trad.age_at_treatment_start,
+                    age_at_treatment_end: trad.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatments
+            WITH
+              guid,
+              CASE
+                WHEN trad_count > 0
+                THEN treatments
+                ELSE []
+              END AS treatments
+            RETURN guid, treatments
+
+            UNION
+
+            // treatment_surgery
+            WITH p
+            OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
+            WITH
+              p.guid AS guid,
+              count(tsurg) AS tsurg_count,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: tsurg.treatment_type,
+                    treatment_agent: tsurg.surgery_type,
+                    age_at_treatment_start: tsurg.age_at_treatment_start,
+                    age_at_treatment_end: tsurg.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatments
+            WITH
+              guid,
+              CASE
+                WHEN tsurg_count > 0
+                THEN treatments
+                ELSE []
+              END AS treatments
+            RETURN guid, treatments
+
+            UNION
+
+            // treatment_other
+            WITH p
+            OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
+            WITH
+              p.guid AS guid,
+              count(toth) AS toth_count,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: toth.treatment_type,
+                    treatment_agent: toth.other_treatment_type,
+                    age_at_treatment_start: toth.age_at_treatment_start,
+                    age_at_treatment_end: toth.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatments
+            WITH
+              guid,
+              CASE
+                WHEN toth_count > 0
+                THEN treatments
+                ELSE []
+              END AS treatments
+            RETURN guid, treatments
+          }
+          WITH
+            guid,
+            collect(treatments) AS treatment_superlist
+          WITH
+            guid,
+            reduce(all_treatments = [], t IN treatment_superlist | all_treatments + t) AS treatments
+          RETURN guid, treatments
+        page_size: 5000
+      - name: "treatment_responses"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
+          WITH
+            p.guid AS guid,
+            count(tresp) AS treatment_response_count,
+            coalesce(
+              [item IN collect(
+                DISTINCT {
+                  age_at_response: tresp.age_at_response,
+                  response: tresp.response,
+                  response_category: tresp.response_category,
+                  response_system: tresp.response_system
+                }
+              ) WHERE item IS NOT NULL],
+              []
+            ) AS treatment_responses
+          WITH
+            guid,
+            CASE
+              WHEN treatment_response_count > 0
+              THEN treatment_responses
+              ELSE []
+            END AS treatment_responses
+          RETURN guid, treatment_responses
+        page_size: 5000
 
   # participant centric index for study and other facets
   - index_name: study_participants_faceted
