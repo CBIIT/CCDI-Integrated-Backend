@@ -146,6 +146,46 @@ indices:
             ) AS race_str,
             p.sex_at_birth AS sex_at_birth
         page_size: 1000
+      - name: "diagnoses"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (p)<--(d:diagnosis)
+          WITH
+            p.guid AS guid,
+            count(d) AS diagnosis_count,
+            coalesce(
+              [item IN collect(
+                DISTINCT {
+                  guid: d.guid,
+                  diagnosis_id: d.diagnosis_id,
+                  anatomic_site: d.anatomic_site,
+                  diagnosis: d.diagnosis,
+                  diagnosis_basis: d.diagnosis_basis,
+                  diagnosis_category: d.diagnosis_category,
+                  diagnosis_classification_system: d.diagnosis_classification_system,
+                  diagnosis_comment: d.diagnosis_comment,
+                  disease_phase: d.disease_phase,
+                  toronto_childhood_cancer_staging: d.toronto_childhood_cancer_staging,
+                  tumor_classification: d.tumor_classification,
+                  tumor_grade: d.tumor_grade,
+                  tumor_stage_clinical_m: d.tumor_stage_clinical_m,
+                  tumor_stage_clinical_n: d.tumor_stage_clinical_n,
+                  tumor_stage_clinical_t: d.tumor_stage_clinical_t
+                }
+              ) WHERE item IS NOT NULL],
+              []
+            ) AS diagnoses
+          WITH
+            guid,
+            CASE
+              WHEN diagnosis_count > 0
+              THEN diagnoses
+              ELSE []
+            END AS diagnoses
+          RETURN guid, diagnoses
+        page_size: 1000
 
   # participant centric index for study and other facets
   - index_name: study_participants_faceted
