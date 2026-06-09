@@ -97,7 +97,7 @@ indices:
         WITH p
         SKIP $skip LIMIT $limit
         RETURN p.guid AS guid
-      page_size: 1000
+      page_size: 5000
     update_queries:
       - name: "study_properties"
         query: |
@@ -115,7 +115,7 @@ indices:
             stu.study_phase AS study_status,
             stu.study_acronym AS study_acronym,
             stu.study_name AS study_name
-        page_size: 1000
+        page_size: 5000
       - name: "consent_group_properties"
         query: |
           MATCH
@@ -128,7 +128,7 @@ indices:
             p.guid AS guid,
             cg.consent_group_name AS consent_group_name,
             cg.consent_group_number AS consent_group_number
-        page_size: 1000
+        page_size: 5000
       - name: "participant_properties"
         query: |
           MATCH (p:participant)
@@ -145,7 +145,7 @@ indices:
               END
             ) AS race_str,
             p.sex_at_birth AS sex_at_birth
-        page_size: 1000
+        page_size: 5000
       - name: "diagnoses"
         query: |
           MATCH (p:participant)
@@ -182,15 +182,13 @@ indices:
             participant_diagnoses,
             collect(DISTINCT sample_dg) AS sample_diagnoses
 
-          UNWIND (participant_diagnoses + sample_diagnoses) AS dg
           WITH
             p.guid AS guid,
-            dg
-          WHERE dg IS NOT NULL
+            [dg IN (participant_diagnoses + sample_diagnoses) WHERE dg IS NOT NULL] AS diagnoses
 
           RETURN
             guid,
-            collect(DISTINCT {
+            [dg IN diagnoses | {
               age_at_diagnosis: dg.age_at_diagnosis,
               anatomic_site: dg.anatomic_site,
               disease_phase: dg.disease_phase,
@@ -198,8 +196,8 @@ indices:
               diagnosis_category: dg.diagnosis_category,
               diagnosis_basis: dg.diagnosis_basis,
               diagnosis: dg.diagnosis
-            }) AS diagnoses
-        page_size: 1000
+            }] AS diagnoses
+        page_size: 5000
       - name: "survivals"
         query: |
           MATCH (p:participant)
