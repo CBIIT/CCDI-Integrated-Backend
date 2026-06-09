@@ -198,6 +198,70 @@ indices:
               diagnosis: dg.diagnosis
             }] AS diagnoses
         page_size: 5000
+      - name: "genetic_analyses"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+
+          // Direct participant samples: self-context
+          OPTIONAL MATCH (p)<--(s1:sample)
+          WITH
+            p,
+            collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
+
+          // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
+          OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
+          WHERE model:cell_line OR model:pdx
+
+          WITH
+            p,
+            [ctx IN (
+              direct_contexts
+              + collect(DISTINCT { sm: s1_model, source_sm: s1_model })
+              + collect(DISTINCT { sm: s2, source_sm: s2 })
+              + collect(DISTINCT { sm: s1_model, source_sm: s2 })
+              + collect(DISTINCT { sm: s2, source_sm: s1_model })
+            )
+            WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
+
+          WITH
+            p,
+            CASE
+              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
+              ELSE sample_contexts
+            END AS sample_contexts
+
+          UNWIND sample_contexts AS ctx
+          WITH
+            p,
+            ctx.source_sm AS source_sm
+
+          // Genetic analyses linked via any source sample
+          OPTIONAL MATCH (source_sm)<--(sample_ga:genetic_analysis)
+          WITH
+            p,
+            collect(DISTINCT sample_ga) AS sample_gas
+
+          // Genetic analyses directly linked to the participant
+          OPTIONAL MATCH (p)<--(participant_ga:genetic_analysis)
+
+          WITH
+            p.guid AS guid,
+            [ga IN (sample_gas + collect(DISTINCT participant_ga)) WHERE ga IS NOT NULL] AS gas
+
+          RETURN
+            guid,
+            [ga IN gas | {
+              reported_significance: ga.reported_significance,
+              reported_significance_system: ga.reported_significance_system,
+              gene_symbol: ga.gene_symbol,
+              alteration: ga.alteration,
+              fusion_partner_gene: ga.fusion_partner_gene,
+              alteration_type: ga.alteration_type,
+              status: ga.status
+            }] AS genetic_analyses
+        page_size: 5000
       - name: "survivals"
         query: |
           MATCH (p:participant)
