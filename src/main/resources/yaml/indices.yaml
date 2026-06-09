@@ -151,40 +151,54 @@ indices:
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (p)<--(d:diagnosis)
+
+          // Direct participant samples
+          OPTIONAL MATCH (p)<--(direct_sm:sample)
+          WITH p, collect(DISTINCT direct_sm) AS direct_samples
+
+          // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
+          OPTIONAL MATCH (p)<-[:of_sample]-(model_sm:sample)<--(model)<--(related_sm:sample)
+          WHERE model:cell_line OR model:pdx
+          WITH
+            p,
+            [sm IN (
+              direct_samples +
+              collect(DISTINCT model_sm) +
+              collect(DISTINCT related_sm)
+            ) WHERE sm IS NOT NULL] AS source_samples
+
+          // Diagnoses directly linked to the participant
+          OPTIONAL MATCH (p)<--(participant_dg:diagnosis)
+          WITH
+            p,
+            source_samples,
+            collect(DISTINCT participant_dg) AS participant_diagnoses
+
+          // Diagnoses linked via any source sample
+          UNWIND CASE WHEN size(source_samples) = 0 THEN [null] ELSE source_samples END AS source_sm
+          OPTIONAL MATCH (source_sm)<--(sample_dg:diagnosis)
+          WITH
+            p,
+            participant_diagnoses,
+            collect(DISTINCT sample_dg) AS sample_diagnoses
+
+          UNWIND (participant_diagnoses + sample_diagnoses) AS dg
           WITH
             p.guid AS guid,
-            count(d) AS diagnosis_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  guid: d.guid,
-                  diagnosis_id: d.diagnosis_id,
-                  anatomic_site: d.anatomic_site,
-                  diagnosis: d.diagnosis,
-                  diagnosis_basis: d.diagnosis_basis,
-                  diagnosis_category: d.diagnosis_category,
-                  diagnosis_classification_system: d.diagnosis_classification_system,
-                  diagnosis_comment: d.diagnosis_comment,
-                  disease_phase: d.disease_phase,
-                  toronto_childhood_cancer_staging: d.toronto_childhood_cancer_staging,
-                  tumor_classification: d.tumor_classification,
-                  tumor_grade: d.tumor_grade,
-                  tumor_stage_clinical_m: d.tumor_stage_clinical_m,
-                  tumor_stage_clinical_n: d.tumor_stage_clinical_n,
-                  tumor_stage_clinical_t: d.tumor_stage_clinical_t
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS diagnoses
-          WITH
+            dg
+          WHERE dg IS NOT NULL
+
+          RETURN
             guid,
-            CASE
-              WHEN diagnosis_count > 0
-              THEN diagnoses
-              ELSE []
-            END AS diagnoses
-          RETURN guid, diagnoses
+            collect(DISTINCT {
+              age_at_diagnosis: dg.age_at_diagnosis,
+              anatomic_site: dg.anatomic_site,
+              disease_phase: dg.disease_phase,
+              diagnosis_classification_system: dg.diagnosis_classification_system,
+              diagnosis_category: dg.diagnosis_category,
+              diagnosis_basis: dg.diagnosis_basis,
+              diagnosis: dg.diagnosis
+            }) AS diagnoses
         page_size: 1000
       - name: "survivals"
         query: |
