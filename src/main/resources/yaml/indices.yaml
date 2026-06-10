@@ -274,6 +274,29 @@ indices:
               status: ga.status
             }] AS genetic_analyses
         page_size: 5000
+      - name: "samples"
+        query: |
+          MATCH (p:participant)-[:of_participant]->(:consent_group)-[:of_consent_group]->(:study)
+          WITH p
+          SKIP $skip LIMIT $limit
+
+          OPTIONAL MATCH (s:sample)-[*..4]->(p)
+
+          WITH
+            p.guid AS guid,
+            [sample IN collect(DISTINCT s) WHERE sample IS NOT NULL] AS samples
+
+          RETURN
+            guid,
+            [sample IN samples | {
+              id: sample.id,
+              sample_id: sample.sample_id,
+              anatomic_site: sample.anatomic_site,
+              participant_age_at_collection: sample.participant_age_at_collection,
+              sample_tumor_status: sample.sample_tumor_status,
+              tumor_classification: sample.tumor_classification,
+              sample_description: sample.sample_description
+            }] AS samples
       - name: "survivals"
         query: |
           MATCH (p:participant)
