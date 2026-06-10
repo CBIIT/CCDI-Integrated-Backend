@@ -2273,12 +2273,14 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             query = new HashMap<>(query);
             if (filename != null && !filename.isEmpty()) {
                 // Navigate to the appropriate location to add wildcard based on query structure
-                // When there ARE facet filters: {"query": {"bool": {"should": [{"bool": {"must": {...}, "filter": [...]}}]}}}
-                // When there are NO facet filters: {"query": {"bool": {"must": {"exists": {"field": "file_id"}}}}}
+                // When there ARE facet filters: {"query": {"bool": {"should": [{"bool": {"filter": [...]}}]}}}
+                // When there are NO facet filters: {"query": {"match_all": {}}} from buildFacetFilterQuery
                 
                 try {
                     Map<String, Object> queryMap = (Map<String, Object>) query.get("query");
-                    Map<String, Object> boolQuery = (Map<String, Object>) queryMap.get("bool");
+                    Map<String, Object> boolQuery = queryMap.containsKey("bool")
+                            ? (Map<String, Object>) queryMap.get("bool")
+                            : null;
                     
                     // Create multi-field wildcard search
                     // Search across: file_name, data_category, file_description, file_type, file_access,
@@ -2312,8 +2314,14 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     Map<String, Object> multiFieldSearch = new HashMap<>();
                     multiFieldSearch.put("bool", Map.of("should", shouldClauses, "minimum_should_match", 1));
                     
-                    // Check if query has "should" structure (with facet filters)
-                    if (boolQuery.containsKey("should")) {
+                    if (queryMap.containsKey("match_all")) {
+                        // No facet filters — buildFacetFilterQuery returns match_all instead of a bool query
+                        List<Object> mustList = new ArrayList<>();
+                        mustList.add(Map.of("exists", Map.of("field", "file_id")));
+                        mustList.add(multiFieldSearch);
+                        query.put("query", Map.of("bool", Map.of("must", mustList)));
+                    } else if (boolQuery != null && boolQuery.containsKey("should")) {
+                        // Query has facet filters in a bool.should structure
                         List<Object> shouldList = (List<Object>) boolQuery.get("should");
                         if (shouldList != null && !shouldList.isEmpty()) {
                             // Get the first (and only) element in should array
@@ -2345,9 +2353,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                                 query.put("query", mutableQueryMap);
                             }
                         }
-                    } else {
-                        // No facet filters - simpler structure with just "must"
-                        // Add multi-field search to must clause
+                    } else if (boolQuery != null) {
+                        // Bool query without should — add filename search to must clause
                         Object mustObj = boolQuery.get("must");
                         List<Object> mustList = new ArrayList<>();
                         
