@@ -255,12 +255,25 @@ indices:
             sample_contexts,
             [f IN collect(DISTINCT study_file) WHERE f IS NOT NULL] AS study_files
 
+          // Participant-level files
+          OPTIONAL MATCH (p)<--(participant_file)
+          WHERE participant_file:clinical_measure_file
+            OR participant_file:generic_file
+            OR participant_file:radiology_file
+
+          WITH
+            p,
+            sample_contexts,
+            study_files,
+            [f IN collect(DISTINCT participant_file) WHERE f IS NOT NULL] AS participant_files
+
           UNWIND sample_contexts AS ctx
 
           WITH
             p,
             ctx.source_sm AS source_sm,
-            study_files
+            study_files,
+            participant_files
 
           // Source sample-level files
           OPTIONAL MATCH (source_sm)<--(sample_file)
@@ -271,25 +284,27 @@ indices:
             OR sample_file:cytogenomic_file
 
           WITH
-            p,
+            p.guid AS guid,
             study_files,
+            participant_files,
             [f IN collect(DISTINCT sample_file) WHERE f IS NOT NULL] AS sample_files
 
-          // Participant-level files
-          OPTIONAL MATCH (p)<--(participant_file)
-          WHERE participant_file:clinical_measure_file
-            OR participant_file:generic_file
-            OR participant_file:radiology_file
+          WITH
+            guid,
+            study_files + participant_files + sample_files AS all_files
+
+          UNWIND CASE
+            WHEN size(all_files) = 0 THEN [null]
+            ELSE all_files
+          END AS f
 
           WITH
-            p.guid AS guid,
-            study_files +
-            sample_files +
-            [f IN collect(DISTINCT participant_file) WHERE f IS NOT NULL] AS files
+            guid,
+            collect(DISTINCT f) AS files
 
           RETURN
             guid,
-            [f IN files | {
+            [f IN files WHERE f IS NOT NULL | {
               id: f.dcf_indexd_guid,
               file_id: CASE labels(f)[0]
                 WHEN 'clinical_measure_file' THEN f.dcf_indexd_guid
