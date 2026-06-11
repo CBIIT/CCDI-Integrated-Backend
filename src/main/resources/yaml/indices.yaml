@@ -210,6 +210,123 @@ indices:
               diagnosis: dg.diagnosis
             }] AS diagnoses
         page_size: 5000
+      - name: "files"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+
+          // Direct participant samples: self-context
+          OPTIONAL MATCH (p)<--(s1:sample)
+          WITH
+            p,
+            collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
+
+          // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
+          OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
+          WHERE model:cell_line OR model:pdx
+
+          WITH
+            p,
+            [ctx IN (
+              direct_contexts
+              + collect(DISTINCT { sm: s1_model, source_sm: s1_model })
+              + collect(DISTINCT { sm: s2, source_sm: s2 })
+              + collect(DISTINCT { sm: s1_model, source_sm: s2 })
+              + collect(DISTINCT { sm: s2, source_sm: s1_model })
+            )
+            WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
+
+          WITH
+            p,
+            CASE
+              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
+              ELSE sample_contexts
+            END AS sample_contexts
+
+          // Study-level files
+          OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+          OPTIONAL MATCH (st)<--(study_file)
+          WHERE study_file:clinical_measure_file
+            OR study_file:generic_file
+
+          WITH
+            p,
+            sample_contexts,
+            [f IN collect(DISTINCT study_file) WHERE f IS NOT NULL] AS study_files
+
+          UNWIND sample_contexts AS ctx
+
+          WITH
+            p,
+            ctx.source_sm AS source_sm,
+            study_files
+
+          // Source sample-level files
+          OPTIONAL MATCH (source_sm)<--(sample_file)
+          WHERE sample_file:sequencing_file
+            OR sample_file:generic_file
+            OR sample_file:methylation_array_file
+            OR sample_file:pathology_file
+            OR sample_file:cytogenomic_file
+
+          WITH
+            p,
+            study_files,
+            [f IN collect(DISTINCT sample_file) WHERE f IS NOT NULL] AS sample_files
+
+          // Participant-level files
+          OPTIONAL MATCH (p)<--(participant_file)
+          WHERE participant_file:clinical_measure_file
+            OR participant_file:generic_file
+            OR participant_file:radiology_file
+
+          WITH
+            p.guid AS guid,
+            study_files +
+            sample_files +
+            [f IN collect(DISTINCT participant_file) WHERE f IS NOT NULL] AS files
+
+          RETURN
+            guid,
+            [f IN files | {
+              id: f.dcf_indexd_guid,
+              file_id: CASE labels(f)[0]
+                WHEN 'clinical_measure_file' THEN f.dcf_indexd_guid
+                WHEN 'generic_file' THEN f.dcf_indexd_guid
+                WHEN 'radiology_file' THEN f.dcf_indexd_guid
+                WHEN 'sequencing_file' THEN f.dcf_indexd_guid
+                WHEN 'methylation_array_file' THEN f.dcf_indexd_guid
+                WHEN 'pathology_file' THEN f.dcf_indexd_guid
+                WHEN 'cytogenomic_file' THEN f.dcf_indexd_guid
+                ELSE null
+              END,
+              dcf_indexd_guid: f.dcf_indexd_guid,
+              file_name: f.file_name,
+              file_access: f.file_access,
+              data_category: f.data_category,
+              file_type: f.file_type,
+              file_description: f.file_description,
+              file_size: f.file_size,
+              md5sum: f.md5sum,
+              library_selection: CASE labels(f)[0]
+                WHEN 'sequencing_file' THEN f.library_selection
+                ELSE null
+              END,
+              library_source_material: CASE labels(f)[0]
+                WHEN 'sequencing_file' THEN f.library_source_material
+                ELSE null
+              END,
+              library_source_molecule: CASE labels(f)[0]
+                WHEN 'sequencing_file' THEN f.library_source_molecule
+                ELSE null
+              END,
+              library_strategy: CASE labels(f)[0]
+                WHEN 'sequencing_file' THEN f.library_strategy
+                ELSE null
+              END
+            }] AS files
+        page_size: 1000
       - name: "genetic_analyses"
         query: |
           MATCH (p:participant)
