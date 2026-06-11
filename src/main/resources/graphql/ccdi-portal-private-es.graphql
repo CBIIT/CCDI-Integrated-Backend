@@ -128,6 +128,23 @@ type CohortChartParticipantGroup {
     subjects: Float
 }
 
+type KMPlotResult {
+    id: String # Participant ID
+    time: Int # Difference between highest age_at_last_known_survival_status and highest age_at_diagnosis
+    event: Int # Event (0 = censored, 1 = event occurred)
+    group: String # Name of cohort
+}
+
+type RiskTableResult {
+    cohorts: [RiskTableReturnObject]
+    timeIntervals: [String]
+}
+
+type RiskTableReturnObject {
+    cohort: String
+    survivalData: [SearchParticipantsReturnObject]
+}
+
 type CohortMetadataReturnObject {
     id: String
     participant_id: String
@@ -511,6 +528,18 @@ type QueryType {
         c3: [String],
         charts: [CohortChartConfigChart]
     ): [CohortChartsResult]
+
+    kMPlot(
+        c1: [String],
+        c2: [String],
+        c3: [String]
+    ): [KMPlotResult]
+
+    riskTableData(
+        c1: [String]!,
+        c2: [String]!,
+        c3: [String]!
+    ): RiskTableResult
 
     studyDetails(study_id: String): StudyDetailsResult
     

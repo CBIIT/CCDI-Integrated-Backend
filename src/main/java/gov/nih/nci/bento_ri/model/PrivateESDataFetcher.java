@@ -65,6 +65,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String COHORTS_END_POINT = "/cohorts/_search";
     final String PARTICIPANTS_END_POINT = "/participants_table/_search";
     final String SURVIVALS_END_POINT = "/survivals_table/_search";
+    final String KM_PLOT_DATA_END_POINT = "/km_plot_data/_search";
     final String TREATMENTS_END_POINT = "/treatments_table/_search";
     final String TREATMENT_RESPONSES_END_POINT = "/treatment_responses_table/_search";
     final String DIAGNOSIS_END_POINT = "/diagnoses_table/_search";
@@ -93,6 +94,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         Map.entry("diagnoses_table", DIAGNOSIS_END_POINT),
         Map.entry("files_table", FILES_END_POINT),
         Map.entry("genetic_analyses_table", GENETIC_ANALYSES_END_POINT),
+        Map.entry("km_plot_data", KM_PLOT_DATA_END_POINT),
         Map.entry("participants_table", PARTICIPANTS_END_POINT),
         Map.entry("samples_table", SAMPLES_END_POINT),
         Map.entry("survivals_table", SURVIVALS_END_POINT),
@@ -174,6 +176,14 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         .dataFetcher("cohortCharts", env -> {
                             Map<String, Object> args = env.getArguments();
                             return cohortCharts(args);
+                        })
+                        .dataFetcher("kMPlot", env -> {
+                            Map<String, Object> args = env.getArguments();
+                            return kMPlot(args);
+                        })
+                        .dataFetcher("riskTableData", env -> {
+                            Map<String, Object> args = env.getArguments();
+                            return riskTableData(args);
                         })
                         .dataFetcher("studyDetails", env -> {
                             Map<String, Object> args = env.getArguments();
@@ -1818,6 +1828,245 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         return charts;
     }
 
+    private List<Map<String, Object>> kMPlot(Map<String, Object> params) throws IOException {
+        List<Map<String, Object>> dataPoints = new ArrayList<Map<String, Object>>();
+        final List<Map<String, Object>> PROPERTIES = List.of(
+            Map.ofEntries( // Participant ID
+                Map.entry("gqlName", "id"),
+                Map.entry("osName", "id")
+            ),
+            Map.ofEntries( // Difference between participant's highest age_at_diagnosis and highest age_at_last_known_survival_status
+                Map.entry("gqlName", "time"),
+                Map.entry("osName", "time")
+            ),
+            Map.ofEntries( // 1 if participant is dead, and 0 if participant is alive
+                Map.entry("gqlName", "event"),
+                Map.entry("osName", "event")
+            )
+        );
+
+        String defaultSort = "time"; // Default sort order
+
+        Map<String, Map<String, Object>> mapping = Map.ofEntries(
+            Map.entry("id", Map.ofEntries(
+                Map.entry("osName", "id"),
+                Map.entry("isNested", false)
+            )),
+            Map.entry("time", Map.ofEntries(
+                Map.entry("osName", "time"),
+                Map.entry("isNested", false)
+            )),
+            Map.entry("event", Map.ofEntries(
+                Map.entry("osName", "event"),
+                Map.entry("isNested", false)
+            ))
+        );
+
+        if (!(params.containsKey("c1") || params.containsKey("c2") || params.containsKey("c3"))) {
+            return List.of(); // No cohorts specified
+        }
+
+        // Iterate through "c1", "c2", and "c3" in params
+        for (String cohortKey : List.of("c1", "c2", "c3")) {
+            List<String> cohort = new ArrayList<String>();
+            Object cohortRaw;
+
+            if (!params.containsKey(cohortKey)) {
+                continue;
+            }
+
+            cohortRaw = params.get(cohortKey);
+
+            if (cohortRaw == null) {
+                continue;
+            }
+
+            if (cohortRaw instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> castedCohort = (List<String>) cohortRaw;
+                cohort = castedCohort;
+            }
+
+            if (cohort.isEmpty()) {
+                continue;
+            }
+
+            Map<String, Object> cohortParams = Map.ofEntries(
+                Map.entry("id", cohort),
+                Map.entry(ORDER_BY, "time"),
+                Map.entry(SORT_DIRECTION, "ASC"),
+                Map.entry(PAGE_SIZE, ESService.MAX_ES_SIZE),
+                Map.entry(OFFSET, 0)
+            );
+            List<Map<String, Object>> cohortKMPlotData = overview(KM_PLOT_DATA_END_POINT, cohortParams, PROPERTIES, defaultSort, mapping, "participants");
+
+            // Specify cohort for each data point
+            cohortKMPlotData.forEach(data -> {
+                data.put("group", cohortKey);
+                dataPoints.add(data);
+            });
+        }
+
+        return dataPoints;
+    }
+
+    /**
+     * Returns data for the risk table
+     * At 0 months, we count all participants who are eligible for KM plot data
+     * At 6 months, we subtract participants who experienced the event up until then
+     * At 12 months, we further subtract participants who experienced the event up until then
+     * And so on...
+     * @param params
+     * @return List of three "tables" - one for each cohort
+     * @throws IOException
+     */
+    private Map<String, Object> riskTableData(Map<String, Object> params) throws IOException {
+        Map<String, Object> result = new HashMap<>(Map.of(
+            "timeIntervals", List.of("0 Months", "6 Months", "12 Months", "18 Months", "24 Months", "30 Months", "36 Months")
+        ));
+        ArrayList<Map<String, Object>> cohortsData = new ArrayList<Map<String, Object>>();
+
+        List<Map<String, Object>> cutoffTimes = List.of(
+            Map.of(
+                "key", "6 Months",
+                "from", 0,
+                "to", 183
+            ),
+            Map.of(
+                "key", "12 Months",
+                "from", 183,
+                "to", 365
+            ),
+            Map.of(
+                "key", "18 Months",
+                "from", 365,
+                "to", 548
+            ),
+            Map.of(
+                "key", "24 Months",
+                "from", 548,
+                "to", 730
+            ),
+            Map.of(
+                "key", "30 Months",
+                "from", 730,
+                "to", 913
+            ),
+            Map.of(
+                "key", "36 Months",
+                "from", 913,
+                "to", 1095
+            )
+        );
+
+        // Obtain data for each cohort
+        for (String cohortName : List.of("c1", "c2", "c3")) { // All three are guaranteed by GraphQL
+            List<String> cohort = new ArrayList<String>();
+            JsonArray counts;
+            int initialCount;
+            Map<String, Object> initialCountQuery;
+            JsonObject opensearchResponse;
+            Map<String, Object> query;
+            String queryJson;
+            Request request;
+            int runningCount;
+            List<Map<String, Object>> table = new ArrayList<Map<String, Object>>();
+            Object cohortRaw = params.get(cohortName);
+
+            // Obtain cohort (list of Participant primary keys)
+            if (cohortRaw instanceof List<?>) {
+                @SuppressWarnings("unchecked")
+                List<String> castedCohort = (List<String>) cohortRaw;
+                cohort = castedCohort;
+            }
+
+            // Count all eligible participants in the cohort
+            initialCountQuery = Map.of(
+                "query", Map.of(
+                    "bool", Map.of(
+                        "filter", Set.of(
+                            Map.of(
+                                "terms", Map.of(
+                                    "id", cohort
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+
+            // Obtain initial count
+            initialCount = inventoryESService.getCount(initialCountQuery, "km_plot_data");
+            runningCount = initialCount; // To be used later for each cutoff time
+            table.add(Map.ofEntries(
+                Map.entry("group", "0 Months"),
+                Map.entry("subjects", initialCount)
+            ));
+
+            // Build query
+            query = Map.of(
+                "size", 0,
+                "query", Map.of(
+                    "bool", Map.of(
+                        "filter", Set.of(
+                            Map.of(
+                                "term", Map.of(
+                                    "event", 1
+                                )
+                            ),
+                            Map.of(
+                                "terms", Map.of(
+                                    "id", cohort
+                                )
+                            )
+                        )
+                    )
+                ),
+                "aggs", Map.of(
+                    "cutoff_times", Map.of(
+                        "range", Map.of(
+                            "field", "time",
+                            "ranges", cutoffTimes
+                        ),
+                        "aggs", Map.of(
+                            "unique_participants", Map.of(
+                                "cardinality", Map.of(
+                                    "field", "id"
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+
+            queryJson = gson.toJson(query);
+            request = new Request("GET", KM_PLOT_DATA_END_POINT);
+            request.setJsonEntity(queryJson);
+            opensearchResponse = inventoryESService.send(request);
+            counts = inventoryESService.collectRangCountAggs(opensearchResponse, "cutoff_times").get("cutoff_times");
+
+            for (JsonElement item : counts) {
+                String key = item.getAsJsonObject().get("key").getAsString();
+                int count = item.getAsJsonObject().get("unique_participants").getAsJsonObject().get("value").getAsInt();
+                runningCount = runningCount - count;
+
+                table.add(Map.ofEntries(
+                    Map.entry("group", key),
+                    Map.entry("subjects", runningCount)
+                ));
+            }
+
+            // Add data to result to return
+            cohortsData.add(Map.ofEntries(
+                Map.entry("cohort", cohortName),
+                Map.entry("survivalData", table)
+            ));
+        }
+
+        result.put("cohorts", cohortsData);
+        return result;
+    }
+
     private List<Map<String, Object>> diagnosisOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
             new String[]{"d_id", "id"},
@@ -2468,6 +2717,29 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         return page;
     }
 
+    /**
+     * Returns a list of records that match the given filters
+     * @param endpoint The Opensearch endpoint to query
+     * @param params The GraphQL variables to filter by
+     * @param properties The properties to retrieve
+     * @param defaultSort The default sort
+     * @param mapping Map of how to sort each field
+     * @param overviewType The type of records retrieved
+     * @return
+     * @throws IOException
+     */
+    private List<Map<String, Object>> overview(String endpoint, Map<String, Object> params, List<Map<String, Object>> properties, String defaultSort, Map<String, Map<String, Object>> mapping, String overviewType) throws IOException {
+        Request request = new Request("GET", endpoint);
+        Map<String, Object> query = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(PAGE_SIZE, OFFSET, ORDER_BY, SORT_DIRECTION), Set.of(), "", overviewType);
+        String order_by = (String)params.get(ORDER_BY);
+        String direction = ((String)params.get(SORT_DIRECTION)).toLowerCase();
+        query.put("sort", mapSortOrderWithMetadata(order_by, direction, defaultSort, mapping));
+        int pageSize = (int) params.get(PAGE_SIZE);
+        int offset = (int) params.get(OFFSET);
+        List<Map<String, Object>> page = inventoryESService.collectPage(request, query, mapProperties(properties), pageSize, offset);
+        return page;
+    }
+
     private List<Map<String, Object>> findParticipantIdsInList(Map<String, Object> params) throws IOException {
         final String[][] properties = new String[][]{
                 new String[]{"participant_id", "participant_id"},
@@ -2532,6 +2804,55 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         return Map.of(sortOrder, sortDirection);
     }
 
+    private Map<String, Object> mapSortOrderWithMetadata(String order_by, String direction, String defaultSort, Map<String, Map<String, Object>> mapping) {
+        String sortDirection = "asc";
+        Object sortPredicate;
+
+        // Handle null sort mapping
+        if (mapping == null) {
+            return Map.of(defaultSort, sortDirection);
+        }
+
+        // Handle invalid sort parameters
+        if (!mapping.containsKey(order_by)) {
+            logger.info("Order: \"" + order_by + "\" not recognized, use default order");
+            return Map.of(defaultSort, sortDirection);
+        }
+
+        // Only two valid sort directions
+        if (direction != null && (direction.equalsIgnoreCase("asc") || direction.equalsIgnoreCase("desc"))) {
+            sortDirection = direction.toLowerCase();
+        }
+
+        Map<String, Object> mappingDetails = mapping.get(order_by);
+        boolean isNested = (Boolean) mappingDetails.get("isNested");
+        String propName = (String) mappingDetails.get("osName");
+
+        if (isNested) {
+            String nestedPath = (String) mappingDetails.get("path");
+            propName = String.join(".", nestedPath, propName);
+            sortPredicate = Map.ofEntries(
+                Map.entry("nested_path", nestedPath),
+                Map.entry("order", sortDirection)
+            );
+        } else {
+            sortPredicate = sortDirection;
+        }
+
+        return Map.of(propName, sortPredicate);
+    }
+    
+    private String[][] mapProperties(List<Map<String, Object>> properties) {
+        String[][] mappedProperties = new String[properties.size()][2];
+
+        for (int i = 0; i < properties.size(); i++) {
+            Map<String, Object> property = properties.get(i);
+            mappedProperties[i][0] = (String) property.get("gqlName");
+            mappedProperties[i][1] = (String) property.get("osName");
+        }
+        return mappedProperties;
+    }
+    
     private List<String> fileIDsFromList(Map<String, Object> params) throws IOException {
         List<String> participantIDsSet = (List<String>) params.get("participant_ids");
         List<String> diagnosisIDsSet = (List<String>) params.get("diagnosis_ids");
