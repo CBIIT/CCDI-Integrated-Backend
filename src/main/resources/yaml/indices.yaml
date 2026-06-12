@@ -3207,8 +3207,8 @@ indices:
           SKIP $skip LIMIT $limit
           RETURN
             tresp.guid AS id,
-            tresp.guid AS treatment_response_id,
-            p.id AS pid,
+            tresp.treatment_response_id AS treatment_response_id,
+            p.guid AS pid,
             p.participant_id AS participant_id,
             p.race AS race,
             reduce(result = '', x IN p.race |
