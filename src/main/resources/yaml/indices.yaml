@@ -10,9 +10,12 @@ indices:
         - race
         - sex_at_birth
         - consent_group_name
-        - consent_group_number
+        - consent_group_suffix
         - study_id
         - dbgap_accession
+        - study_acronym
+        - study_name
+        - study_status
         - diagnoses.guid
         - diagnoses.diagnosis_id
         - diagnoses.anatomic_site
@@ -28,6 +31,20 @@ indices:
         - diagnoses.tumor_stage_clinical_m
         - diagnoses.tumor_stage_clinical_n
         - diagnoses.tumor_stage_clinical_t
+        - files.guid
+        - files.file_id
+        - files.dcf_indexd_guid
+        - files.data_category
+        - files.file_access
+        - files.file_description
+        - files.file_name
+        - files.file_size
+        - files.file_type
+        - files.library_selection
+        - files.library_source_material
+        - files.library_source_molecule
+        - files.library_strategy
+        - files.md5sum
         - genetic_analyses.guid
         - genetic_analyses.genetic_analysis_id
         - genetic_analyses.alteration
@@ -48,6 +65,12 @@ indices:
         - genetic_analyses.reported_significance_system
         - genetic_analyses.status
         - genetic_analyses.test
+        - samples.guid
+        - samples.sample_id
+        - samples.anatomic_site
+        - samples.sample_description
+        - samples.sample_tumor_status
+        - samples.tumor_classification
         - survivals.guid
         - survivals.survival_id
         - survivals.cause_of_death
@@ -63,34 +86,14 @@ indices:
         - treatment_responses.response
         - treatment_responses.response_category
         - treatment_responses.response_system
-        - samples.guid
-        - samples.sample_id
-        - samples.anatomic_site
-        - samples.sample_tumor_status
-        - samples.tumor_classification
-        - samples.sample_description
-        - files.guid
-        - files.file_id
-        - files.file_name
-        - files.data_category
-        - files.file_type
-        - files.file_description
-        - files.file_size
-        - files.md5sum
-        - files.file_access
-        - files.dcf_indexd_guid
-        - files.library_selection
-        - files.library_strategy
-        - files.library_source_material
-        - files.library_source_molecule
       integer:
         - diagnoses.age_at_diagnosis
+        - samples.participant_age_at_collection
         - survivals.age_at_event_free_survival_status
         - survivals.age_at_last_known_survival_status
         - treatments.age_at_treatment_end
         - treatments.age_at_treatment_start
         - treatment_responses.age_at_response
-        - samples.participant_age_at_collection
     initial_query:
       query: |
         MATCH (p:participant)
@@ -112,9 +115,9 @@ indices:
             p.guid AS id,
             stu.study_id AS study_id,
             stu.dbgap_accession AS dbgap_accession,
-            stu.study_phase AS study_status,
             stu.study_acronym AS study_acronym,
-            stu.study_name AS study_name
+            stu.study_name AS study_name,
+            stu.study_phase AS study_status
         page_size: 5000
       - name: "consent_group_properties"
         query: |
@@ -127,7 +130,7 @@ indices:
           RETURN
             p.guid AS id,
             cg.consent_group_name AS consent_group_name,
-            cg.consent_group_number AS consent_group_number
+            cg.consent_group_suffix AS consent_group_suffix
         page_size: 5000
       - name: "participant_properties"
         query: |
@@ -138,12 +141,6 @@ indices:
             p.guid AS id,
             p.participant_id AS participant_id,
             p.race AS race,
-            reduce(result = '', x IN p.race |
-              CASE 
-                WHEN result = "" THEN x
-                ELSE result + ";" + x
-              END
-            ) AS race_str,
             p.sex_at_birth AS sex_at_birth
         page_size: 5000
       - name: "diagnoses"
@@ -201,13 +198,22 @@ indices:
           RETURN
             id,
             [dg IN diagnoses | {
+              guid: dg.guid,
+              diagnosis_id: dg.diagnosis_id,
               age_at_diagnosis: dg.age_at_diagnosis,
               anatomic_site: dg.anatomic_site,
-              disease_phase: dg.disease_phase,
-              diagnosis_classification_system: dg.diagnosis_classification_system,
-              diagnosis_category: dg.diagnosis_category,
+              diagnosis: dg.diagnosis,
               diagnosis_basis: dg.diagnosis_basis,
-              diagnosis: dg.diagnosis
+              diagnosis_category: dg.diagnosis_category,
+              diagnosis_classification_system: dg.diagnosis_classification_system,
+              diagnosis_comment: dg.diagnosis_comment,
+              disease_phase: dg.disease_phase,
+              toronto_childhood_cancer_staging: dg.toronto_childhood_cancer_staging,
+              tumor_classification: dg.tumor_classification,
+              tumor_grade: dg.tumor_grade,
+              tumor_stage_clinical_m: dg.tumor_stage_clinical_m,
+              tumor_stage_clinical_n: dg.tumor_stage_clinical_n,
+              tumor_stage_clinical_t: dg.tumor_stage_clinical_t
             }] AS diagnoses
         page_size: 5000
       - name: "files"
@@ -305,7 +311,7 @@ indices:
           RETURN
             id,
             [f IN files WHERE f IS NOT NULL | {
-              id: f.dcf_indexd_guid,
+              guid: f.dcf_indexd_guid,
               file_id: CASE labels(f)[0]
                 WHEN 'clinical_measure_file' THEN f.dcf_indexd_guid
                 WHEN 'generic_file' THEN f.dcf_indexd_guid
@@ -317,13 +323,12 @@ indices:
                 ELSE null
               END,
               dcf_indexd_guid: f.dcf_indexd_guid,
-              file_name: f.file_name,
-              file_access: f.file_access,
               data_category: f.data_category,
-              file_type: f.file_type,
+              file_access: f.file_access,
               file_description: f.file_description,
+              file_name: f.file_name,
               file_size: f.file_size,
-              md5sum: f.md5sum,
+              file_type: f.file_type,
               library_selection: CASE labels(f)[0]
                 WHEN 'sequencing_file' THEN f.library_selection
                 ELSE null
@@ -339,7 +344,8 @@ indices:
               library_strategy: CASE labels(f)[0]
                 WHEN 'sequencing_file' THEN f.library_strategy
                 ELSE null
-              END
+              END,
+              md5sum: f.md5sum
             }] AS files
         page_size: 1000
       - name: "genetic_analyses"
@@ -397,13 +403,26 @@ indices:
           RETURN
             id,
             [ga IN gas | {
+              guid: ga.guid,
+              genetic_analysis_id: ga.genetic_analysis_id,
+              alteration: ga.alteration,
+              alteration_effect: ga.alteration_effect,
+              alteration_type: ga.alteration_type,
+              chromosome: ga.chromosome,
+              cytoband: ga.cytoband,
+              exon: ga.exon,
+              fusion_partner_exon: ga.fusion_partner_exon,
+              fusion_partner_gene: ga.fusion_partner_gene,
+              gene_symbol: ga.gene_symbol,
+              genomic_source_category: ga.genomic_source_category,
+              hgvs_coding: ga.hgvs_coding,
+              hgvs_genome: ga.hgvs_genome,
+              hgvs_protein: ga.hgvs_protein,
+              reference_genome: ga.reference_genome,
               reported_significance: ga.reported_significance,
               reported_significance_system: ga.reported_significance_system,
-              gene_symbol: ga.gene_symbol,
-              alteration: ga.alteration,
-              fusion_partner_gene: ga.fusion_partner_gene,
-              alteration_type: ga.alteration_type,
-              status: ga.status
+              status: ga.status,
+              test: ga.test
             }] AS genetic_analyses
         page_size: 5000
       - name: "samples"
@@ -421,13 +440,13 @@ indices:
           RETURN
             id,
             [sample IN samples | {
-              id: sample.id,
+              guid: sample.id,
               sample_id: sample.sample_id,
               anatomic_site: sample.anatomic_site,
               participant_age_at_collection: sample.participant_age_at_collection,
+              sample_description: sample.sample_description,
               sample_tumor_status: sample.sample_tumor_status,
-              tumor_classification: sample.tumor_classification,
-              sample_description: sample.sample_description
+              tumor_classification: sample.tumor_classification
             }] AS samples
       - name: "survivals"
         query: |
@@ -441,10 +460,14 @@ indices:
             coalesce(
               [item IN collect(
                 DISTINCT {
-                  last_known_survival_status: sur.last_known_survival_status,
+                  guid: sur.guid,
+                  survival_id: sur.survival_id,
+                  age_at_event_free_survival_status: sur.age_at_event_free_survival_status,
+                  age_at_last_known_survival_status: sur.age_at_last_known_survival_status,
                   cause_of_death: sur.cause_of_death,
+                  event_free_survival_status: sur.event_free_survival_status,
                   first_event: sur.first_event,
-                  age_at_last_known_survival_status: sur.age_at_last_known_survival_status
+                  last_known_survival_status: sur.last_known_survival_status
                 }
               ) WHERE item IS NOT NULL],
               []
@@ -475,10 +498,12 @@ indices:
               coalesce(
                 [item in collect(
                   DISTINCT {
-                    treatment_type: tchemo.chemotherapy_type,
+                    guid: tchemo.guid,
+                    treatment_id: tchemo.treatment_chemotherapy_id,
                     treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
-                    age_at_treatment_start: tchemo.age_at_treatment_start,
-                    age_at_treatment_end: tchemo.age_at_treatment_end
+                    treatment_type: tchemo.chemotherapy_type,
+                    age_at_treatment_end: tchemo.age_at_treatment_end,
+                    age_at_treatment_start: tchemo.age_at_treatment_start
                   }
                 ) WHERE item IS NOT NULL],
                 []
@@ -503,10 +528,12 @@ indices:
               coalesce(
                 [item in collect(
                   DISTINCT {
-                    treatment_type: trad.treatment_type,
+                    guid: trad.guid,
+                    treatment_id: trad.treatment_radiation_id,
                     treatment_agent: trad.radiation_therapy_type,
-                    age_at_treatment_start: trad.age_at_treatment_start,
-                    age_at_treatment_end: trad.age_at_treatment_end
+                    treatment_type: trad.treatment_type,
+                    age_at_treatment_end: trad.age_at_treatment_end,
+                    age_at_treatment_start: trad.age_at_treatment_start
                   }
                 ) WHERE item IS NOT NULL],
                 []
@@ -531,10 +558,12 @@ indices:
               coalesce(
                 [item in collect(
                   DISTINCT {
-                    treatment_type: tsurg.treatment_type,
+                    guid: tsurg.guid,
+                    treatment_id: tsurg.treatment_surgery_id,
                     treatment_agent: tsurg.surgery_type,
-                    age_at_treatment_start: tsurg.age_at_treatment_start,
-                    age_at_treatment_end: tsurg.age_at_treatment_end
+                    treatment_type: tsurg.treatment_type,
+                    age_at_treatment_end: tsurg.age_at_treatment_end,
+                    age_at_treatment_start: tsurg.age_at_treatment_start
                   }
                 ) WHERE item IS NOT NULL],
                 []
@@ -559,10 +588,12 @@ indices:
               coalesce(
                 [item in collect(
                   DISTINCT {
-                    treatment_type: toth.treatment_type,
+                    guid: toth.guid,
+                    treatment_id: toth.treatment_other_id,
                     treatment_agent: toth.other_treatment_type,
-                    age_at_treatment_start: toth.age_at_treatment_start,
-                    age_at_treatment_end: toth.age_at_treatment_end
+                    treatment_type: toth.treatment_type,
+                    age_at_treatment_end: toth.age_at_treatment_end,
+                    age_at_treatment_start: toth.age_at_treatment_start
                   }
                 ) WHERE item IS NOT NULL],
                 []
@@ -596,6 +627,8 @@ indices:
             coalesce(
               [item IN collect(
                 DISTINCT {
+                  guid: tresp.guid,
+                  treatment_response_id: tresp.treatment_response_id,
                   age_at_response: tresp.age_at_response,
                   response: tresp.response,
                   response_category: tresp.response_category,
