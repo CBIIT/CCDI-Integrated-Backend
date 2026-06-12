@@ -3277,9 +3277,10 @@ indices:
           MATCH (tresp:treatment_response)-[:of_treatment_response]->(p:participant)
           WITH tresp, p
           SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
-          WITH tresp, p,
-            coalesce(
+          CALL {
+            WITH p
+            OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
+            RETURN coalesce(
               [item IN collect(DISTINCT {
                 treatment_type: CASE
                   WHEN tchemo.chemotherapy_type IS NULL OR size(tchemo.chemotherapy_type) = 0 THEN ['chemotherapy']
@@ -3291,9 +3292,11 @@ indices:
               }) WHERE item IS NOT NULL],
               []
             ) AS chemo_filters
-          OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
-          WITH tresp, p, chemo_filters,
-            coalesce(
+          }
+          CALL {
+            WITH p
+            OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
+            RETURN coalesce(
               [item IN collect(DISTINCT {
                 treatment_type: CASE
                   WHEN trad.treatment_type IS NULL OR size(trad.treatment_type) = 0 THEN ['radiation']
@@ -3305,9 +3308,11 @@ indices:
               }) WHERE item IS NOT NULL],
               []
             ) AS rad_filters
-          OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
-          WITH tresp, p, chemo_filters, rad_filters,
-            coalesce(
+          }
+          CALL {
+            WITH p
+            OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
+            RETURN coalesce(
               [item IN collect(DISTINCT {
                 treatment_type: CASE
                   WHEN tsurg.treatment_type IS NULL OR size(tsurg.treatment_type) = 0 THEN ['surgery']
@@ -3319,11 +3324,11 @@ indices:
               }) WHERE item IS NOT NULL],
               []
             ) AS surg_filters
-          OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
-          WITH
-            tresp.guid AS id,
-            chemo_filters + rad_filters + surg_filters +
-            coalesce(
+          }
+          CALL {
+            WITH p
+            OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
+            RETURN coalesce(
               [item IN collect(DISTINCT {
                 treatment_type: CASE
                   WHEN toth.treatment_type IS NULL OR size(toth.treatment_type) = 0 THEN ['other']
@@ -3334,7 +3339,11 @@ indices:
                 age_at_treatment_end: toth.age_at_treatment_end
               }) WHERE item IS NOT NULL],
               []
-            ) AS treatment_filters
+            ) AS other_filters
+          }
+          WITH
+            tresp.guid AS id,
+            chemo_filters + rad_filters + surg_filters + other_filters AS treatment_filters
           RETURN id, treatment_filters
         page_size: 1000
       - name: "sample_diagnosis_genetic_analysis_file_filters"
