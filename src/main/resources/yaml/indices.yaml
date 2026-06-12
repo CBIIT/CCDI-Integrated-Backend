@@ -2584,6 +2584,7 @@ indices:
         - pid
         - participant_id
         - race
+        - race_str
         - sex_at_birth
         - study_id
         - dbgap_accession
@@ -2694,6 +2695,13 @@ indices:
             UNION
 
             MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p:participant)
+            WITH
+              p,
+              trad,
+              CASE
+                WHEN trad.treatment_type IS NULL OR size(trad.treatment_type) = 0 THEN ['radiation']
+                ELSE [item IN trad.treatment_type WHERE item IS NOT NULL | trim(item)]
+              END AS treatment_type
             RETURN
               'treatment_radiation:' + trad.guid AS id,
               trad.guid AS treatment_id,
@@ -2707,10 +2715,7 @@ indices:
                   ELSE result + ';' + item
                 END
               ) AS treatment_agent_str,
-              CASE
-                WHEN trad.treatment_type IS NULL OR size(trad.treatment_type) = 0 THEN ['radiation']
-                ELSE [item IN trad.treatment_type WHERE item IS NOT NULL | trim(item)]
-              END AS treatment_type,
+              treatment_type,
               reduce(result = '', item IN treatment_type |
                 CASE
                   WHEN result = '' THEN item
@@ -2721,6 +2726,13 @@ indices:
             UNION
 
             MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p:participant)
+            WITH
+              p,
+              tsurg,
+              CASE
+                WHEN tsurg.treatment_type IS NULL OR size(tsurg.treatment_type) = 0 THEN ['surgery']
+                ELSE [item IN tsurg.treatment_type WHERE item IS NOT NULL | trim(item)]
+              END AS treatment_type
             RETURN
               'treatment_surgery:' + tsurg.guid AS id,
               tsurg.guid AS treatment_id,
@@ -2734,10 +2746,7 @@ indices:
                   ELSE result + ';' + item
                 END
               ) AS treatment_agent_str,
-              CASE
-                WHEN tsurg.treatment_type IS NULL OR size(tsurg.treatment_type) = 0 THEN ['surgery']
-                ELSE [item IN tsurg.treatment_type WHERE item IS NOT NULL | trim(item)]
-              END AS treatment_type,
+              treatment_type,
               reduce(result = '', item IN treatment_type |
                 CASE
                   WHEN result = '' THEN item
@@ -2748,6 +2757,13 @@ indices:
             UNION
 
             MATCH (toth:treatment_other)-[:of_treatment_other]->(p:participant)
+            WITH
+              p,
+              toth,
+              CASE
+                WHEN toth.treatment_type IS NULL OR size(toth.treatment_type) = 0 THEN ['other']
+                ELSE [item IN toth.treatment_type WHERE item IS NOT NULL | trim(item)]
+              END AS treatment_type
             RETURN
               'treatment_other:' + toth.guid AS id,
               toth.guid AS treatment_id,
@@ -2761,10 +2777,7 @@ indices:
                   ELSE result + ';' + item
                 END
               ) AS treatment_agent_str,
-              CASE
-                WHEN toth.treatment_type IS NULL OR size(toth.treatment_type) = 0 THEN ['other']
-                ELSE [item IN toth.treatment_type WHERE item IS NOT NULL | trim(item)]
-              END AS treatment_type,
+              treatment_type,
               reduce(result = '', item IN treatment_type |
                 CASE
                   WHEN result = '' THEN item
@@ -2777,7 +2790,7 @@ indices:
           RETURN
             id,
             treatment_id,
-            p.id AS pid,
+            p.guid AS pid,
             p.participant_id AS participant_id,
             p.race AS race,
             reduce(result = '', x IN p.race |
