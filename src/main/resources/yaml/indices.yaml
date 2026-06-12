@@ -3145,6 +3145,7 @@ indices:
         - pid
         - participant_id
         - race
+        - race_str
         - sex_at_birth
         - study_id
         - dbgap_accession
