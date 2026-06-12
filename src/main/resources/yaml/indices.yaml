@@ -765,6 +765,8 @@ indices:
     mapping:
       keyword:
         - id
+      boolean:
+        - is_valid
       integer:
         - time
         - event
@@ -830,55 +832,93 @@ indices:
 
         WITH
           p,
+          diagnoses,
+          collect(DISTINCT sur) AS survivals
+
+        WITH
+          p,
           [diagnosis IN diagnoses
             WHERE diagnosis.age_at_diagnosis IS NOT NULL |
             diagnosis.age_at_diagnosis] AS diag_ages,
-          [survival IN collect(DISTINCT sur)
+          [survival IN survivals
             WHERE survival.age_at_last_known_survival_status IS NOT NULL |
             survival.age_at_last_known_survival_status] AS surv_ages,
-          collect(DISTINCT sur) AS survivals
+          survivals
 
-        WHERE
-          NOT ANY(a IN diag_ages WHERE a = -999) AND
-          NOT ANY(a IN surv_ages WHERE a = -999) AND
-          size(diag_ages) > 0 AND
-          size(surv_ages) > 0
+        WITH
+          p,
+          diag_ages,
+          surv_ages,
+          survivals,
+          NOT ANY(a IN diag_ages WHERE a = -999)
+            AND NOT ANY(a IN surv_ages WHERE a = -999)
+            AND size(diag_ages) > 0
+            AND size(surv_ages) > 0 AS has_required_ages
+
+        WITH
+          p,
+          diag_ages,
+          surv_ages,
+          survivals,
+          has_required_ages,
+          CASE
+            WHEN has_required_ages THEN
+              REDUCE(
+                m = NULL,
+                a IN diag_ages |
+                  CASE
+                    WHEN m IS NULL OR a < m THEN a
+                    ELSE m
+                  END
+              )
+            ELSE NULL
+          END AS min_diag_age,
+          CASE
+            WHEN has_required_ages THEN
+              REDUCE(
+                m = NULL,
+                a IN surv_ages |
+                  CASE
+                    WHEN m IS NULL OR a > m THEN a
+                    ELSE m
+                  END
+              )
+            ELSE NULL
+          END AS max_surv_age
 
         WITH
           p,
           survivals,
-          REDUCE(
-            m = NULL,
-            a IN diag_ages |
-              CASE
-                WHEN m IS NULL OR a < m THEN a
-                ELSE m
-              END
-          ) AS min_diag_age,
-          REDUCE(
-            m = NULL,
-            a IN surv_ages |
-              CASE
-                WHEN m IS NULL OR a > m THEN a
-                ELSE m
-              END
-          ) AS max_surv_age
-
-        WHERE min_diag_age <= max_surv_age
+          min_diag_age,
+          max_surv_age,
+          has_required_ages
+            AND min_diag_age IS NOT NULL
+            AND max_surv_age IS NOT NULL
+            AND min_diag_age <= max_surv_age AS is_valid
 
         WITH
           p,
           min_diag_age,
           max_surv_age,
-          [survival IN survivals
-            WHERE survival.age_at_last_known_survival_status = max_surv_age] AS max_survs
+          is_valid,
+          CASE
+            WHEN is_valid THEN
+              [survival IN survivals
+                WHERE survival.age_at_last_known_survival_status = max_surv_age]
+            ELSE []
+          END AS max_survs
 
         RETURN
           p.guid AS id,
-          max_surv_age - min_diag_age AS time,
+          is_valid,
           CASE
-            WHEN ANY(surv IN max_survs WHERE surv.last_known_survival_status = "Dead") THEN 1
-            ELSE 0
+            WHEN is_valid THEN max_surv_age - min_diag_age
+            ELSE NULL
+          END AS time,
+          CASE
+            WHEN is_valid AND ANY(surv IN max_survs WHERE surv.last_known_survival_status = "Dead") THEN 1
+            WHEN is_valid THEN 0
+            ELSE NULL
           END AS event
       page_size: 2000
 
