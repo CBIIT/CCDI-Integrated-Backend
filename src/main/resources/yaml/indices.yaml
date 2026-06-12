@@ -761,73 +761,126 @@ indices:
   # Excludes survival records with bad age_at_last_known_survival_status
   # Excludes survival records associated with bad age_at_diagnosis
   - index_name: km_plot_data
-    type: neo4j
+    id_field: id
     mapping:
       keyword:
         - id
       integer:
         - time
         - event
-    cypher_query: >
-      MATCH (p:participant)
-      OPTIONAL MATCH (p)<-[:of_diagnosis]-(d:diagnosis)
-      OPTIONAL MATCH (p)<-[:of_survival]-(sur:survival)
-      WITH p, COLLECT(d) AS diagnoses, COLLECT(sur) AS survivals
+    initial_query:
+      query: |
+        MATCH (p:participant)
+        WITH p
+        SKIP $skip LIMIT $limit
 
-      WITH
-        p,
-        diagnoses,
-        survivals,
-        [diagnosis IN diagnoses
-          WHERE diagnosis.age_at_diagnosis IS NOT NULL |
-          diagnosis.age_at_diagnosis] AS diag_ages,
-        [survival IN survivals
-          WHERE survival.age_at_last_known_survival_status IS NOT NULL |
-          survival.age_at_last_known_survival_status] AS surv_ages
+        // Direct participant samples: self-context
+        OPTIONAL MATCH (p)<--(s1:sample)
+        WITH
+          p,
+          collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
 
-      WHERE
-        NOT ANY(a IN diag_ages WHERE a = -999) AND
-        NOT ANY(a IN surv_ages WHERE a = -999) AND
-        SIZE(diag_ages) > 0 AND
-        SIZE(surv_ages) > 0
+        // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
+        OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
+        WHERE model:cell_line OR model:pdx
 
-      WITH
-        p,
-        diagnoses,
-        survivals,
-        REDUCE(
-          m = NULL,
-          a IN diag_ages |
-            CASE
-              WHEN m IS NULL OR a < m THEN a
-              ELSE m
-            END
-        ) AS min_diag_age,
-        REDUCE(
-          m = null,
-          a IN surv_ages |
-            CASE
-              WHEN m IS NULL OR a > m THEN a
-              ELSE m
-            END
-        ) AS max_surv_age
+        WITH
+          p,
+          [ctx IN (
+            direct_contexts
+            + collect(DISTINCT { sm: s1_model, source_sm: s1_model })
+            + collect(DISTINCT { sm: s2, source_sm: s2 })
+            + collect(DISTINCT { sm: s1_model, source_sm: s2 })
+            + collect(DISTINCT { sm: s2, source_sm: s1_model })
+          )
+          WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
 
-      WHERE min_diag_age <= max_surv_age
+        WITH
+          p,
+          CASE
+            WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
+            ELSE sample_contexts
+          END AS sample_contexts
 
-      WITH
-        p,
-        min_diag_age,
-        max_surv_age,
-        [survival IN survivals
-          WHERE survival.age_at_last_known_survival_status = max_surv_age] AS max_survs
+        UNWIND sample_contexts AS ctx
+        WITH
+          p,
+          collect(DISTINCT ctx.source_sm) AS source_sms
 
-      RETURN
-        p.id AS id,
-        max_surv_age - min_diag_age AS time,
-        CASE
-          WHEN ANY(surv IN max_survs WHERE surv.last_known_survival_status = "Dead") THEN 1
-          ELSE 0
-        END AS event;
+        // Participant-level diagnoses
+        OPTIONAL MATCH (p)<-[:of_diagnosis]-(participant_dg:diagnosis)
+
+        WITH
+          p,
+          source_sms,
+          collect(DISTINCT participant_dg) AS participant_diagnoses
+
+        // Source sample-level diagnoses
+        UNWIND CASE WHEN size(source_sms) = 0 THEN [null] ELSE source_sms END AS source_sm
+        OPTIONAL MATCH (source_sm)<-[:of_diagnosis]-(sample_dg:diagnosis)
+
+        WITH
+          p,
+          [dg IN (
+            participant_diagnoses + collect(DISTINCT sample_dg)
+          ) WHERE dg IS NOT NULL] AS diagnoses
+
+        // Survival records
+        OPTIONAL MATCH (p)<-[:of_survival]-(sur:survival)
+
+        WITH
+          p,
+          [diagnosis IN diagnoses
+            WHERE diagnosis.age_at_diagnosis IS NOT NULL |
+            diagnosis.age_at_diagnosis] AS diag_ages,
+          [survival IN collect(DISTINCT sur)
+            WHERE survival.age_at_last_known_survival_status IS NOT NULL |
+            survival.age_at_last_known_survival_status] AS surv_ages,
+          collect(DISTINCT sur) AS survivals
+
+        WHERE
+          NOT ANY(a IN diag_ages WHERE a = -999) AND
+          NOT ANY(a IN surv_ages WHERE a = -999) AND
+          size(diag_ages) > 0 AND
+          size(surv_ages) > 0
+
+        WITH
+          p,
+          survivals,
+          REDUCE(
+            m = NULL,
+            a IN diag_ages |
+              CASE
+                WHEN m IS NULL OR a < m THEN a
+                ELSE m
+              END
+          ) AS min_diag_age,
+          REDUCE(
+            m = NULL,
+            a IN surv_ages |
+              CASE
+                WHEN m IS NULL OR a > m THEN a
+                ELSE m
+              END
+          ) AS max_surv_age
+
+        WHERE min_diag_age <= max_surv_age
+
+        WITH
+          p,
+          min_diag_age,
+          max_surv_age,
+          [survival IN survivals
+            WHERE survival.age_at_last_known_survival_status = max_surv_age] AS max_survs
+
+        RETURN
+          p.guid AS guid,
+          max_surv_age - min_diag_age AS time,
+          CASE
+            WHEN ANY(surv IN max_survs WHERE surv.last_known_survival_status = "Dead") THEN 1
+            ELSE 0
+          END AS event
+      page_size: 2000
 
   # participant index for table display and participant level facets
   - index_name: participants_table
