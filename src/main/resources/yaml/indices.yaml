@@ -1,11 +1,11 @@
 # Indices settings
 indices:
-  # TODO: work on the cypher queries for the index
+  # Participants with nested lists of diagnoses, files, genetic analyses, etc.
   - index_name: cohorts
-    id_field: guid
+    id_field: id
     mapping:
       keyword:
-        - guid
+        - id
         - participant_id
         - race
         - sex_at_birth
@@ -96,7 +96,7 @@ indices:
         MATCH (p:participant)
         WITH p
         SKIP $skip LIMIT $limit
-        RETURN p.guid AS guid
+        RETURN p.guid AS id
       page_size: 5000
     update_queries:
       - name: "study_properties"
@@ -109,7 +109,7 @@ indices:
           WITH p, stu
           SKIP $skip LIMIT $limit
           RETURN
-            p.guid AS guid,
+            p.guid AS id,
             stu.study_id AS study_id,
             stu.dbgap_accession AS dbgap_accession,
             stu.study_phase AS study_status,
@@ -125,7 +125,7 @@ indices:
           WITH p, cg
           SKIP $skip LIMIT $limit
           RETURN
-            p.guid AS guid,
+            p.guid AS id,
             cg.consent_group_name AS consent_group_name,
             cg.consent_group_number AS consent_group_number
         page_size: 5000
@@ -135,7 +135,7 @@ indices:
           WITH p
           SKIP $skip LIMIT $limit
           RETURN
-            p.guid AS guid,
+            p.guid AS id,
             p.participant_id AS participant_id,
             p.race AS race,
             reduce(result = '', x IN p.race |
@@ -195,11 +195,11 @@ indices:
           OPTIONAL MATCH (p)<--(participant_dg:diagnosis)
 
           WITH
-            p.guid AS guid,
+            p.guid AS id,
             [dg IN (sample_diagnoses + collect(DISTINCT participant_dg)) WHERE dg IS NOT NULL] AS diagnoses
 
           RETURN
-            guid,
+            id,
             [dg IN diagnoses | {
               age_at_diagnosis: dg.age_at_diagnosis,
               anatomic_site: dg.anatomic_site,
@@ -284,13 +284,13 @@ indices:
             OR sample_file:cytogenomic_file
 
           WITH
-            p.guid AS guid,
+            p.guid AS id,
             study_files,
             participant_files,
             [f IN collect(DISTINCT sample_file) WHERE f IS NOT NULL] AS sample_files
 
           WITH
-            guid,
+            id,
             study_files + participant_files + sample_files AS all_files
 
           UNWIND CASE
@@ -299,11 +299,11 @@ indices:
           END AS f
 
           WITH
-            guid,
+            id,
             collect(DISTINCT f) AS files
 
           RETURN
-            guid,
+            id,
             [f IN files WHERE f IS NOT NULL | {
               id: f.dcf_indexd_guid,
               file_id: CASE labels(f)[0]
@@ -391,11 +391,11 @@ indices:
           OPTIONAL MATCH (p)<--(participant_ga:genetic_analysis)
 
           WITH
-            p.guid AS guid,
+            p.guid AS id,
             [ga IN (sample_gas + collect(DISTINCT participant_ga)) WHERE ga IS NOT NULL] AS gas
 
           RETURN
-            guid,
+            id,
             [ga IN gas | {
               reported_significance: ga.reported_significance,
               reported_significance_system: ga.reported_significance_system,
@@ -415,11 +415,11 @@ indices:
           OPTIONAL MATCH (s:sample)-[*..4]->(p)
 
           WITH
-            p.guid AS guid,
+            p.guid AS id,
             [sample IN collect(DISTINCT s) WHERE sample IS NOT NULL] AS samples
 
           RETURN
-            guid,
+            id,
             [sample IN samples | {
               id: sample.id,
               sample_id: sample.sample_id,
@@ -436,7 +436,7 @@ indices:
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
           WITH
-            p.guid AS guid,
+            p.guid AS id,
             count(sur) AS survival_count,
             coalesce(
               [item IN collect(
@@ -450,13 +450,13 @@ indices:
               []
             ) AS survivals
           WITH
-            guid,
+            id,
             CASE
               WHEN survival_count >0
               THEN survivals
               ELSE []
             END AS survivals
-          RETURN guid, survivals
+          RETURN id, survivals
         page_size: 5000
       - name: "treatments"
         query: |
@@ -470,7 +470,7 @@ indices:
             WITH p
             OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
             WITH
-              p.guid AS guid,
+              p.guid AS id,
               count(tchemo) AS tchemo_count,
               coalesce(
                 [item in collect(
@@ -484,13 +484,13 @@ indices:
                 []
               ) AS treatments
             WITH
-              guid,
+              id,
               CASE
                 WHEN tchemo_count > 0
                 THEN treatments
                 ELSE []
               END AS treatments
-            RETURN guid, treatments
+            RETURN id, treatments
 
             UNION
 
@@ -498,7 +498,7 @@ indices:
             WITH p
             OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
             WITH
-              p.guid AS guid,
+              p.guid AS id,
               count(trad) AS trad_count,
               coalesce(
                 [item in collect(
@@ -512,13 +512,13 @@ indices:
                 []
               ) AS treatments
             WITH
-              guid,
+              id,
               CASE
                 WHEN trad_count > 0
                 THEN treatments
                 ELSE []
               END AS treatments
-            RETURN guid, treatments
+            RETURN id, treatments
 
             UNION
 
@@ -526,7 +526,7 @@ indices:
             WITH p
             OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
             WITH
-              p.guid AS guid,
+              p.guid AS id,
               count(tsurg) AS tsurg_count,
               coalesce(
                 [item in collect(
@@ -540,13 +540,13 @@ indices:
                 []
               ) AS treatments
             WITH
-              guid,
+              id,
               CASE
                 WHEN tsurg_count > 0
                 THEN treatments
                 ELSE []
               END AS treatments
-            RETURN guid, treatments
+            RETURN id, treatments
 
             UNION
 
@@ -554,7 +554,7 @@ indices:
             WITH p
             OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
             WITH
-              p.guid AS guid,
+              p.guid AS id,
               count(toth) AS toth_count,
               coalesce(
                 [item in collect(
@@ -568,21 +568,21 @@ indices:
                 []
               ) AS treatments
             WITH
-              guid,
+              id,
               CASE
                 WHEN toth_count > 0
                 THEN treatments
                 ELSE []
               END AS treatments
-            RETURN guid, treatments
+            RETURN id, treatments
           }
           WITH
-            guid,
+            id,
             collect(treatments) AS treatment_superlist
           WITH
-            guid,
+            id,
             reduce(all_treatments = [], t IN treatment_superlist | all_treatments + t) AS treatments
-          RETURN guid, treatments
+          RETURN id, treatments
         page_size: 5000
       - name: "treatment_responses"
         query: |
@@ -591,7 +591,7 @@ indices:
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
           WITH
-            p.guid AS guid,
+            p.guid AS id,
             count(tresp) AS treatment_response_count,
             coalesce(
               [item IN collect(
@@ -605,13 +605,13 @@ indices:
               []
             ) AS treatment_responses
           WITH
-            guid,
+            id,
             CASE
               WHEN treatment_response_count > 0
               THEN treatment_responses
               ELSE []
             END AS treatment_responses
-          RETURN guid, treatment_responses
+          RETURN id, treatment_responses
         page_size: 5000
 
   # participant centric index for study and other facets
