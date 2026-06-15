@@ -6,6 +6,7 @@ indices:
     mapping:
       keyword:
         - id
+        - guid # Identical to id in this index. Returned in cohort metadata JSON
         - participant_id
         - race
         - sex_at_birth
@@ -99,7 +100,7 @@ indices:
         MATCH (p:participant)
         WITH p
         SKIP $skip LIMIT $limit
-        RETURN p.guid AS id
+        RETURN p.guid AS id, p.guid AS guid
       page_size: 5000
     update_queries:
       - name: "study_properties"
