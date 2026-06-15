@@ -3379,7 +3379,7 @@ indices:
             id,
             p,
             CASE
-              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
+              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: null }]
               ELSE sample_contexts
             END AS sample_contexts
 
