@@ -2085,10 +2085,10 @@ indices:
             (sur:survival)-[:of_survival]->(p:participant),
             (cg:consent_group)<-[:of_participant]->(p),
             (stu:study)<-[:of_consent_group]-(cg)
-          WITH sur, stu
+          WITH sur.guid AS id, stu
           SKIP $skip LIMIT $limit
           RETURN
-            sur.guid AS id,
+            id,
             stu.study_id AS study_id,
             stu.dbgap_accession AS dbgap_accession,
             stu.study_phase AS study_status,
@@ -2098,19 +2098,13 @@ indices:
       - name: "participant_properties"
         query: |
           MATCH (sur:survival)-[:of_survival]->(p:participant)
-          WITH sur, p
+          WITH sur.guid AS id, p
           SKIP $skip LIMIT $limit
           RETURN
-            sur.guid AS id,
+            id,
             p.guid AS pid,
             p.participant_id AS participant_id,
             p.race AS race,
-            reduce(result = '', x IN p.race |
-              CASE 
-                WHEN result = "" THEN x
-                ELSE result + ";" + x
-              END
-            ) AS race_str,
             p.sex_at_birth AS sex_at_birth
         page_size: 5000
       - name: "survival_properties"
@@ -2139,10 +2133,10 @@ indices:
           // Build a superlist of treatment filters
           CALL {
             // treatment_chemotherapy
-            WITH sur, p
+            WITH sur.guid AS id, p
             OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
             WITH
-              sur.guid AS id,
+              id,
               count(tchemo) AS tchemo_count,
               coalesce(
                 [item in collect(
@@ -2167,10 +2161,10 @@ indices:
             UNION
 
             // treatment_radiation
-            WITH sur, p
+            WITH sur.guid AS id, p
             OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
             WITH
-              sur.guid AS id,
+              id,
               count(trad) AS trad_count,
               coalesce(
                 [item in collect(
@@ -2195,10 +2189,10 @@ indices:
             UNION
 
             // treatment_surgery
-            WITH sur, p
+            WITH sur.guid AS id, p
             OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
             WITH
-              sur.guid AS id,
+              id,
               count(tsurg) AS tsurg_count,
               coalesce(
                 [item in collect(
@@ -2223,10 +2217,10 @@ indices:
             UNION
 
             // treatment_other
-            WITH sur, p
+            WITH sur.guid AS id, p
             OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
             WITH
-              sur.guid AS id,
+              id,
               count(toth) AS toth_count,
               coalesce(
                 [item in collect(
@@ -2255,6 +2249,35 @@ indices:
             id,
             reduce(all_filters = [], filters IN treatment_filters_superlist | all_filters + filters) AS treatment_filters
           RETURN id, treatment_filters
+        page_size: 5000
+      - name: "treatment_response_filters"
+        query: |
+          MATCH (sur:survival)-[:of_survival]->(p:participant)
+          WITH sur.guid AS id, p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
+          WITH
+            id,
+            count(tresp) AS treatment_response_count,
+            coalesce(
+              [item IN collect(
+                DISTINCT {
+                  age_at_response: tresp.age_at_response,
+                  response: tresp.response,
+                  response_category: tresp.response_category,
+                  response_system: tresp.response_system
+                }
+              ) WHERE item IS NOT NULL],
+              []
+            ) AS treatment_response_filters
+          WITH
+            id,
+            CASE
+              WHEN treatment_response_count > 0
+              THEN treatment_response_filters
+              ELSE []
+            END AS treatment_response_filters
+          RETURN id, treatment_response_filters
         page_size: 5000
 
   - index_name: treatments_table
