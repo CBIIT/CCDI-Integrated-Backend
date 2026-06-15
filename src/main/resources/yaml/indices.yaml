@@ -2130,6 +2130,132 @@ indices:
             sur.first_event AS first_event,
             sur.last_known_survival_status AS last_known_survival_status
         page_size: 5000
+      - name: "treatment_filters"
+        query: |
+          MATCH (sur:survival)-[:of_survival]->(p:participant)
+          WITH sur, p
+          SKIP $skip LIMIT $limit
+
+          // Build a superlist of treatment filters
+          CALL {
+            // treatment_chemotherapy
+            WITH sur, p
+            OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
+            WITH
+              sur.guid AS id,
+              count(tchemo) AS tchemo_count,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: tchemo.chemotherapy_type,
+                    treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
+                    age_at_treatment_start: tchemo.age_at_treatment_start,
+                    age_at_treatment_end: tchemo.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatment_filters
+            WITH
+              id,
+              CASE
+                WHEN tchemo_count > 0
+                THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+            RETURN id, treatment_filters
+
+            UNION
+
+            // treatment_radiation
+            WITH sur, p
+            OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
+            WITH
+              sur.guid AS id,
+              count(trad) AS trad_count,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: trad.treatment_type,
+                    treatment_agent: trad.radiation_therapy_type,
+                    age_at_treatment_start: trad.age_at_treatment_start,
+                    age_at_treatment_end: trad.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatment_filters
+            WITH
+              id,
+              CASE
+                WHEN trad_count > 0
+                THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+            RETURN id, treatment_filters
+
+            UNION
+
+            // treatment_surgery
+            WITH sur, p
+            OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
+            WITH
+              sur.guid AS id,
+              count(tsurg) AS tsurg_count,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: tsurg.treatment_type,
+                    treatment_agent: tsurg.surgery_type,
+                    age_at_treatment_start: tsurg.age_at_treatment_start,
+                    age_at_treatment_end: tsurg.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatment_filters
+            WITH
+              id,
+              CASE
+                WHEN tsurg_count > 0
+                THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+            RETURN id, treatment_filters
+
+            UNION
+
+            // treatment_other
+            WITH sur, p
+            OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
+            WITH
+              sur.guid AS id,
+              count(toth) AS toth_count,
+              coalesce(
+                [item in collect(
+                  DISTINCT {
+                    treatment_type: toth.treatment_type,
+                    treatment_agent: toth.other_treatment_type,
+                    age_at_treatment_start: toth.age_at_treatment_start,
+                    age_at_treatment_end: toth.age_at_treatment_end
+                  }
+                ) WHERE item IS NOT NULL],
+                []
+              ) AS treatment_filters
+            WITH
+              id,
+              CASE
+                WHEN toth_count > 0
+                THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+            RETURN id, treatment_filters
+          }
+          WITH
+            id,
+            collect(treatment_filters) AS treatment_filters_superlist
+          WITH
+            id,
+            reduce(all_filters = [], filters IN treatment_filters_superlist | all_filters + filters) AS treatment_filters
+          RETURN id, treatment_filters
+        page_size: 5000
 
   - index_name: treatments_table
     id_field: "id"
