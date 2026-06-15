@@ -2113,6 +2113,23 @@ indices:
             ) AS race_str,
             p.sex_at_birth AS sex_at_birth
         page_size: 5000
+      - name: "survival_properties"
+        query: |
+          MATCH (sur:survival)
+          WITH sur
+          SKIP $skip LIMIT $limit
+          RETURN
+            sur.guid AS id,
+            sur.survival_id AS survival_id,
+            sur.age_at_event_free_survival_status AS age_at_event_free_survival_status,
+            toString(sur.age_at_event_free_survival_status) AS age_at_event_free_survival_status_str,
+            sur.age_at_last_known_survival_status AS age_at_last_known_survival_status,
+            toString(sur.age_at_last_known_survival_status) AS age_at_last_known_survival_status_str,
+            sur.cause_of_death AS cause_of_death,
+            sur.event_free_survival_status AS event_free_survival_status,
+            sur.first_event AS first_event,
+            sur.last_known_survival_status AS last_known_survival_status
+        page_size: 5000
 
   - index_name: treatments_table
     id_field: "id"
