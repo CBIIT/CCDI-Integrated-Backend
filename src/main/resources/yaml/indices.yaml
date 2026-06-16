@@ -2138,17 +2138,15 @@ indices:
             WITH
               id,
               count(tchemo) AS tchemo_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: tchemo.chemotherapy_type,
-                    treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
-                    age_at_treatment_start: tchemo.age_at_treatment_start,
-                    age_at_treatment_end: tchemo.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              collect(DISTINCT {
+                treatment_type: CASE
+                  WHEN tchemo.chemotherapy_type IS NULL OR size(tchemo.chemotherapy_type) = 0 THEN ['chemotherapy']
+                  ELSE [x IN tchemo.chemotherapy_type WHERE x IS NOT NULL | trim(x)]
+                END,
+                treatment_agent: tchemo.chemotherapy_agent,
+                age_at_treatment_start: tchemo.age_at_treatment_start,
+                age_at_treatment_end: tchemo.age_at_treatment_end
+              }) AS treatment_filters
             WITH
               id,
               CASE
@@ -2166,17 +2164,15 @@ indices:
             WITH
               id,
               count(trad) AS trad_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: trad.treatment_type,
-                    treatment_agent: trad.radiation_therapy_type,
-                    age_at_treatment_start: trad.age_at_treatment_start,
-                    age_at_treatment_end: trad.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              collect(DISTINCT {
+                treatment_type: CASE
+                  WHEN trad.treatment_type IS NULL OR size(trad.treatment_type) = 0 THEN ['radiation']
+                  ELSE [x IN trad.treatment_type WHERE x IS NOT NULL | trim(x)]
+                END,
+                treatment_agent: trad.radiation_therapy_type,
+                age_at_treatment_start: trad.age_at_treatment_start,
+                age_at_treatment_end: trad.age_at_treatment_end
+              }) AS treatment_filters
             WITH
               id,
               CASE
@@ -2194,17 +2190,15 @@ indices:
             WITH
               id,
               count(tsurg) AS tsurg_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: tsurg.treatment_type,
-                    treatment_agent: tsurg.surgery_type,
-                    age_at_treatment_start: tsurg.age_at_treatment_start,
-                    age_at_treatment_end: tsurg.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              collect(DISTINCT {
+                treatment_type: CASE
+                  WHEN tsurg.treatment_type IS NULL OR size(tsurg.treatment_type) = 0 THEN ['surgery']
+                  ELSE [x IN tsurg.treatment_type WHERE x IS NOT NULL | trim(x)]
+                END,
+                treatment_agent: tsurg.surgery_type,
+                age_at_treatment_start: tsurg.age_at_treatment_start,
+                age_at_treatment_end: tsurg.age_at_treatment_end
+              }) AS treatment_filters
             WITH
               id,
               CASE
@@ -2222,17 +2216,15 @@ indices:
             WITH
               id,
               count(toth) AS toth_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: toth.treatment_type,
-                    treatment_agent: toth.other_treatment_type,
-                    age_at_treatment_start: toth.age_at_treatment_start,
-                    age_at_treatment_end: toth.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              collect(DISTINCT {
+                treatment_type: CASE
+                  WHEN toth.treatment_type IS NULL OR size(toth.treatment_type) = 0 THEN ['other']
+                  ELSE [x IN toth.treatment_type WHERE x IS NOT NULL | trim(x)]
+                END,
+                treatment_agent: toth.other_treatment_type,
+                age_at_treatment_start: toth.age_at_treatment_start,
+                age_at_treatment_end: toth.age_at_treatment_end
+              }) AS treatment_filters
             WITH
               id,
               CASE
@@ -2314,7 +2306,7 @@ indices:
             id,
             p,
             CASE
-              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
+              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: null }]
               ELSE sample_contexts
             END AS sample_contexts
 
@@ -2944,7 +2936,7 @@ indices:
             id,
             p,
             CASE
-              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
+              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: null }]
               ELSE sample_contexts
             END AS sample_contexts
 
