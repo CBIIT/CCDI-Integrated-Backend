@@ -44,20 +44,163 @@ indices:
         - diagnoses.tumor_grade_source
         - diagnoses.laterality
         - diagnoses.guid
-        - files.guid
-        - files.file_id
-        - files.dcf_indexd_guid
-        - files.data_category
-        - files.file_access
-        - files.file_description
-        - files.file_name
-        - files.file_size
-        - files.file_type
-        - files.library_selection
-        - files.library_source_material
-        - files.library_source_molecule
-        - files.library_strategy
-        - files.md5sum
+        - clinical_measure_files.clinical_measure_file_id
+        - clinical_measure_files.file_name
+        - clinical_measure_files.data_category
+        - clinical_measure_files.file_type
+        - clinical_measure_files.file_description
+        - clinical_measure_files.md5sum
+        - clinical_measure_files.file_mapping_level
+        - clinical_measure_files.file_access
+        - clinical_measure_files.acl
+        - clinical_measure_files.authz
+        - clinical_measure_files.file_url
+        - clinical_measure_files.dcf_indexd_guid
+        - clinical_measure_files.checksum_algorithm
+        - clinical_measure_files.checksum_value
+        - clinical_measure_files.guid
+        - clinical_measure_files.crdc_id
+        - cytogenomic_files.cytogenomic_file_id
+        - cytogenomic_files.file_name
+        - cytogenomic_files.data_category
+        - cytogenomic_files.file_type
+        - cytogenomic_files.file_description
+        - cytogenomic_files.md5sum
+        - cytogenomic_files.file_mapping_level
+        - cytogenomic_files.file_access
+        - cytogenomic_files.acl
+        - cytogenomic_files.authz
+        - cytogenomic_files.file_url
+        - cytogenomic_files.dcf_indexd_guid
+        - cytogenomic_files.cytogenomic_platform
+        - cytogenomic_files.guid
+        - cytogenomic_files.crdc_id
+        - methylation_array_files.methylation_array_file_id
+        - methylation_array_files.file_name
+        - methylation_array_files.data_category
+        - methylation_array_files.file_type
+        - methylation_array_files.file_description
+        - methylation_array_files.md5sum
+        - methylation_array_files.file_mapping_level
+        - methylation_array_files.file_access
+        - methylation_array_files.acl
+        - methylation_array_files.authz
+        - methylation_array_files.file_url
+        - methylation_array_files.dcf_indexd_guid
+        - methylation_array_files.methylation_platform
+        - methylation_array_files.reporter_label
+        - methylation_array_files.guid
+        - methylation_array_files.crdc_id
+        - pathology_files.pathology_file_id
+        - pathology_files.file_name
+        - pathology_files.data_category
+        - pathology_files.file_type
+        - pathology_files.file_description
+        - pathology_files.md5sum
+        - pathology_files.file_mapping_level
+        - pathology_files.file_access
+        - pathology_files.acl
+        - pathology_files.authz
+        - pathology_files.file_url
+        - pathology_files.dcf_indexd_guid
+        - pathology_files.image_modality
+        - pathology_files.license
+        - pathology_files.magnification
+        - pathology_files.fixation_embedding_method
+        - pathology_files.staining_method
+        - pathology_files.deidentification_method
+        - pathology_files.slim_url
+        - pathology_files.guid
+        - pathology_files.crdc_id
+        - radiology_files.radiology_file_id
+        - radiology_files.file_name
+        - radiology_files.data_category
+        - radiology_files.file_type
+        - radiology_files.file_description
+        - radiology_files.md5sum
+        - radiology_files.file_mapping_level
+        - radiology_files.file_access
+        - radiology_files.acl
+        - radiology_files.authz
+        - radiology_files.file_url
+        - radiology_files.dcf_indexd_guid
+        - radiology_files.submitted_anatomic_site
+        - radiology_files.anatomic_site
+        - radiology_files.image_modality
+        - radiology_files.deidentification_method
+        - radiology_files.scanner_manufacturer
+        - radiology_files.scanner_model
+        - radiology_files.echoPulseSequenceCategoryCode
+        - radiology_files.diffusionDirectionalityCode
+        - radiology_files.resonantNucleusCode
+        - radiology_files.acquisitionContrastCode
+        - radiology_files.inversionRecoveryIndicator
+        - radiology_files.pulseSequenceName
+        - radiology_files.multipleSpinEchoIndicator
+        - radiology_files.phaseContrastIndicator
+        - radiology_files.timeOfFlightContrastIndicator
+        - radiology_files.arterialSpinLabelingContrastCode
+        - radiology_files.steadyStatePulseSequenceCode
+        - radiology_files.echoPlanarPulseSequenceIndicator
+        - radiology_files.saturationRecoveryIndicator
+        - radiology_files.spectrallySelectedSuppressionCode
+        - radiology_files.mrImageReconstructionProtocolElement
+        - radiology_files.complexImageComponentCode
+        - radiology_files.guid
+        - radiology_files.crdc_id
+        - generic_files.generic_file_id
+        - generic_files.file_name
+        - generic_files.data_category
+        - generic_files.file_type
+        - generic_files.file_description
+        - generic_files.md5sum
+        - generic_files.file_mapping_level
+        - generic_files.file_access
+        - generic_files.acl
+        - generic_files.authz
+        - generic_files.file_url
+        - generic_files.dcf_indexd_guid
+        - generic_files.guid
+        - generic_files.crdc_id
+        - sequencing_files.sequencing_file_id
+        - sequencing_files.file_name
+        - sequencing_files.data_category
+        - sequencing_files.file_type
+        - sequencing_files.file_description
+        - sequencing_files.md5sum
+        - sequencing_files.file_mapping_level
+        - sequencing_files.file_access
+        - sequencing_files.acl
+        - sequencing_files.authz
+        - sequencing_files.file_url
+        - sequencing_files.dcf_indexd_guid
+        - sequencing_files.library_id
+        - sequencing_files.library_selection
+        - sequencing_files.library_strategy
+        - sequencing_files.library_layout
+        - sequencing_files.library_source_material
+        - sequencing_files.library_source_molecule
+        - sequencing_files.design_description
+        - sequencing_files.platform
+        - sequencing_files.instrument_model
+        - sequencing_files.reference_genome_assembly
+        - sequencing_files.checksum_algorithm
+        - sequencing_files.checksum_value
+        - sequencing_files.custom_assembly_fasta_file_for_alignment
+        - sequencing_files.sequence_alignment_software
+        - sequencing_files.cDNA_read
+        - sequencing_files.cell_barcode_read
+        - sequencing_files.single_cell_entity
+        - sequencing_files.dissociation_method
+        - sequencing_files.end_bias
+        - sequencing_files.library_construction_method
+        - sequencing_files.library_strand
+        - sequencing_files.protocols_link
+        - sequencing_files.reverse_transcription_primer
+        - sequencing_files.spike_in
+        - sequencing_files.UMI_barcode_read
+        - sequencing_files.guid
+        - sequencing_files.crdc_id
         - genetic_analyses.genetic_analysis_id
         - genetic_analyses.alteration_category
         - genetic_analyses.reported_significance
@@ -135,13 +278,29 @@ indices:
         - treatments_other.treatment_type
         - treatments_other.other_treatment_type
         - treatments_other.guid
-
-
       integer:
         - study_period_start
         - study_period_stop
         - diagnoses.age_at_diagnosis
         - diagnoses.year_of_diagnosis
+        - clinical_measure_files.file_size
+        - cytogenomic_files.file_size
+        - methylation_array_files.file_size
+        - pathology_files.file_size
+        - radiology_files.file_size
+        - radiology_files.participant_age_at_imaging
+        - generic_files.file_size
+        - sequencing_files.file_size
+        - sequencing_files.number_of_bp
+        - sequencing_files.number_of_reads
+        - sequencing_files.avg_read_length
+        - sequencing_files.cDNA_read_size
+        - sequencing_files.cDNA_read_offset
+        - sequencing_files.cell_barcode_offset
+        - sequencing_files.cell_barcode_size
+        - sequencing_files.total_number_of_input_cells
+        - sequencing_files.UMI_barcode_offset
+        - sequencing_files.UMI_barcode_size
         - genetic_analyses.age_at_genetic_analysis
         - genetic_analyses.alteration_region_number
         - samples.participant_age_at_collection
@@ -157,8 +316,17 @@ indices:
         - treatments_surgery.age_at_treatment_end
         - treatments_other.age_at_treatment_start
         - treatments_other.age_at_treatment_end
-
       float:
+        - radiology_files.magnetic_field_strength
+        - radiology_files.imaging_frequency
+        - radiology_files.repetition_time
+        - radiology_files.echo_time
+        - radiology_files.inversion_time
+        - radiology_files.flip_angle
+        - radiology_files.pixel_spacing
+        - radiology_files.slice_thickness
+        - radiology_files.diffusionBValue
+        - sequencing_files.coverage
         - genetic_analyses.allelic_ratio
         - genetic_analyses.vaf_numeric
         - genetic_analyses.dna_index_numeric
