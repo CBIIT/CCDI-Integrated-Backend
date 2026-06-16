@@ -3,7 +3,7 @@ indices:
   # Participants with nested lists of diagnoses, files, genetic analyses, etc.
   - index_name: cohorts
     id_field: id
-    mapping:
+    mapping: # Properties are listed in the same order as they appear in ccdi-dcc-model.yml
       keyword:
         - id
         - guid # Identical to id in this index. Returned in cohort metadata JSON
@@ -12,26 +12,38 @@ indices:
         - sex_at_birth
         - consent_group_name
         - consent_group_suffix
-        - study_id
-        - dbgap_accession
-        - study_acronym
-        - study_name
-        - study_status
-        - diagnoses.guid
+        - study.study_id
+        - study.dbgap_accession
+        - study.study_name
+        - study.study_acronym
+        - study.study_description
+        - study.external_url
+        - study.experimental_strategy_and_data_subtype
+        - study.study_phase
+        - study.study_data_types
+        - study.promotion_status
+        - study.guid
+        - study.crdc_id
         - diagnoses.diagnosis_id
-        - diagnoses.anatomic_site
+        - diagnoses.submitted_diagnosis
         - diagnoses.diagnosis
-        - diagnoses.diagnosis_basis
         - diagnoses.diagnosis_category
         - diagnoses.diagnosis_classification_system
+        - diagnoses.diagnosis_basis
         - diagnoses.diagnosis_comment
         - diagnoses.disease_phase
+        - diagnoses.tumor_spatial_extent
+        - diagnoses.submitted_anatomic_site
+        - diagnoses.anatomic_site
         - diagnoses.toronto_childhood_cancer_staging
-        - diagnoses.tumor_classification
-        - diagnoses.tumor_grade
-        - diagnoses.tumor_stage_clinical_m
-        - diagnoses.tumor_stage_clinical_n
         - diagnoses.tumor_stage_clinical_t
+        - diagnoses.tumor_stage_clinical_n
+        - diagnoses.tumor_stage_clinical_m
+        - diagnoses.tumor_stage_source
+        - diagnoses.tumor_grade
+        - diagnoses.tumor_grade_source
+        - diagnoses.laterality
+        - diagnoses.guid
         - files.guid
         - files.file_id
         - files.dcf_indexd_guid
@@ -46,55 +58,74 @@ indices:
         - files.library_source_molecule
         - files.library_strategy
         - files.md5sum
-        - genetic_analyses.guid
         - genetic_analyses.genetic_analysis_id
-        - genetic_analyses.alteration
-        - genetic_analyses.alteration_effect
-        - genetic_analyses.alteration_type
+        - genetic_analyses.alteration_category
+        - genetic_analyses.reported_significance
+        - genetic_analyses.platform
+        - genetic_analyses.analysis_type
+        - genetic_analyses.analysis_method
+        - genetic_analyses.reference_genome
         - genetic_analyses.chromosome
         - genetic_analyses.cytoband
-        - genetic_analyses.exon
-        - genetic_analyses.fusion_partner_exon
-        - genetic_analyses.fusion_partner_gene
         - genetic_analyses.gene_symbol
-        - genetic_analyses.genomic_source_category
+        - genetic_analyses.alteration_region
+        - genetic_analyses.alteration_location_role
+        - genetic_analyses.transcript
         - genetic_analyses.hgvs_coding
-        - genetic_analyses.hgvs_genome
         - genetic_analyses.hgvs_protein
-        - genetic_analyses.reference_genome
-        - genetic_analyses.reported_significance
-        - genetic_analyses.reported_significance_system
+        - genetic_analyses.hgvs_genome
+        - genetic_analyses.alteration
+        - genetic_analyses.alteration_type
+        - genetic_analyses.alteration_effect
+        - genetic_analyses.iscn
         - genetic_analyses.status
-        - genetic_analyses.test
-        - samples.guid
+        - genetic_analyses.zygosity
+        - genetic_analyses.external_references
+        - genetic_analyses.alteration_description
+        - genetic_analyses.guid
         - samples.sample_id
+        - samples.submitted_anatomic_site
         - samples.anatomic_site
-        - samples.sample_description
         - samples.sample_tumor_status
-        - samples.tumor_classification
-        - survivals.guid
+        - samples.tumor_spatial_extent
+        - samples.sample_description
+        - samples.laterality
+        - samples.guid
+        - samples.crdc_id
         - survivals.survival_id
-        - survivals.cause_of_death
-        - survivals.event_free_survival_status
-        - survivals.first_event
         - survivals.last_known_survival_status
+        - survivals.first_event
+        - survivals.event_free_survival_status
+        - survivals.cause_of_death
+        - survivals.guid
         - treatments.guid
         - treatments.treatment_id
         - treatments.treatment_agent
         - treatments.treatment_type
-        - treatment_responses.guid
         - treatment_responses.treatment_response_id
         - treatment_responses.response
         - treatment_responses.response_category
         - treatment_responses.response_system
+        - treatment_responses.guid
       integer:
+        - study_period_start
+        - study_period_stop
         - diagnoses.age_at_diagnosis
+        - diagnoses.year_of_diagnosis
+        - genetic_analyses.age_at_genetic_analysis
+        - genetic_analyses.alteration_region_number
         - samples.participant_age_at_collection
-        - survivals.age_at_event_free_survival_status
         - survivals.age_at_last_known_survival_status
+        - survivals.age_at_event_free_survival_status
         - treatments.age_at_treatment_end
         - treatments.age_at_treatment_start
         - treatment_responses.age_at_response
+      float:
+        - genetic_analyses.allelic_ratio
+        - genetic_analyses.vaf_numeric
+        - genetic_analyses.dna_index_numeric
+        - samples.percent_tumor
+        - samples.percent_necrosis
     initial_query:
       query: |
         MATCH (p:participant)
