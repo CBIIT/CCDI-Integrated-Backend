@@ -3280,8 +3280,9 @@ indices:
           CALL {
             WITH p
             OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
-            RETURN coalesce(
-              [item IN collect(DISTINCT {
+            WITH
+              count(tchemo) AS n_tchemo,
+              collect(DISTINCT {
                 treatment_type: CASE
                   WHEN tchemo.chemotherapy_type IS NULL OR size(tchemo.chemotherapy_type) = 0 THEN ['chemotherapy']
                   ELSE [x IN tchemo.chemotherapy_type WHERE x IS NOT NULL | trim(x)]
@@ -3289,15 +3290,19 @@ indices:
                 treatment_agent: tchemo.chemotherapy_agent,
                 age_at_treatment_start: tchemo.age_at_treatment_start,
                 age_at_treatment_end: tchemo.age_at_treatment_end
-              }) WHERE item IS NOT NULL],
-              []
-            ) AS chemo_filters
+              }) AS collected_filters
+            RETURN
+              CASE
+                WHEN n_tchemo = 0 THEN []
+                ELSE collected_filters
+              END AS chemo_filters
           }
           CALL {
             WITH p
             OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
-            RETURN coalesce(
-              [item IN collect(DISTINCT {
+            WITH
+              count(trad) AS n_trad,
+              collect(DISTINCT {
                 treatment_type: CASE
                   WHEN trad.treatment_type IS NULL OR size(trad.treatment_type) = 0 THEN ['radiation']
                   ELSE [x IN trad.treatment_type WHERE x IS NOT NULL | trim(x)]
@@ -3305,15 +3310,19 @@ indices:
                 treatment_agent: trad.radiation_therapy_type,
                 age_at_treatment_start: trad.age_at_treatment_start,
                 age_at_treatment_end: trad.age_at_treatment_end
-              }) WHERE item IS NOT NULL],
-              []
-            ) AS rad_filters
+              }) AS collected_filters
+            RETURN
+              CASE
+                WHEN n_trad = 0 THEN []
+                ELSE collected_filters
+              END AS rad_filters
           }
           CALL {
             WITH p
             OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
-            RETURN coalesce(
-              [item IN collect(DISTINCT {
+            WITH
+              count(tsurg) AS n_tsurg,
+              collect(DISTINCT {
                 treatment_type: CASE
                   WHEN tsurg.treatment_type IS NULL OR size(tsurg.treatment_type) = 0 THEN ['surgery']
                   ELSE [x IN tsurg.treatment_type WHERE x IS NOT NULL | trim(x)]
@@ -3321,15 +3330,19 @@ indices:
                 treatment_agent: tsurg.surgery_type,
                 age_at_treatment_start: tsurg.age_at_treatment_start,
                 age_at_treatment_end: tsurg.age_at_treatment_end
-              }) WHERE item IS NOT NULL],
-              []
-            ) AS surg_filters
+              }) AS collected_filters
+            RETURN
+              CASE
+                WHEN n_tsurg = 0 THEN []
+                ELSE collected_filters
+              END AS surg_filters
           }
           CALL {
             WITH p
             OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
-            RETURN coalesce(
-              [item IN collect(DISTINCT {
+            WITH
+              count(toth) AS n_toth,
+              collect(DISTINCT {
                 treatment_type: CASE
                   WHEN toth.treatment_type IS NULL OR size(toth.treatment_type) = 0 THEN ['other']
                   ELSE [x IN toth.treatment_type WHERE x IS NOT NULL | trim(x)]
@@ -3337,9 +3350,12 @@ indices:
                 treatment_agent: toth.other_treatment_type,
                 age_at_treatment_start: toth.age_at_treatment_start,
                 age_at_treatment_end: toth.age_at_treatment_end
-              }) WHERE item IS NOT NULL],
-              []
-            ) AS other_filters
+              }) AS collected_filters
+            RETURN
+              CASE
+                WHEN n_toth = 0 THEN []
+                ELSE collected_filters
+              END AS other_filters
           }
           WITH
             tresp.guid AS id,
