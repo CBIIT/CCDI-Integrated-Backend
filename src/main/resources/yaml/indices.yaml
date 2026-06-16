@@ -98,15 +98,45 @@ indices:
         - survivals.event_free_survival_status
         - survivals.cause_of_death
         - survivals.guid
-        - treatments.guid
-        - treatments.treatment_id
-        - treatments.treatment_agent
-        - treatments.treatment_type
         - treatment_responses.treatment_response_id
         - treatment_responses.response
         - treatment_responses.response_category
         - treatment_responses.response_system
         - treatment_responses.guid
+        - treatments_chemotherapy.treatment_chemotherapy_id
+        - treatments_chemotherapy.treatment_type
+        - treatments_chemotherapy.chemotherapy_type
+        - treatments_chemotherapy.chemotherapy_agent
+        - treatments_chemotherapy.chemotherapy_class
+        - treatments_chemotherapy.chemotherapy_subclass
+        - treatments_chemotherapy.dose_unit
+        - treatments_chemotherapy.dose_route
+        - treatments_chemotherapy.dose_frequency
+        - treatments_chemotherapy.protocol
+        - treatments_chemotherapy.guid
+        - treatments_radiation.treatment_radiation_id
+        - treatments_radiation.treatment_type
+        - treatments_radiation.radiation_therapy_type
+        - treatments_radiation.beam_radiation_type
+        - treatments_radiation.total_radiation_dose_unit
+        - treatments_radiation.submitted_anatomic_site
+        - treatments_radiation.anatomic_site
+        - treatments_radiation.laterality_of_radiation_field
+        - treatments_radiation.fraction_radiation_dose_unit
+        - treatments_radiation.guid
+        - treatments_surgery.treatment_surgery_id
+        - treatments_surgery.treatment_type
+        - treatments_surgery.surgery_type
+        - treatments_surgery.submitted_anatomic_site
+        - treatments_surgery.anatomic_site
+        - treatments_surgery.resection_margin_status
+        - treatments_surgery.guid
+        - treatments_other.treatment_other_id
+        - treatments_other.treatment_type
+        - treatments_other.other_treatment_type
+        - treatments_other.guid
+
+
       integer:
         - study_period_start
         - study_period_stop
@@ -117,15 +147,26 @@ indices:
         - samples.participant_age_at_collection
         - survivals.age_at_last_known_survival_status
         - survivals.age_at_event_free_survival_status
-        - treatments.age_at_treatment_end
-        - treatments.age_at_treatment_start
         - treatment_responses.age_at_response
+        - treatments_chemotherapy.age_at_treatment_start
+        - treatments_chemotherapy.age_at_treatment_end
+        - treatments_radiation.age_at_treatment_start
+        - treatments_radiation.age_at_treatment_end
+        - treatments_radiation.radiation_therapy_fraction
+        - treatments_surgery.age_at_treatment_start
+        - treatments_surgery.age_at_treatment_end
+        - treatments_other.age_at_treatment_start
+        - treatments_other.age_at_treatment_end
+
       float:
         - genetic_analyses.allelic_ratio
         - genetic_analyses.vaf_numeric
         - genetic_analyses.dna_index_numeric
         - samples.percent_tumor
         - samples.percent_necrosis
+        - treatments_chemotherapy.dose
+        - treatments_radiation.total_radiation_dose
+        - treatments_radiation.fraction_radiation_dose
     initial_query:
       query: |
         MATCH (p:participant)
