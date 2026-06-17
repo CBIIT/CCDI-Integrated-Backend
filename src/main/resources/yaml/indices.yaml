@@ -6,12 +6,16 @@ indices:
     mapping: # Properties are listed in the same order as they appear in ccdi-dcc-model.yml
       keyword:
         - id
-        - guid # Identical to id in this index. Returned in cohort metadata JSON
         - participant_id
-        - race
+        - race       
         - sex_at_birth
+        - occupation
+        - guid # Identical to id in this index. Returned in cohort metadata JSON
+        - crdc_id
+        - consent_group_id
         - consent_group_name
-        - consent_group_suffix
+        - consent_group_suffix 
+        - guid
         - study.study_id
         - study.dbgap_accession
         - study.study_name
@@ -354,11 +358,22 @@ indices:
           SKIP $skip LIMIT $limit
           RETURN
             p.guid AS id,
-            stu.study_id AS study_id,
-            stu.dbgap_accession AS dbgap_accession,
-            stu.study_acronym AS study_acronym,
-            stu.study_name AS study_name,
-            stu.study_phase AS study_status
+            {
+              study_id: stu.study_id,
+              dbgap_accession: stu.dbgap_accession,
+              study_name: stu.study_name,
+              study_acronym: stu.study_acronym,
+              study_description: stu.study_description,
+              external_url: stu.external_url,
+              experimental_strategy_and_data_subtype: stu.experimental_strategy_and_data_subtype,
+              study_phase: stu.study_phase,
+              study_data_types: stu.study_data_types,
+              promotion_status: stu.promotion_status,
+              guid: stu.guid,
+              crdc_id: stu.crdc_id,
+              study_period_start: stu.study_period_start,
+              study_period_stop: stu.study_period_stop
+            } AS study
         page_size: 5000
       - name: "consent_group_properties"
         query: |
@@ -370,8 +385,12 @@ indices:
           SKIP $skip LIMIT $limit
           RETURN
             p.guid AS id,
-            cg.consent_group_name AS consent_group_name,
-            cg.consent_group_suffix AS consent_group_suffix
+            {
+              consent_group_id: cg.consent_group_id,
+              consent_group_name: cg.consent_group_name,
+              consent_group_suffix: cg.consent_group_suffix,
+              guid: cg.guid
+            } AS consent_group
         page_size: 5000
       - name: "participant_properties"
         query: |
@@ -379,10 +398,12 @@ indices:
           WITH p
           SKIP $skip LIMIT $limit
           RETURN
-            p.guid AS id,
             p.participant_id AS participant_id,
             p.race AS race,
-            p.sex_at_birth AS sex_at_birth
+            p.sex_at_birth AS sex_at_birth,
+            p.occupation AS occupation,
+            p.guid AS id,
+            p.crdc_id AS crdc_id
         page_size: 5000
       - name: "diagnoses"
         query: |
@@ -439,24 +460,126 @@ indices:
           RETURN
             id,
             [dg IN diagnoses | {
-              guid: dg.guid,
               diagnosis_id: dg.diagnosis_id,
-              age_at_diagnosis: dg.age_at_diagnosis,
-              anatomic_site: dg.anatomic_site,
+              submitted_diagnosis: dg.submitted_diagnosis,
               diagnosis: dg.diagnosis,
-              diagnosis_basis: dg.diagnosis_basis,
               diagnosis_category: dg.diagnosis_category,
               diagnosis_classification_system: dg.diagnosis_classification_system,
+              diagnosis_basis: dg.diagnosis_basis,
               diagnosis_comment: dg.diagnosis_comment,
               disease_phase: dg.disease_phase,
+              tumor_spatial_extent: dg.tumor_spatial_extent,
+              submitted_anatomic_site: dg.submitted_anatomic_site,
+              anatomic_site: dg.anatomic_site,
               toronto_childhood_cancer_staging: dg.toronto_childhood_cancer_staging,
-              tumor_classification: dg.tumor_classification,
-              tumor_grade: dg.tumor_grade,
-              tumor_stage_clinical_m: dg.tumor_stage_clinical_m,
+              tumor_stage_clinical_t: dg.tumor_stage_clinical_t,
               tumor_stage_clinical_n: dg.tumor_stage_clinical_n,
-              tumor_stage_clinical_t: dg.tumor_stage_clinical_t
+              tumor_stage_clinical_m: dg.tumor_stage_clinical_m,
+              tumor_stage_source: dg.tumor_stage_source,
+              tumor_grade: dg.tumor_grade,
+              tumor_grade_source: dg.tumor_grade_source,
+              laterality: dg.laterality,
+              guid: dg.guid,
+              age_at_diagnosis: dg.age_at_diagnosis,
+              year_of_diagnosis: dg.year_of_diagnosis
             }] AS diagnoses
         page_size: 5000
+      - name: "clinical_measure_files" # TODO
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+      - name: "cytogenomic_files" # TODO
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+      - name: "methylation_array_files" # TODO
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+      - name: "pathology_files" # TODO
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+      - name: "radiology_files"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (f:radiology_file)-[:of_radiology_file]->(p)
+          WITH
+            p.guid AS id,
+            count(f) AS file_count,
+            collect({
+              radiology_file_id: f.radiology_file_id,
+              file_name: f.file_name,
+              data_category: f.data_category,
+              file_type: f.file_type,
+              file_description: f.file_description,
+              md5sum: f.md5sum,
+              file_mapping_level: f.file_mapping_level,
+              file_access: f.file_access,
+              acl: f.acl,
+              authz: f.authz,
+              file_url: f.file_url,
+              dcf_indexd_guid: f.dcf_indexd_guid,
+              submitted_anatomic_site: f.submitted_anatomic_site,
+              anatomic_site: f.anatomic_site,
+              image_modality: f.image_modality,
+              deidentification_method: f.deidentification_method,
+              scanner_manufacturer: f.scanner_manufacturer,
+              scanner_model: f.scanner_model,
+              echoPulseSequenceCategoryCode: f.echoPulseSequenceCategoryCode,
+              diffusionDirectionalityCode: f.diffusionDirectionalityCode,
+              resonantNucleusCode: f.resonantNucleusCode,
+              acquisitionContrastCode: f.acquisitionContrastCode,
+              inversionRecoveryIndicator: f.inversionRecoveryIndicator,
+              pulseSequenceName: f.pulseSequenceName,
+              multipleSpinEchoIndicator: f.multipleSpinEchoIndicator,
+              phaseContrastIndicator: f.phaseContrastIndicator,
+              timeOfFlightContrastIndicator: f.timeOfFlightContrastIndicator,
+              arterialSpinLabelingContrastCode: f.arterialSpinLabelingContrastCode,
+              steadyStatePulseSequenceCode: f.steadyStatePulseSequenceCode,
+              echoPlanarPulseSequenceIndicator: f.echoPlanarPulseSequenceIndicator,
+              saturationRecoveryIndicator: f.saturationRecoveryIndicator,
+              spectrallySelectedSuppressionCode: f.spectrallySelectedSuppressionCode,
+              mrImageReconstructionProtocolElement: f.mrImageReconstructionProtocolElement,
+              complexImageComponentCode: f.complexImageComponentCode,
+              guid: f.guid,
+              crdc_id: f.crdc_id,
+              file_size: f.file_size,
+              participant_age_at_imaging: f.participant_age_at_imaging,
+              magnetic_field_strength: f.magnetic_field_strength,
+              imaging_frequency: f.imaging_frequency,
+              repetition_time: f.repetition_time,
+              echo_time: f.echo_time,
+              inversion_time: f.inversion_time,
+              flip_angle: f.flip_angle,
+              pixel_spacing: f.pixel_spacing,
+              slice_thickness: f.slice_thickness,
+              diffusionBValue: f.diffusionBValue
+            }) AS radiology_files
+          WITH
+            id,
+            CASE
+              WHEN file_count > 0
+              THEN radiology_files
+              ELSE []
+            END AS radiology_files
+          RETURN id, radiology_files
+      - name: "generic_files" # TODO
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+      - name: "sequencing_files" # TODO
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
       - name: "files"
         query: |
           MATCH (p:participant)
@@ -592,102 +715,255 @@ indices:
       - name: "genetic_analyses"
         query: |
           MATCH (p:participant)
-          WITH p
+          WITH DISTINCT p
           SKIP $skip LIMIT $limit
 
-          // Direct participant samples: self-context
-          OPTIONAL MATCH (p)<--(s1:sample)
-          WITH
-            p,
-            collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
+          CALL {
+            WITH p
 
-          // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
-          OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
-          WHERE model:cell_line OR model:pdx
+            // Direct participant samples: self-context
+            OPTIONAL MATCH (p)<--(s1:sample)
+            WITH
+              p,
+              collect(DISTINCT s1) AS direct_source_sms
 
-          WITH
-            p,
-            [ctx IN (
-              direct_contexts
-              + collect(DISTINCT { sm: s1_model, source_sm: s1_model })
-              + collect(DISTINCT { sm: s2, source_sm: s2 })
-              + collect(DISTINCT { sm: s1_model, source_sm: s2 })
-              + collect(DISTINCT { sm: s2, source_sm: s1_model })
-            )
-            WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
+            // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
+            OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
+            WHERE model:cell_line OR model:pdx
+
+            WITH
+              p,
+              [
+                sm IN (
+                  direct_source_sms
+                  + collect(DISTINCT s1_model)
+                  + collect(DISTINCT s2)
+                )
+                WHERE sm IS NOT NULL
+              ] AS source_sms
+
+            UNWIND source_sms AS source_sm
+            WITH DISTINCT p, source_sm
+
+            OPTIONAL MATCH (source_sm)<--(sample_ga:genetic_analysis)
+
+            RETURN sample_ga AS ga
+
+            UNION
+
+            WITH p
+            OPTIONAL MATCH (p)<--(participant_ga:genetic_analysis)
+            RETURN participant_ga AS ga
+          }
 
           WITH
             p,
             CASE
-              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
-              ELSE sample_contexts
-            END AS sample_contexts
+              WHEN ga IS NULL THEN NULL
+              ELSE {
+                genetic_analysis_id: ga.genetic_analysis_id,
+                alteration_category: ga.alteration_category,
+                reported_significance: ga.reported_significance,
+                platform: ga.platform,
+                analysis_type: ga.analysis_type,
+                analysis_method: ga.analysis_method,
+                reference_genome: ga.reference_genome,
+                chromosome: ga.chromosome,
+                cytoband: ga.cytoband,
+                gene_symbol: ga.gene_symbol,
+                alteration_region: ga.alteration_region,
+                alteration_location_role: ga.alteration_location_role,
+                transcript: ga.transcript,
+                hgvs_coding: ga.hgvs_coding,
+                hgvs_protein: ga.hgvs_protein,
+                hgvs_genome: ga.hgvs_genome,
+                alteration: ga.alteration,
+                alteration_type: ga.alteration_type,
+                alteration_effect: ga.alteration_effect,
+                iscn: ga.iscn,
+                status: ga.status,
+                zygosity: ga.zygosity,
+                external_references: ga.external_references,
+                alteration_description: ga.alteration_description,
+                guid: ga.guid
+              }
+            END AS ga_map
 
-          UNWIND sample_contexts AS ctx
           WITH
             p,
-            ctx.source_sm AS source_sm
-
-          // Genetic analyses linked via any source sample
-          OPTIONAL MATCH (source_sm)<--(sample_ga:genetic_analysis)
-          WITH
-            p,
-            collect(DISTINCT sample_ga) AS sample_gas
-
-          // Genetic analyses directly linked to the participant
-          OPTIONAL MATCH (p)<--(participant_ga:genetic_analysis)
-
-          WITH
-            p.guid AS id,
-            [ga IN (sample_gas + collect(DISTINCT participant_ga)) WHERE ga IS NOT NULL] AS gas
+            [x IN collect(DISTINCT ga_map) WHERE x IS NOT NULL] AS genetic_analyses
 
           RETURN
-            id,
-            [ga IN gas | {
-              guid: ga.guid,
-              genetic_analysis_id: ga.genetic_analysis_id,
-              alteration: ga.alteration,
-              alteration_effect: ga.alteration_effect,
-              alteration_type: ga.alteration_type,
-              chromosome: ga.chromosome,
-              cytoband: ga.cytoband,
-              exon: ga.exon,
-              fusion_partner_exon: ga.fusion_partner_exon,
-              fusion_partner_gene: ga.fusion_partner_gene,
-              gene_symbol: ga.gene_symbol,
-              genomic_source_category: ga.genomic_source_category,
-              hgvs_coding: ga.hgvs_coding,
-              hgvs_genome: ga.hgvs_genome,
-              hgvs_protein: ga.hgvs_protein,
-              reference_genome: ga.reference_genome,
-              reported_significance: ga.reported_significance,
-              reported_significance_system: ga.reported_significance_system,
-              status: ga.status,
-              test: ga.test
-            }] AS genetic_analyses
+            p.guid AS id,
+            genetic_analyses
         page_size: 5000
       - name: "samples"
         query: |
-          MATCH (p:participant)-[:of_participant]->(:consent_group)-[:of_consent_group]->(:study)
-          WITH p
+          MATCH (p:participant)
+          WITH DISTINCT p.guid AS id, p
+          ORDER BY id
           SKIP $skip LIMIT $limit
 
-          OPTIONAL MATCH (s:sample)-[*..4]->(p)
+          // ------------------------------------------------------------
+          // Context group 1:
+          // samples that point to participant, cell_line, or pdx
+          // ------------------------------------------------------------
+          OPTIONAL MATCH (p)<-[:of_cell_line]-(cl:cell_line)
+          WITH
+            id,
+            p,
+            collect(DISTINCT cl) AS cell_lines
+
+          OPTIONAL MATCH (p)<-[:of_pdx]-(px:pdx)
+          WITH
+            id,
+            p,
+            [p] + cell_lines + collect(DISTINCT px) AS sample_targets
+
+          UNWIND sample_targets AS sample_target
+
+          OPTIONAL MATCH (sample_target)<-[:of_sample]-(target_sample:sample)
+          WITH
+            id,
+            p,
+            collect(DISTINCT target_sample) AS target_samples
+
+          // ------------------------------------------------------------
+          // Context group 2:
+          // connector nodes that link participant to sample
+          // ------------------------------------------------------------
+          OPTIONAL MATCH (p)<-[:of_diagnosis]-(d:diagnosis)
+          WITH
+            id,
+            p,
+            target_samples,
+            collect(DISTINCT d) AS diagnoses
+
+          OPTIONAL MATCH (p)<-[:of_genetic_analysis]-(ga:genetic_analysis)
+          WITH
+            id,
+            p,
+            target_samples,
+            diagnoses,
+            collect(DISTINCT ga) AS genetic_analyses
+
+          OPTIONAL MATCH (p)<-[:of_laboratory_test]-(lt:laboratory_test)
+          WITH
+            id,
+            p,
+            target_samples,
+            diagnoses,
+            genetic_analyses,
+            collect(DISTINCT lt) AS laboratory_tests
+
+          OPTIONAL MATCH (p)<-[:of_clinical_measure_file]-(cmf:clinical_measure_file)
+          WITH
+            id,
+            p,
+            target_samples,
+            diagnoses,
+            genetic_analyses,
+            laboratory_tests,
+            collect(DISTINCT cmf) AS clinical_measure_files
+
+          OPTIONAL MATCH (p)<-[:of_generic_file]-(gf:generic_file)
+          WITH
+            id,
+            p,
+            target_samples,
+            diagnoses,
+            genetic_analyses,
+            laboratory_tests,
+            clinical_measure_files,
+            collect(DISTINCT gf) AS generic_files
+
+          OPTIONAL MATCH (p)<-[:of_synonym]-(syn:synonym)
+          WITH
+            id,
+            target_samples,
+            diagnoses
+              + genetic_analyses
+              + laboratory_tests
+              + clinical_measure_files
+              + generic_files
+              + collect(DISTINCT syn) AS sample_connectors
+
+          UNWIND
+            CASE
+              WHEN size(sample_connectors) = 0 THEN [null]
+              ELSE sample_connectors
+            END AS sample_connector
+
+          OPTIONAL MATCH (sample_connector)-[
+            :of_diagnosis |
+            :of_genetic_analysis |
+            :of_laboratory_test |
+            :of_clinical_measure_file |
+            :of_generic_file |
+            :of_synonym
+          ]->(connector_sample:sample)
 
           WITH
-            p.guid AS id,
-            [sample IN collect(DISTINCT s) WHERE sample IS NOT NULL] AS samples
+            id,
+            target_samples + collect(DISTINCT connector_sample) AS raw_samples
+
+          // ------------------------------------------------------------
+          // Final dedupe by final projected sample map GUID
+          // ------------------------------------------------------------
+          WITH
+            id,
+            [sample IN raw_samples WHERE sample IS NOT NULL] AS raw_samples
+
+          UNWIND
+            CASE
+              WHEN size(raw_samples) = 0 THEN [null]
+              ELSE raw_samples
+            END AS sample
+
+          WITH
+            id,
+            CASE
+              WHEN sample IS NULL THEN NULL
+              ELSE {
+                sample_id: sample.sample_id,
+                submitted_anatomic_site: sample.submitted_anatomic_site,
+                anatomic_site: sample.anatomic_site,
+                sample_tumor_status: sample.tumor_spatial_extent,
+                tumor_spatial_extent: sample.tumor_spatial_extent,
+                sample_description: sample.sample_description,
+                laterality: sample.laterality,
+                guid: sample.guid,
+                crdc_id: sample.crdc_id,
+                participant_age_at_collection: sample.participant_age_at_collection,
+                percent_tumor: sample.percent_tumor,
+                percent_necrosis: sample.percent_necrosis
+              }
+            END AS sample_map
+
+          WITH
+            id,
+            sample_map.guid AS sample_guid,
+            collect(DISTINCT sample_map)[0] AS sample_map
+
+          WITH
+            id,
+            [sample IN collect(sample_map) WHERE sample IS NOT NULL] AS samples
 
           RETURN
             id,
             [sample IN samples | {
-              guid: sample.id,
               sample_id: sample.sample_id,
+              submitted_anatomic_site: sample.submitted_anatomic_site,
               anatomic_site: sample.anatomic_site,
-              participant_age_at_collection: sample.participant_age_at_collection,
-              sample_description: sample.sample_description,
               sample_tumor_status: sample.sample_tumor_status,
-              tumor_classification: sample.tumor_classification
+              tumor_spatial_extent: sample.tumor_spatial_extent,
+              sample_description: sample.sample_description,
+              laterality: sample.laterality,
+              guid: sample.guid,
+              crdc_id: sample.crdc_id,
+              participant_age_at_collection: sample.participant_age_at_collection,
+              percent_tumor: sample.percent_tumor,
+              percent_necrosis: sample.percent_necrosis
             }] AS samples
       - name: "survivals"
         query: |
@@ -698,25 +974,22 @@ indices:
           WITH
             p.guid AS id,
             count(sur) AS survival_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  guid: sur.guid,
-                  survival_id: sur.survival_id,
-                  age_at_event_free_survival_status: sur.age_at_event_free_survival_status,
-                  age_at_last_known_survival_status: sur.age_at_last_known_survival_status,
-                  cause_of_death: sur.cause_of_death,
-                  event_free_survival_status: sur.event_free_survival_status,
-                  first_event: sur.first_event,
-                  last_known_survival_status: sur.last_known_survival_status
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS survivals
+            [item IN collect(
+              DISTINCT {
+                guid: sur.guid,
+                survival_id: sur.survival_id,
+                age_at_event_free_survival_status: sur.age_at_event_free_survival_status,
+                age_at_last_known_survival_status: sur.age_at_last_known_survival_status,
+                cause_of_death: sur.cause_of_death,
+                event_free_survival_status: sur.event_free_survival_status,
+                first_event: sur.first_event,
+                last_known_survival_status: sur.last_known_survival_status
+              }) WHERE item IS NOT NULL
+            ] AS survivals
           WITH
             id,
             CASE
-              WHEN survival_count >0
+              WHEN survival_count > 0
               THEN survivals
               ELSE []
             END AS survivals
