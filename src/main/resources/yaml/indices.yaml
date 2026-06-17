@@ -1485,7 +1485,7 @@ indices:
         - sex_at_birth
         - study_id
         - dbgap_accession
-        - study_status
+        - study_phase
         - study_acronym
         - study_name
         - survival_filters.last_known_survival_status
@@ -1551,7 +1551,7 @@ indices:
             p.guid AS guid,
             stu.study_id AS study_id,
             stu.dbgap_accession AS dbgap_accession,
-            stu.study_phase AS study_status,
+            stu.study_phase AS study_phase,
             stu.study_acronym AS study_acronym,
             stu.study_name AS study_name
         page_size: 1000
@@ -2021,7 +2021,7 @@ indices:
         - survival_id
         - study_id
         - dbgap_accession
-        - study_status
+        - study_phase
         - study_acronym
         - study_name
         - participant_id
@@ -2091,7 +2091,7 @@ indices:
             id,
             stu.study_id AS study_id,
             stu.dbgap_accession AS dbgap_accession,
-            stu.study_phase AS study_status,
+            stu.study_phase AS study_phase,
             stu.study_acronym AS study_acronym,
             stu.study_name AS study_name
         page_size: 5000
@@ -2532,7 +2532,7 @@ indices:
         - sex_at_birth
         - study_id
         - dbgap_accession
-        - study_status
+        - study_phase
         - study_acronym
         - study_name
         - age_at_treatment_end_str
@@ -2789,7 +2789,7 @@ indices:
             id,
             stu.study_id AS study_id,
             stu.dbgap_accession AS dbgap_accession,
-            stu.study_phase AS study_status,
+            stu.study_phase AS study_phase,
             stu.study_acronym AS study_acronym,
             stu.study_name AS study_name
         page_size: 1000
@@ -3161,7 +3161,7 @@ indices:
         - sex_at_birth
         - study_id
         - dbgap_accession
-        - study_status
+        - study_phase
         - study_acronym
         - study_name
         - age_at_response_str
@@ -3252,7 +3252,7 @@ indices:
             id,
             stu.study_id AS study_id,
             stu.dbgap_accession AS dbgap_accession,
-            stu.study_phase AS study_status,
+            stu.study_phase AS study_phase,
             stu.study_acronym AS study_acronym,
             stu.study_name AS study_name
         page_size: 1000
@@ -3630,7 +3630,7 @@ indices:
         - race
         - sex_at_birth
         - dbgap_accession
-        - study_status
+        - study_phase
         - study_id
         - study_acronym
         - study_name
@@ -3771,7 +3771,7 @@ indices:
             dg.guid AS guid,
             st.study_id AS study_id,
             st.dbgap_accession AS dbgap_accession,
-            st.study_phase AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym AS study_acronym,
             st.study_name AS study_name
         page_size: 1000
@@ -4084,7 +4084,7 @@ indices:
         - race
         - sex_at_birth
         - dbgap_accession
-        - study_status
+        - study_phase
         - study_id
         - study_acronym
         - study_name
@@ -4219,7 +4219,7 @@ indices:
             ga.guid AS guid,
             st.study_id AS study_id,
             st.dbgap_accession AS dbgap_accession,
-            st.study_phase AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym AS study_acronym,
             st.study_name AS study_name
         page_size: 1000
@@ -4532,7 +4532,7 @@ indices:
         - grant_id
         - pubmed_ids
         - dbgap_accession
-        - study_status
+        - study_phase
         - study_name
         - study_description
         - study_acronym
@@ -4571,7 +4571,7 @@ indices:
             st.guid AS guid,
             st.study_id AS study_id,
             st.dbgap_accession AS dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_name AS study_name,
             st.study_description AS study_description,
             st.study_acronym AS study_acronym
@@ -4731,7 +4731,7 @@ indices:
         - sex_at_birth
         - study_id
         - dbgap_accession
-        - study_status
+        - study_phase
         - study_acronym
         - study_name
         - sample_anatomic_site
@@ -4833,7 +4833,7 @@ indices:
             sm.guid AS guid,
             st.study_id AS study_id,
             st.dbgap_accession AS dbgap_accession,
-            st.study_phase AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym AS study_acronym,
             st.study_name AS study_name
         page_size: 1000
@@ -5077,7 +5077,7 @@ indices:
         - sample_id
         - study_id
         - dbgap_accession
-        - study_status
+        - study_phase
         - study_acronym
         - study_name
         - anatomic_site
