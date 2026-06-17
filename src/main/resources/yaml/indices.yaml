@@ -1615,17 +1615,15 @@ indices:
             WITH
               p.guid AS id,
               count(tchemo) AS tchemo_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: tchemo.chemotherapy_type,
-                    treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
-                    age_at_treatment_start: tchemo.age_at_treatment_start,
-                    age_at_treatment_end: tchemo.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              collect(DISTINCT {
+                treatment_type: CASE
+                  WHEN tchemo.chemotherapy_type IS NULL OR size(tchemo.chemotherapy_type) = 0 THEN ['chemotherapy']
+                  ELSE [x IN tchemo.chemotherapy_type WHERE x IS NOT NULL | trim(x)]
+                END,
+                treatment_agent: tchemo.chemotherapy_agent,
+                age_at_treatment_start: tchemo.age_at_treatment_start,
+                age_at_treatment_end: tchemo.age_at_treatment_end
+              }) AS treatment_filters
             WITH
               id,
               CASE
