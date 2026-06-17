@@ -1498,7 +1498,7 @@ indices:
         - treatment_response_filters.response_system
         - sample_diagnosis_genetic_analysis_file_filters.sample_anatomic_site
         - sample_diagnosis_genetic_analysis_file_filters.sample_tumor_status
-        - sample_diagnosis_genetic_analysis_file_filters.tumor_classification
+        - sample_diagnosis_genetic_analysis_file_filters.tumor_spatial_extent
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis_category
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis_anatomic_site
@@ -1908,7 +1908,7 @@ indices:
             row.sm.anatomic_site AS sample_anatomic_site,
             row.sm.participant_age_at_collection AS participant_age_at_collection,
             row.sm.sample_tumor_status AS sample_tumor_status,
-            row.sm.tumor_classification AS tumor_classification,
+            row.sm.tumor_spatial_extent AS tumor_spatial_extent,
 
             // Diagnosis facets
             row.dg.age_at_diagnosis AS age_at_diagnosis,
@@ -1966,7 +1966,7 @@ indices:
               sample_anatomic_site: sample_anatomic_site,
               participant_age_at_collection: participant_age_at_collection,
               sample_tumor_status: sample_tumor_status,
-              tumor_classification: tumor_classification,
+              tumor_spatial_extent: tumor_spatial_extent,
               age_at_diagnosis: age_at_diagnosis,
               diagnosis_anatomic_site: diagnosis_anatomic_site,
               disease_phase: disease_phase,
@@ -2041,7 +2041,7 @@ indices:
         - treatment_response_filters.response_system
         - sample_diagnosis_genetic_analysis_file_filters.sample_anatomic_site
         - sample_diagnosis_genetic_analysis_file_filters.sample_tumor_status
-        - sample_diagnosis_genetic_analysis_file_filters.tumor_classification
+        - sample_diagnosis_genetic_analysis_file_filters.tumor_spatial_extent
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis_category
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis_anatomic_site
@@ -2435,7 +2435,7 @@ indices:
             row.sm.anatomic_site AS sample_anatomic_site,
             row.sm.participant_age_at_collection AS participant_age_at_collection,
             row.sm.sample_tumor_status AS sample_tumor_status,
-            row.sm.tumor_classification AS tumor_classification,
+            row.sm.tumor_spatial_extent AS tumor_spatial_extent,
 
             // Diagnosis facets
             row.dg.age_at_diagnosis AS age_at_diagnosis,
@@ -2494,7 +2494,7 @@ indices:
               sample_anatomic_site: sample_anatomic_site,
               participant_age_at_collection: participant_age_at_collection,
               sample_tumor_status: sample_tumor_status,
-              tumor_classification: tumor_classification,
+              tumor_spatial_extent: tumor_spatial_extent,
               age_at_diagnosis: age_at_diagnosis,
               diagnosis_anatomic_site: diagnosis_anatomic_site,
               disease_phase: disease_phase,
@@ -2549,7 +2549,7 @@ indices:
         - treatment_response_filters.response_system
         - sample_diagnosis_genetic_analysis_file_filters.sample_anatomic_site
         - sample_diagnosis_genetic_analysis_file_filters.sample_tumor_status
-        - sample_diagnosis_genetic_analysis_file_filters.tumor_classification
+        - sample_diagnosis_genetic_analysis_file_filters.tumor_spatial_extent
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis_category
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis_anatomic_site
@@ -3065,7 +3065,7 @@ indices:
             row.sm.anatomic_site AS sample_anatomic_site,
             row.sm.participant_age_at_collection AS participant_age_at_collection,
             row.sm.sample_tumor_status AS sample_tumor_status,
-            row.sm.tumor_classification AS tumor_classification,
+            row.sm.tumor_spatial_extent AS tumor_spatial_extent,
 
             // Diagnosis facets
             row.dg.age_at_diagnosis AS age_at_diagnosis,
@@ -3123,7 +3123,7 @@ indices:
               sample_anatomic_site: sample_anatomic_site,
               participant_age_at_collection: participant_age_at_collection,
               sample_tumor_status: sample_tumor_status,
-              tumor_classification: tumor_classification,
+              tumor_spatial_extent: tumor_spatial_extent,
               age_at_diagnosis: age_at_diagnosis,
               diagnosis_anatomic_site: diagnosis_anatomic_site,
               disease_phase: disease_phase,
@@ -3175,7 +3175,7 @@ indices:
         - treatment_filters.treatment_agent
         - sample_diagnosis_genetic_analysis_file_filters.sample_anatomic_site
         - sample_diagnosis_genetic_analysis_file_filters.sample_tumor_status
-        - sample_diagnosis_genetic_analysis_file_filters.tumor_classification
+        - sample_diagnosis_genetic_analysis_file_filters.tumor_spatial_extent
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis_category
         - sample_diagnosis_genetic_analysis_file_filters.diagnosis_anatomic_site
@@ -3536,7 +3536,7 @@ indices:
             row.sm.anatomic_site AS sample_anatomic_site,
             row.sm.participant_age_at_collection AS participant_age_at_collection,
             row.sm.sample_tumor_status AS sample_tumor_status,
-            row.sm.tumor_classification AS tumor_classification,
+            row.sm.tumor_spatial_extent AS tumor_spatial_extent,
 
           // Diagnosis facets
             row.dg.age_at_diagnosis AS age_at_diagnosis,
@@ -3594,7 +3594,7 @@ indices:
               sample_anatomic_site: sample_anatomic_site,
               participant_age_at_collection: participant_age_at_collection,
               sample_tumor_status: sample_tumor_status,
-              tumor_classification: tumor_classification,
+              tumor_spatial_extent: tumor_spatial_extent,
               age_at_diagnosis: age_at_diagnosis,
               diagnosis_anatomic_site: diagnosis_anatomic_site,
               disease_phase: disease_phase,
@@ -3646,7 +3646,7 @@ indices:
         - diagnosis_basis_str
         - diagnosis_comment
         - disease_phase
-        - tumor_classification
+        - tumor_spatial_extent
         - toronto_childhood_cancer_staging
         - tumor_grade
         - tumor_stage_clinical_m
@@ -3662,7 +3662,7 @@ indices:
         - treatment_response_filters.response_system
         - sample_genetic_analysis_file_filters.sample_anatomic_site
         - sample_genetic_analysis_file_filters.sample_tumor_status
-        - sample_genetic_analysis_file_filters.tumor_classification
+        - sample_genetic_analysis_file_filters.tumor_spatial_extent
         - sample_genetic_analysis_file_filters.reported_significance
         - sample_genetic_analysis_file_filters.reported_significance_system
         - sample_genetic_analysis_file_filters.gene_symbol
@@ -3741,7 +3741,7 @@ indices:
             ) AS diagnosis_basis_str,
             dg.diagnosis_comment AS diagnosis_comment,
             dg.disease_phase AS disease_phase,
-            dg.tumor_classification AS tumor_classification,
+            dg.tumor_spatial_extent AS tumor_spatial_extent,
             dg.toronto_childhood_cancer_staging AS toronto_childhood_cancer_staging,
             dg.tumor_grade AS tumor_grade,
             dg.tumor_stage_clinical_m AS tumor_stage_clinical_m,
@@ -4011,7 +4011,7 @@ indices:
             sm.anatomic_site AS sample_anatomic_site,
             sm.participant_age_at_collection AS participant_age_at_collection,
             sm.sample_tumor_status AS sample_tumor_status,
-            sm.tumor_classification AS tumor_classification,
+            sm.tumor_spatial_extent AS tumor_spatial_extent,
 
             ga.reported_significance AS reported_significance,
             ga.reported_significance_system AS reported_significance_system,
@@ -4042,7 +4042,7 @@ indices:
                 sample_anatomic_site: sample_anatomic_site,
                 participant_age_at_collection: participant_age_at_collection,
                 sample_tumor_status: sample_tumor_status,
-                tumor_classification: tumor_classification,
+                tumor_spatial_extent: tumor_spatial_extent,
 
                 reported_significance: reported_significance,
                 reported_significance_system: reported_significance_system,
@@ -4068,7 +4068,7 @@ indices:
               WHERE f.sample_anatomic_site IS NOT NULL
                 OR f.participant_age_at_collection IS NOT NULL
                 OR f.sample_tumor_status IS NOT NULL
-                OR f.tumor_classification IS NOT NULL
+                OR f.tumor_spatial_extent IS NOT NULL
                 OR f.file_type IS NOT NULL
             ] AS sample_genetic_analysis_file_filters
         page_size: 500
@@ -4117,7 +4117,7 @@ indices:
         - treatment_response_filters.response_system
         - sample_diagnosis_file_filters.sample_anatomic_site
         - sample_diagnosis_file_filters.sample_tumor_status
-        - sample_diagnosis_file_filters.tumor_classification
+        - sample_diagnosis_file_filters.tumor_spatial_extent
         - sample_diagnosis_file_filters.diagnosis
         - sample_diagnosis_file_filters.diagnosis_category
         - sample_diagnosis_file_filters.diagnosis_anatomic_site
@@ -4459,7 +4459,7 @@ indices:
             sm.anatomic_site AS sample_anatomic_site,
             sm.participant_age_at_collection AS participant_age_at_collection,
             sm.sample_tumor_status AS sample_tumor_status,
-            sm.tumor_classification AS tumor_classification,
+            sm.tumor_spatial_extent AS tumor_spatial_extent,
 
             dg.age_at_diagnosis AS age_at_diagnosis,
             dg.anatomic_site AS diagnosis_anatomic_site,
@@ -4490,7 +4490,7 @@ indices:
                 sample_anatomic_site: sample_anatomic_site,
                 participant_age_at_collection: participant_age_at_collection,
                 sample_tumor_status: sample_tumor_status,
-                tumor_classification: tumor_classification,
+                tumor_spatial_extent: tumor_spatial_extent,
 
                 age_at_diagnosis: age_at_diagnosis,
                 diagnosis_anatomic_site: diagnosis_anatomic_site,
@@ -4516,7 +4516,7 @@ indices:
               WHERE f.sample_anatomic_site IS NOT NULL
                 OR f.participant_age_at_collection IS NOT NULL
                 OR f.sample_tumor_status IS NOT NULL
-                OR f.tumor_classification IS NOT NULL
+                OR f.tumor_spatial_extent IS NOT NULL
                 OR f.diagnosis IS NOT NULL
                 OR f.age_at_diagnosis IS NOT NULL
                 OR f.file_type IS NOT NULL
@@ -4737,7 +4737,7 @@ indices:
         - sample_anatomic_site
         - sample_anatomic_site_str
         - sample_tumor_status
-        - tumor_classification
+        - tumor_spatial_extent
         - diagnosis_filters.diagnosis_anatomic_site
         - diagnosis_filters.disease_phase
         - diagnosis_filters.diagnosis_classification_system
@@ -4806,7 +4806,7 @@ indices:
             ) AS sample_anatomic_site_str,
             sm.participant_age_at_collection AS participant_age_at_collection,
             sm.sample_tumor_status AS sample_tumor_status,
-            sm.tumor_classification AS tumor_classification
+            sm.tumor_spatial_extent AS tumor_spatial_extent
         page_size: 1000
       - name: "participant_properties"
         query: |
@@ -5114,7 +5114,7 @@ indices:
         - combined_filters.treatment_response_filters.response_system
         - combined_filters.sample_diagnosis_genetic_analysis_filters.sample_anatomic_site
         - combined_filters.sample_diagnosis_genetic_analysis_filters.sample_tumor_status
-        - combined_filters.sample_diagnosis_genetic_analysis_filters.tumor_classification
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.tumor_spatial_extent
         - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_anatomic_site
         - combined_filters.sample_diagnosis_genetic_analysis_filters.disease_phase
         - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_classification_system
@@ -5391,7 +5391,7 @@ indices:
               sample_anatomic_site: CASE WHEN sm IS NOT NULL THEN sm.anatomic_site ELSE null END,
               participant_age_at_collection: CASE WHEN sm IS NOT NULL THEN sm.participant_age_at_collection ELSE null END,
               sample_tumor_status: CASE WHEN sm IS NOT NULL THEN sm.sample_tumor_status ELSE null END,
-              tumor_classification: CASE WHEN sm IS NOT NULL THEN sm.tumor_classification ELSE null END,
+              tumor_spatial_extent: CASE WHEN sm IS NOT NULL THEN sm.tumor_spatial_extent ELSE null END,
 
               age_at_diagnosis: CASE WHEN dg IS NOT NULL THEN dg.age_at_diagnosis ELSE null END,
               diagnosis_anatomic_site: CASE WHEN dg IS NOT NULL THEN dg.anatomic_site ELSE null END,
@@ -5867,7 +5867,7 @@ indices:
               sample_anatomic_site: CASE WHEN sm IS NOT NULL THEN sm.anatomic_site ELSE null END,
               participant_age_at_collection: CASE WHEN sm IS NOT NULL THEN sm.participant_age_at_collection ELSE null END,
               sample_tumor_status: CASE WHEN sm IS NOT NULL THEN sm.sample_tumor_status ELSE null END,
-              tumor_classification: CASE WHEN sm IS NOT NULL THEN sm.tumor_classification ELSE null END,
+              tumor_spatial_extent: CASE WHEN sm IS NOT NULL THEN sm.tumor_spatial_extent ELSE null END,
               age_at_diagnosis: CASE WHEN dg IS NOT NULL THEN dg.age_at_diagnosis ELSE null END,
               diagnosis_anatomic_site: CASE WHEN dg IS NOT NULL THEN dg.anatomic_site ELSE null END,
               disease_phase: CASE WHEN dg IS NOT NULL THEN dg.disease_phase ELSE null END,
