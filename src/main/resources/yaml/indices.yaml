@@ -3637,7 +3637,6 @@ indices:
         - diagnosis
         - diagnosis_category
         - diagnosis_category_str
-        - age_at_diagnosis
         - diagnosis_anatomic_site
         - diagnosis_anatomic_site_str
         - diagnosis_classification_system
@@ -4766,6 +4765,7 @@ indices:
         - treatment_response_filters.response
         - treatment_response_filters.response_category
         - treatment_response_filters.response_system
+        - files
       integer:
         - participant_age_at_collection
         - diagnosis_filters.age_at_diagnosis
@@ -4959,7 +4959,7 @@ indices:
             sm.guid AS guid,
             file_filters AS file_filters,
             [] AS files, // Not used in the current implementation
-            0 AS file_count // Not used in the current implementation
+            0 AS file_count, // Not used in the current implementation
             0 AS direct_file_count
         page_size: 1000
       - name: "survival_filters"
