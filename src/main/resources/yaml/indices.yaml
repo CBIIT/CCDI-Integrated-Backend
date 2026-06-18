@@ -882,7 +882,6 @@ indices:
         - treatment_response_filters.age_at_response
         - sample_diagnosis_genetic_analysis_file_filters.participant_age_at_collection
         - sample_diagnosis_genetic_analysis_file_filters.age_at_diagnosis
-      text:
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
     initial_query:
       query: |
