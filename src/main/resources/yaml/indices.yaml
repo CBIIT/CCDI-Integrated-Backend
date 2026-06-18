@@ -363,17 +363,14 @@ indices:
           WITH
             p.guid AS id,
             count(sur) AS survival_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  last_known_survival_status: sur.last_known_survival_status,
-                  cause_of_death: sur.cause_of_death,
-                  first_event: sur.first_event,
-                  age_at_last_known_survival_status: sur.age_at_last_known_survival_status
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS survival_filters
+            [item IN collect(
+              DISTINCT {
+                last_known_survival_status: sur.last_known_survival_status,
+                cause_of_death: sur.cause_of_death,
+                first_event: sur.first_event,
+                age_at_last_known_survival_status: sur.age_at_last_known_survival_status
+              }
+            ) WHERE item IS NOT NULL] AS survival_filters
           WITH
             id,
             CASE
@@ -423,17 +420,14 @@ indices:
             WITH
               p.guid AS id,
               count(trad) AS trad_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: trad.treatment_type,
-                    treatment_agent: trad.radiation_therapy_type,
-                    age_at_treatment_start: trad.age_at_treatment_start,
-                    age_at_treatment_end: trad.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              [item in collect(
+                DISTINCT {
+                  treatment_type: trad.treatment_type,
+                  treatment_agent: trad.radiation_therapy_type,
+                  age_at_treatment_start: trad.age_at_treatment_start,
+                  age_at_treatment_end: trad.age_at_treatment_end
+                }
+              ) WHERE item IS NOT NULL] AS treatment_filters
             WITH
               id,
               CASE
@@ -451,17 +445,14 @@ indices:
             WITH
               p.guid AS id,
               count(tsurg) AS tsurg_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: tsurg.treatment_type,
-                    treatment_agent: tsurg.surgery_type,
-                    age_at_treatment_start: tsurg.age_at_treatment_start,
-                    age_at_treatment_end: tsurg.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              [item in collect(
+                DISTINCT {
+                  treatment_type: tsurg.treatment_type,
+                  treatment_agent: tsurg.surgery_type,
+                  age_at_treatment_start: tsurg.age_at_treatment_start,
+                  age_at_treatment_end: tsurg.age_at_treatment_end
+                }
+              ) WHERE item IS NOT NULL] AS treatment_filters
             WITH
               id,
               CASE
@@ -479,17 +470,14 @@ indices:
             WITH
               p.guid AS id,
               count(toth) AS toth_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: toth.treatment_type,
-                    treatment_agent: toth.other_treatment_type,
-                    age_at_treatment_start: toth.age_at_treatment_start,
-                    age_at_treatment_end: toth.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              [item in collect(
+                DISTINCT {
+                  treatment_type: toth.treatment_type,
+                  treatment_agent: toth.other_treatment_type,
+                  age_at_treatment_start: toth.age_at_treatment_start,
+                  age_at_treatment_end: toth.age_at_treatment_end
+                }
+              ) WHERE item IS NOT NULL] AS treatment_filters
             WITH
               id,
               CASE
@@ -516,17 +504,14 @@ indices:
           WITH
             p.guid AS id,
             count(tresp) AS treatment_response_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  age_at_response: tresp.age_at_response,
-                  response: tresp.response,
-                  response_category: tresp.response_category,
-                  response_system: tresp.response_system
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS treatment_response_filters
+            [item IN collect(
+              DISTINCT {
+                age_at_response: tresp.age_at_response,
+                response: tresp.response,
+                response_category: tresp.response_category,
+                response_system: tresp.response_system
+              }
+            ) WHERE item IS NOT NULL] AS treatment_response_filters
           WITH
             id,
             CASE
@@ -950,17 +935,14 @@ indices:
           WITH
             p.guid AS id,
             count(sur) AS survival_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  last_known_survival_status: sur.last_known_survival_status,
-                  cause_of_death: sur.cause_of_death,
-                  first_event: sur.first_event,
-                  age_at_last_known_survival_status: sur.age_at_last_known_survival_status
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS survival_filters
+            [item IN collect(
+              DISTINCT {
+                last_known_survival_status: sur.last_known_survival_status,
+                cause_of_death: sur.cause_of_death,
+                first_event: sur.first_event,
+                age_at_last_known_survival_status: sur.age_at_last_known_survival_status
+              }
+            ) WHERE item IS NOT NULL] AS survival_filters
           WITH
             id,
             CASE
@@ -1010,17 +992,14 @@ indices:
             WITH
               p.guid AS id,
               count(trad) AS trad_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: trad.treatment_type,
-                    treatment_agent: trad.radiation_therapy_type,
-                    age_at_treatment_start: trad.age_at_treatment_start,
-                    age_at_treatment_end: trad.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              [item in collect(
+                DISTINCT {
+                  treatment_type: trad.treatment_type,
+                  treatment_agent: trad.radiation_therapy_type,
+                  age_at_treatment_start: trad.age_at_treatment_start,
+                  age_at_treatment_end: trad.age_at_treatment_end
+                }
+              ) WHERE item IS NOT NULL] AS treatment_filters
             WITH
               id,
               CASE
@@ -1038,17 +1017,14 @@ indices:
             WITH
               p.guid AS id,
               count(tsurg) AS tsurg_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: tsurg.treatment_type,
-                    treatment_agent: tsurg.surgery_type,
-                    age_at_treatment_start: tsurg.age_at_treatment_start,
-                    age_at_treatment_end: tsurg.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              [item in collect(
+                DISTINCT {
+                  treatment_type: tsurg.treatment_type,
+                  treatment_agent: tsurg.surgery_type,
+                  age_at_treatment_start: tsurg.age_at_treatment_start,
+                  age_at_treatment_end: tsurg.age_at_treatment_end
+                }
+              ) WHERE item IS NOT NULL] AS treatment_filters
             WITH
               id,
               CASE
@@ -1066,17 +1042,14 @@ indices:
             WITH
               p.guid AS id,
               count(toth) AS toth_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    treatment_type: toth.treatment_type,
-                    treatment_agent: toth.other_treatment_type,
-                    age_at_treatment_start: toth.age_at_treatment_start,
-                    age_at_treatment_end: toth.age_at_treatment_end
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatment_filters
+              [item in collect(
+                DISTINCT {
+                  treatment_type: toth.treatment_type,
+                  treatment_agent: toth.other_treatment_type,
+                  age_at_treatment_start: toth.age_at_treatment_start,
+                  age_at_treatment_end: toth.age_at_treatment_end
+                }
+              ) WHERE item IS NOT NULL] AS treatment_filters
             WITH
               id,
               CASE
@@ -1103,17 +1076,14 @@ indices:
           WITH
             p.guid AS id,
             count(tresp) AS treatment_response_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  age_at_response: tresp.age_at_response,
-                  response: tresp.response,
-                  response_category: tresp.response_category,
-                  response_system: tresp.response_system
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS treatment_response_filters
+            [item IN collect(
+              DISTINCT {
+                age_at_response: tresp.age_at_response,
+                response: tresp.response,
+                response_category: tresp.response_category,
+                response_system: tresp.response_system
+              }
+            ) WHERE item IS NOT NULL] AS treatment_response_filters
           WITH
             id,
             CASE
@@ -1596,17 +1566,14 @@ indices:
           WITH
             id,
             count(tresp) AS treatment_response_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  age_at_response: tresp.age_at_response,
-                  response: tresp.response,
-                  response_category: tresp.response_category,
-                  response_system: tresp.response_system
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS treatment_response_filters
+            [item IN collect(
+              DISTINCT {
+                age_at_response: tresp.age_at_response,
+                response: tresp.response,
+                response_category: tresp.response_category,
+                response_system: tresp.response_system
+              }
+            ) WHERE item IS NOT NULL] AS treatment_response_filters
           WITH
             id,
             CASE
@@ -2165,17 +2132,14 @@ indices:
           WITH
             id,
             count(sur) AS survival_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  last_known_survival_status: sur.last_known_survival_status,
-                  cause_of_death: sur.cause_of_death,
-                  first_event: sur.first_event,
-                  age_at_last_known_survival_status: sur.age_at_last_known_survival_status
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS survival_filters
+            [item IN collect(
+              DISTINCT {
+                last_known_survival_status: sur.last_known_survival_status,
+                cause_of_death: sur.cause_of_death,
+                first_event: sur.first_event,
+                age_at_last_known_survival_status: sur.age_at_last_known_survival_status
+              }
+            ) WHERE item IS NOT NULL] AS survival_filters
           WITH
             id,
             CASE
@@ -2211,17 +2175,14 @@ indices:
           WITH
             id,
             count(tresp) AS treatment_response_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  age_at_response: tresp.age_at_response,
-                  response: tresp.response,
-                  response_category: tresp.response_category,
-                  response_system: tresp.response_system
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS treatment_response_filters
+            [item IN collect(
+              DISTINCT {
+                age_at_response: tresp.age_at_response,
+                response: tresp.response,
+                response_category: tresp.response_category,
+                response_system: tresp.response_system
+              }
+            ) WHERE item IS NOT NULL] AS treatment_response_filters
           WITH
             id,
             CASE
@@ -2610,17 +2571,14 @@ indices:
           WITH
             tresp.guid AS id,
             count(sur) AS survival_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  last_known_survival_status: sur.last_known_survival_status,
-                  cause_of_death: sur.cause_of_death,
-                  first_event: sur.first_event,
-                  age_at_last_known_survival_status: sur.age_at_last_known_survival_status
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS survival_filters
+            [item IN collect(
+              DISTINCT {
+                last_known_survival_status: sur.last_known_survival_status,
+                cause_of_death: sur.cause_of_death,
+                first_event: sur.first_event,
+                age_at_last_known_survival_status: sur.age_at_last_known_survival_status
+              }
+            ) WHERE item IS NOT NULL] AS survival_filters
           WITH
             id,
             CASE
@@ -3128,15 +3086,12 @@ indices:
           WITH
             dg.guid AS id,
             count(su) AS su_count,
-            coalesce(
-              [item IN collect(DISTINCT {
-                last_known_survival_status: su.last_known_survival_status,
-                cause_of_death: su.cause_of_death,
-                first_event: su.first_event,
-                age_at_last_known_survival_status: su.age_at_last_known_survival_status
-              }) WHERE item.last_known_survival_status IS NOT NULL OR item.cause_of_death IS NOT NULL OR item.first_event IS NOT NULL OR item.age_at_last_known_survival_status IS NOT NULL],
-              []
-            ) AS survival_filters
+            [item IN collect(DISTINCT {
+              last_known_survival_status: su.last_known_survival_status,
+              cause_of_death: su.cause_of_death,
+              first_event: su.first_event,
+              age_at_last_known_survival_status: su.age_at_last_known_survival_status
+            }) WHERE item.last_known_survival_status IS NOT NULL OR item.cause_of_death IS NOT NULL OR item.first_event IS NOT NULL OR item.age_at_last_known_survival_status IS NOT NULL] AS survival_filters
           WITH id, CASE WHEN su_count > 0 THEN survival_filters ELSE [] END AS survival_filters
           RETURN id, survival_filters
         page_size: 1000
@@ -3205,15 +3160,12 @@ indices:
           WITH
             dg.guid AS id,
             count(tresp) AS tresp_count,
-            coalesce(
-              [item IN collect(DISTINCT {
-                age_at_response: tresp.age_at_response,
-                response: tresp.response,
-                response_category: tresp.response_category,
-                response_system: tresp.response_system
-              }) WHERE item.response IS NOT NULL OR item.age_at_response IS NOT NULL OR item.response_category IS NOT NULL OR item.response_system IS NOT NULL],
-              []
-            ) AS treatment_response_filters
+            [item IN collect(DISTINCT {
+              age_at_response: tresp.age_at_response,
+              response: tresp.response,
+              response_category: tresp.response_category,
+              response_system: tresp.response_system
+            }) WHERE item.response IS NOT NULL OR item.age_at_response IS NOT NULL OR item.response_category IS NOT NULL OR item.response_system IS NOT NULL] AS treatment_response_filters
           WITH id, CASE WHEN tresp_count > 0 THEN treatment_response_filters ELSE [] END AS treatment_response_filters
           RETURN id, treatment_response_filters
         page_size: 1000
@@ -3576,15 +3528,12 @@ indices:
           WITH
             ga.guid AS id,
             count(su) AS su_count,
-            coalesce(
-              [item IN collect(DISTINCT {
-                last_known_survival_status: su.last_known_survival_status,
-                cause_of_death: su.cause_of_death,
-                first_event: su.first_event,
-                age_at_last_known_survival_status: su.age_at_last_known_survival_status
-              }) WHERE item.last_known_survival_status IS NOT NULL OR item.cause_of_death IS NOT NULL OR item.first_event IS NOT NULL OR item.age_at_last_known_survival_status IS NOT NULL],
-              []
-            ) AS survival_filters
+            [item IN collect(DISTINCT {
+              last_known_survival_status: su.last_known_survival_status,
+              cause_of_death: su.cause_of_death,
+              first_event: su.first_event,
+              age_at_last_known_survival_status: su.age_at_last_known_survival_status
+            }) WHERE item.last_known_survival_status IS NOT NULL OR item.cause_of_death IS NOT NULL OR item.first_event IS NOT NULL OR item.age_at_last_known_survival_status IS NOT NULL] AS survival_filters
           WITH id, CASE WHEN su_count > 0 THEN survival_filters ELSE [] END AS survival_filters
           RETURN id, survival_filters
         page_size: 1000
@@ -3653,15 +3602,12 @@ indices:
           WITH
             ga.guid AS id,
             count(tresp) AS tresp_count,
-            coalesce(
-              [item IN collect(DISTINCT {
-                age_at_response: tresp.age_at_response,
-                response: tresp.response,
-                response_category: tresp.response_category,
-                response_system: tresp.response_system
-              }) WHERE item.response IS NOT NULL OR item.age_at_response IS NOT NULL OR item.response_category IS NOT NULL OR item.response_system IS NOT NULL],
-              []
-            ) AS treatment_response_filters
+            [item IN collect(DISTINCT {
+              age_at_response: tresp.age_at_response,
+              response: tresp.response,
+              response_category: tresp.response_category,
+              response_system: tresp.response_system
+            }) WHERE item.response IS NOT NULL OR item.age_at_response IS NOT NULL OR item.response_category IS NOT NULL OR item.response_system IS NOT NULL] AS treatment_response_filters
           WITH id, CASE WHEN tresp_count > 0 THEN treatment_response_filters ELSE [] END AS treatment_response_filters
           RETURN id, treatment_response_filters
         page_size: 1000
@@ -4316,15 +4262,12 @@ indices:
           WITH
             sm.guid AS id,
             count(su) AS su_count,
-            coalesce(
-              [item IN collect(DISTINCT {
-                last_known_survival_status: su.last_known_survival_status,
-                cause_of_death: su.cause_of_death,
-                first_event: su.first_event,
-                age_at_last_known_survival_status: su.age_at_last_known_survival_status
-              }) WHERE item.last_known_survival_status IS NOT NULL OR item.cause_of_death IS NOT NULL OR item.first_event IS NOT NULL OR item.age_at_last_known_survival_status IS NOT NULL],
-              []
-            ) AS survival_filters
+            [item IN collect(DISTINCT {
+              last_known_survival_status: su.last_known_survival_status,
+              cause_of_death: su.cause_of_death,
+              first_event: su.first_event,
+              age_at_last_known_survival_status: su.age_at_last_known_survival_status
+            }) WHERE item.last_known_survival_status IS NOT NULL OR item.cause_of_death IS NOT NULL OR item.first_event IS NOT NULL OR item.age_at_last_known_survival_status IS NOT NULL] AS survival_filters
           WITH
             id,
             CASE WHEN su_count > 0 THEN survival_filters ELSE [] END AS survival_filters
@@ -4396,15 +4339,12 @@ indices:
           WITH
             sm.guid AS id,
             count(tresp) AS tresp_count,
-            coalesce(
-              [item IN collect(DISTINCT {
-                age_at_response: tresp.age_at_response,
-                response: tresp.response,
-                response_category: tresp.response_category,
-                response_system: tresp.response_system
-              }) WHERE item.response IS NOT NULL OR item.age_at_response IS NOT NULL OR item.response_category IS NOT NULL OR item.response_system IS NOT NULL],
-              []
-            ) AS treatment_response_filters
+            [item IN collect(DISTINCT {
+              age_at_response: tresp.age_at_response,
+              response: tresp.response,
+              response_category: tresp.response_category,
+              response_system: tresp.response_system
+            }) WHERE item.response IS NOT NULL OR item.age_at_response IS NOT NULL OR item.response_category IS NOT NULL OR item.response_system IS NOT NULL] AS treatment_response_filters
           WITH
             id,
             CASE WHEN tresp_count > 0 THEN treatment_response_filters ELSE [] END AS treatment_response_filters
