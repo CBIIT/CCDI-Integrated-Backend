@@ -7,14 +7,14 @@ indices:
       keyword:
         - id
         - participant_id
-        - race       
+        - race
         - sex_at_birth
         - occupation
         - guid # Identical to id in this index. Returned in cohort metadata JSON
         - crdc_id
         - consent_group_id
         - consent_group_name
-        - consent_group_suffix 
+        - consent_group_suffix
         - guid
         - study.study_id
         - study.dbgap_accession
@@ -1250,7 +1250,7 @@ indices:
             p.participant_id AS participant_id,
             p.race AS race,
             reduce(result = '', x IN p.race |
-              CASE 
+              CASE
                 WHEN result = "" THEN x
                 ELSE result + ";" + x
               END
@@ -1968,7 +1968,7 @@ indices:
             p.participant_id AS participant_id,
             p.race AS race,
             reduce(result = '', x IN p.race |
-              CASE 
+              CASE
                 WHEN result = "" THEN x
                 ELSE result + ";" + x
               END
@@ -5127,7 +5127,7 @@ indices:
             num_participant_files AS num_of_participant_files,
             num_sample_files      AS num_of_sample_files
         page_size: 1
-  
+
   - index_name: samples_table
     id_field: "id"
     mapping:
@@ -6009,7 +6009,7 @@ indices:
               }
             ] AS other_filters
 
-          WITH 
+          WITH
             file_guid,
             p,
             sm,
