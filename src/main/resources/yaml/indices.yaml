@@ -3826,6 +3826,7 @@ indices:
         - study_description
         - study_acronym
         - PIs
+        - consent_codes
       integer:
         - num_of_participants
         - num_of_samples
@@ -3924,6 +3925,19 @@ indices:
                 END
             ) AS pubmed_ids,
             size(pub_ids) AS num_of_publications
+        page_size: 1000
+      - name: "consent_codes"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (st)<-[:of_consent_group]-(cg:consent_group)
+          WITH
+            st,
+            [code IN COLLECT(DISTINCT cg.consent_group_name) WHERE code IS NOT NULL] AS consent_codes
+          RETURN
+            st.guid AS id,
+            consent_codes AS consent_codes
         page_size: 1000
       - name: "num_of_participants"
         query: |
@@ -4365,12 +4379,9 @@ indices:
         - study_acronym
         - study_name
         - anatomic_site
-        - participant_age_at_collection
         - sample_tumor_status
         - tumor_spatial_extent
         - sample_description
-        - percent_tumor
-        - percent_necrosis
         - file_name
         - data_category
         - file_type
@@ -4413,12 +4424,16 @@ indices:
         - combined_filters.sample_diagnosis_genetic_analysis_filters.alteration_type
         - combined_filters.sample_diagnosis_genetic_analysis_filters.status
       integer:
+        - participant_age_at_collection
         - combined_filters.survival_filters.age_at_last_known_survival_status
         - combined_filters.treatment_filters.age_at_treatment_start
         - combined_filters.treatment_filters.age_at_treatment_end
         - combined_filters.treatment_response_filters.age_at_response
         - combined_filters.sample_diagnosis_genetic_analysis_filters.participant_age_at_collection
         - combined_filters.sample_diagnosis_genetic_analysis_filters.age_at_diagnosis
+      float:
+        - percent_tumor
+        - percent_necrosis
       long:
         - file_size
       text:
@@ -5140,7 +5155,7 @@ indices:
           UNWIND CASE WHEN size(gas) = 0 THEN [null] ELSE gas END AS ga
 
           // ── group by (file_guid, p) here to collapse sm rows ──────────────
-          // sample_map collected as DISTINCT to dedup across the dg×ga explosion;
+          // sample_map collected as DISTINCT to dedup across the dg x ga explosion;
           // survival/treatment matched AFTER this point so they are collected
           // exactly once per participant, not once per (participant, sm) row.
           WITH
@@ -5355,7 +5370,12 @@ indices:
             ) AS sample_id,
             consent_codes AS consent_codes,
             reduce(acc = [], x IN sample_maps |
-              CASE WHEN x.anatomic_site IS NULL OR x.anatomic_site IN acc THEN acc ELSE acc + [x.anatomic_site] END
+              reduce(inner_acc = acc, site IN coalesce(x.anatomic_site, []) |
+                CASE
+                  WHEN site IS NULL OR site IN inner_acc THEN inner_acc
+                  ELSE inner_acc + [site]
+                END
+              )
             ) AS anatomic_site,
             reduce(acc = [], x IN sample_maps |
               CASE WHEN x.participant_age_at_collection IS NULL OR x.participant_age_at_collection IN acc THEN acc ELSE acc + [x.participant_age_at_collection] END
