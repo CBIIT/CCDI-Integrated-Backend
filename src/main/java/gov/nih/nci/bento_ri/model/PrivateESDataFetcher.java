@@ -393,7 +393,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         new String[]{"study_status", "study_status"},
                         new String[]{"num_of_participants", "num_of_participants"},
                         new String[]{"num_of_samples", "num_of_samples"},
-                        new String[]{"num_of_files", "num_of_files"}
+                        new String[]{"num_of_files", "num_of_files"},
+                        new String[]{"consent_codes", "consent_codes"},
                 },
                 GS_CATEGORY_TYPE, "study"
         ));
@@ -716,6 +717,46 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 subjects = g.get("doc_count").getAsInt();
             }
             data.add(Map.of("group", groupKey, "subjects", subjects));
+        }
+        return data;
+    }
+
+    private List<Map<String, Object>> parseStudyProfileCounts(Object rawValue) {
+        List<Map<String, Object>> data = new ArrayList<>();
+        if (rawValue == null) {
+            return data;
+        }
+
+        List<?> values;
+        if (rawValue instanceof List) {
+            values = (List<?>) rawValue;
+        } else if (rawValue instanceof String) {
+            String rawString = ((String) rawValue).trim();
+            if (rawString.isEmpty()) {
+                return data;
+            }
+            values = List.of(rawString.split(";"));
+        } else {
+            return data;
+        }
+
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("^(.+?) \\((\\d+)\\)$");
+        for (Object value : values) {
+            if (value == null) {
+                continue;
+            }
+            String entry = value.toString().trim();
+            if (entry.isEmpty()) {
+                continue;
+            }
+            java.util.regex.Matcher matcher = pattern.matcher(entry);
+            if (matcher.matches()) {
+                data.add(Map.of(
+                        "group", matcher.group(1).trim(),
+                        "subjects", Integer.parseInt(matcher.group(2))));
+            } else {
+                data.add(Map.of("group", entry, "subjects", 0));
+            }
         }
         return data;
     }
@@ -1377,6 +1418,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"num_of_participants", "num_of_participants"},
             new String[]{"num_of_samples", "num_of_samples"},
             new String[]{"num_of_files", "num_of_files"},
+            new String[]{"consent_codes", "consent_codes"},
+            new String[]{"diagnosis_anatomic_site", "diagnosis_anatomic_site"},
         };
 
         String defaultSort = "dbgap_accession"; // Default sort order
@@ -1388,7 +1431,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             Map.entry("pubmed_ids", "pubmed_ids"),
             Map.entry("num_of_participants", "num_of_participants"),
             Map.entry("num_of_samples", "num_of_samples"),
-            Map.entry("num_of_files", "num_of_files")
+            Map.entry("num_of_files", "num_of_files"),
+            Map.entry("consent_codes", "consent_codes")
         );
 
         Map<String, Object> study_params = Map.ofEntries(
@@ -1404,6 +1448,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         // studies = overview(STUDIES_END_POINT, study_params, PROPERTIES, "dbgap_accession", mapping, "studies");
 
         study = studies.get(0);
+        study.put("anatomic_site", parseStudyProfileCounts(study.remove("diagnosis_anatomic_site")));
 
         // Get study level statistics
         Map<String, Object> query_params = Map.ofEntries(
@@ -1415,12 +1460,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 CARDINALITY_AGG_NAME, "pid",
                 AGG_NAME, "diagnosis",
                 FILTER_COUNT_QUERY, "diagnoses",
-                AGG_ENDPOINT, DIAGNOSIS_END_POINT
-        ));
-        PARTICIPANT_TERM_AGGS.add(Map.of(
-                CARDINALITY_AGG_NAME, "pid",
-                AGG_NAME, "diagnosis_anatomic_site",
-                FILTER_COUNT_QUERY, "anatomic_sites",
                 AGG_ENDPOINT, DIAGNOSIS_END_POINT
         ));
         //data_category mapped to data_category
