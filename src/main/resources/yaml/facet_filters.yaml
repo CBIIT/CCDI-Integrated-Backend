@@ -133,9 +133,9 @@ participants_table:
     cardinality_agg_name: null
     filter_count_name: filterParticipantCountByStudyTitle
     widget_count_name: null
-  - agg_name: study_status
+  - agg_name: study_phase
     cardinality_agg_name: null
-    filter_count_name: filterParticipantCountByStudyStatus
+    filter_count_name: filterParticipantCountByStudyPhase
     widget_count_name: null
 samples_table:
   - agg_name: participant_age_at_collection
