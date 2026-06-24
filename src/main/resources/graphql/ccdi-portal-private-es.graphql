@@ -206,7 +206,7 @@ type SearchParticipantsResult {
     filterParticipantCountByDBGAPAccession: [SearchParticipantsReturnObject]
     filterParticipantCountByAcronym: [SearchParticipantsReturnObject]
     filterParticipantCountByStudyTitle: [SearchParticipantsReturnObject]
-    filterParticipantCountByStudyStatus: [SearchParticipantsReturnObject]
+    filterParticipantCountByStudyPhase: [SearchParticipantsReturnObject]
     filterFileCountByLibrarySelection: [SearchParticipantsReturnObject]
     filterFileCountByLibrarySourceMaterial: [SearchParticipantsReturnObject]
     filterFileCountByLibrarySourceMolecule: [SearchParticipantsReturnObject]
@@ -624,7 +624,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""]
+        study_phase: [String] = [""]
     ): SearchParticipantsResult
     
     participantOverview (
