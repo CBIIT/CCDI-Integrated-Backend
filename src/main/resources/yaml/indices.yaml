@@ -3828,6 +3828,7 @@ indices:
         - PIs
         - consent_codes
       integer:
+        - num_of_diagnoses
         - num_of_participants
         - num_of_samples
         - num_of_files
