@@ -4454,7 +4454,7 @@ indices:
         SKIP $skip LIMIT $limit
         RETURN
           id
-      page_size: 5000
+      page_size: 25
     update_queries:
       - name: "study_properties"
         query: |
@@ -4474,7 +4474,7 @@ indices:
             first_study.study_id AS study_id,
             first_study.study_name AS study_name,
             first_study.study_acronym AS study_acronym
-        page_size: 5000
+        page_size: 25
       - name: "file_properties"
         query: |
           MATCH (f:
@@ -4505,7 +4505,7 @@ indices:
             first_file.fixation_embedding_method AS fixation_embedding_method,
             first_file.staining_method AS staining_method,
             [id] as files
-        page_size: 5000
+        page_size: 25
       - name: "combined_filters_study_level"
         query: |
           MATCH (f:
@@ -4543,7 +4543,7 @@ indices:
               treatment_filters: [],
               treatment_response_filters: []
             }] AS combined_filters
-        page_size: 10000 # There were only 140 results in my local Memgraph, so we can use page size 10k or more to collect all study level files
+        page_size: 25 # There were only 140 results in my local Memgraph, so we can use page size 10k or more to collect all study level files
       - name: "combined_filters_participant_level"
         query: |
           MATCH (f:
@@ -4969,7 +4969,7 @@ indices:
             null AS percent_necrosis,
             [file_guid] AS files,
             combined_filters AS combined_filters
-        page_size: 1000
+        page_size: 25
       - name: "combined_filters_sample_level"
         query: |
           MATCH (f:
@@ -5398,4 +5398,4 @@ indices:
             ) AS percent_necrosis,
             [file_guid] AS files,
             combined_filters AS combined_filters
-        page_size: 1000
+        page_size: 25
