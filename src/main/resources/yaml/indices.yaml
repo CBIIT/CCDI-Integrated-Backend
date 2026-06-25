@@ -4456,6 +4456,435 @@ indices:
           id
       page_size: 5000
     update_queries:
+      - name: "combined_filters_sample_level"
+        query: |
+          MATCH (f:
+            sequencing_file |
+            generic_file |
+            pathology_file |
+            methylation_array_file |
+            cytogenomic_file
+          )-->(:sample)
+
+          WITH
+            f.dcf_indexd_guid AS file_guid,
+            collect(DISTINCT f) AS file_nodes
+
+          ORDER BY file_guid
+          SKIP $skip
+          LIMIT $limit
+
+          UNWIND file_nodes AS f
+
+          OPTIONAL MATCH (f)-[:of_generic_file|of_cytogenomic_file|of_methylation_array_file|of_pathology_file|of_sequencing_file]->(file_sm:sample)
+          OPTIONAL MATCH (file_sm)-[:of_sample]->(p_from_sample:participant)
+
+          WITH
+            file_guid,
+            f,
+            collect(DISTINCT CASE
+              WHEN file_sm IS NOT NULL AND p_from_sample IS NOT NULL THEN {
+                p: p_from_sample,
+                sm: file_sm,
+                source_sm: file_sm
+              }
+            END) AS c1
+
+          OPTIONAL MATCH (f)-[:of_generic_file|of_cytogenomic_file|of_methylation_array_file|of_pathology_file|of_sequencing_file]->(model_file_sm:sample)
+          OPTIONAL MATCH (model_file_sm)-[:of_sample]->(model_for_participant)
+          WHERE model_for_participant:cell_line OR model_for_participant:pdx
+          OPTIONAL MATCH (model_for_participant)-[:of_cell_line|of_pdx]->(st:study)
+
+          WITH
+            file_guid,
+            f,
+            c1,
+            collect(DISTINCT CASE
+              WHEN model_file_sm IS NOT NULL AND st IS NOT NULL THEN {
+                p: null, // No participant for (file)->(smaple)->(cell line/pdx)->(study) files
+                sm: model_file_sm,
+                source_sm: model_file_sm
+              }
+            END) AS c2
+
+          OPTIONAL MATCH (f)-[:of_generic_file|of_cytogenomic_file|of_methylation_array_file|of_pathology_file|of_sequencing_file]->(sm2_model:sample)
+          OPTIONAL MATCH (sm2_model)-[:of_sample]->(model)
+          WHERE model:cell_line OR model:pdx
+          OPTIONAL MATCH (model)-[:of_cell_line|of_pdx]->(sm1_model:sample)
+          OPTIONAL MATCH (sm1_model)-[:of_sample]->(p:participant)
+
+          WITH
+            file_guid,
+            f,
+            c1,
+            c2,
+            collect(DISTINCT CASE
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL THEN {
+                p: p,
+                sm: sm1_model,
+                source_sm: sm1_model
+              }
+            END)
+            +
+            collect(DISTINCT CASE
+              WHEN p IS NOT NULL AND sm2_model IS NOT NULL THEN {
+                p: p,
+                sm: sm2_model,
+                source_sm: sm2_model
+              }
+            END)
+            +
+            collect(DISTINCT CASE
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
+                p: p,
+                sm: sm1_model,
+                source_sm: sm2_model
+              }
+            END)
+            +
+            collect(DISTINCT CASE
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
+                p: p,
+                sm: sm2_model,
+                source_sm: sm1_model
+              }
+            END) AS c3
+
+          OPTIONAL MATCH (f)-[:of_generic_file|of_cytogenomic_file|of_methylation_array_file|of_pathology_file|of_sequencing_file]->(sm1_model:sample)
+          OPTIONAL MATCH (sm1_model)<-[:of_cell_line|of_pdx]-(model)
+          WHERE model:cell_line OR model:pdx
+          OPTIONAL MATCH (model)<-[:of_sample]-(sm2_model:sample)
+          OPTIONAL MATCH (sm1_model)-[:of_sample]->(p:participant)
+
+          WITH
+            file_guid,
+            f,
+            c1,
+            c2,
+            c3,
+            collect(DISTINCT CASE
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL THEN {
+                p: p,
+                sm: sm1_model,
+                source_sm: sm1_model
+              }
+            END)
+            +
+            collect(DISTINCT CASE
+              WHEN p IS NOT NULL AND sm2_model IS NOT NULL THEN {
+                p: p,
+                sm: sm2_model,
+                source_sm: sm2_model
+              }
+            END)
+            +
+            collect(DISTINCT CASE
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
+                p: p,
+                sm: sm1_model,
+                source_sm: sm2_model
+              }
+            END)
+            +
+            collect(DISTINCT CASE
+              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
+                p: p,
+                sm: sm2_model,
+                source_sm: sm1_model
+              }
+            END) AS c4
+
+          WITH
+            file_guid,
+            f,
+            c1 + c2 + c3 + c4 AS raw_contexts
+
+          WITH
+            file_guid,
+            [ctx IN raw_contexts WHERE ctx IS NOT NULL] AS contexts
+
+          UNWIND contexts AS ctx
+
+          WITH DISTINCT
+            file_guid,
+            ctx.p AS p,
+            ctx.sm AS sm,
+            ctx.source_sm AS source_sm
+
+          OPTIONAL MATCH (source_sm)<-[:of_diagnosis]-(sample_dg:diagnosis)
+          OPTIONAL MATCH (p)<-[:of_diagnosis]-(participant_dg:diagnosis)
+
+          WITH
+            file_guid,
+            p,
+            sm,
+            source_sm,
+            collect(DISTINCT sample_dg) + collect(DISTINCT participant_dg) AS diagnosis_nodes
+
+          OPTIONAL MATCH (source_sm)<-[:of_genetic_analysis]-(sample_ga:genetic_analysis)
+          OPTIONAL MATCH (p)<-[:of_genetic_analysis]-(participant_ga:genetic_analysis)
+
+          WITH
+            file_guid,
+            p,
+            sm,
+            [x IN diagnosis_nodes WHERE x IS NOT NULL] AS diagnoses,
+            collect(DISTINCT sample_ga) + collect(DISTINCT participant_ga) AS ga_nodes
+
+          WITH
+            file_guid,
+            p,
+            sm,
+            diagnoses,
+            [x IN ga_nodes WHERE x IS NOT NULL] AS gas
+
+          UNWIND CASE WHEN size(diagnoses) = 0 THEN [null] ELSE diagnoses END AS dg
+          UNWIND CASE WHEN size(gas) = 0 THEN [null] ELSE gas END AS ga
+
+          // ── group by (file_guid, p) here to collapse sm rows ──────────────
+          // sample_map collected as DISTINCT to dedup across the dg x ga explosion;
+          // survival/treatment matched AFTER this point so they are collected
+          // exactly once per participant, not once per (participant, sm) row.
+          WITH
+            file_guid,
+            p,
+            collect(distinct sm) AS samples,
+            collect(DISTINCT {
+              sample_anatomic_site: CASE WHEN sm IS NOT NULL THEN sm.anatomic_site ELSE null END,
+              participant_age_at_collection: CASE WHEN sm IS NOT NULL THEN sm.participant_age_at_collection ELSE null END,
+              sample_tumor_status: CASE WHEN sm IS NOT NULL THEN sm.sample_tumor_status ELSE null END,
+              tumor_spatial_extent: CASE WHEN sm IS NOT NULL THEN sm.tumor_spatial_extent ELSE null END,
+              age_at_diagnosis: CASE WHEN dg IS NOT NULL THEN dg.age_at_diagnosis ELSE null END,
+              diagnosis_anatomic_site: CASE WHEN dg IS NOT NULL THEN dg.anatomic_site ELSE null END,
+              disease_phase: CASE WHEN dg IS NOT NULL THEN dg.disease_phase ELSE null END,
+              diagnosis_classification_system: CASE WHEN dg IS NOT NULL THEN dg.diagnosis_classification_system ELSE null END,
+              diagnosis_category: CASE WHEN dg IS NOT NULL THEN dg.diagnosis_category ELSE null END,
+              diagnosis_basis: CASE WHEN dg IS NOT NULL THEN dg.diagnosis_basis ELSE null END,
+              diagnosis: CASE WHEN dg IS NOT NULL THEN dg.diagnosis ELSE null END,
+              reported_significance: CASE WHEN ga IS NOT NULL THEN ga.reported_significance ELSE null END,
+              reported_significance_system: CASE WHEN ga IS NOT NULL THEN ga.reported_significance_system ELSE null END,
+              gene_symbol: CASE WHEN ga IS NOT NULL THEN ga.gene_symbol ELSE null END,
+              alteration: CASE WHEN ga IS NOT NULL THEN ga.alteration ELSE null END,
+              fusion_partner_gene: CASE WHEN ga IS NOT NULL THEN ga.fusion_partner_gene ELSE null END,
+              alteration_type: CASE WHEN ga IS NOT NULL THEN ga.alteration_type ELSE null END,
+              status: CASE WHEN ga IS NOT NULL THEN ga.status ELSE null END
+            }) AS sample_diagnosis_genetic_analysis_filters
+
+          // ── survival/treatment matched after (file_guid, p) grouping ──────
+          OPTIONAL MATCH (p)<-[:of_survival]-(su:survival)
+
+          WITH
+            file_guid,
+            p,
+            samples,
+            sample_diagnosis_genetic_analysis_filters,
+            [x IN collect(DISTINCT su) WHERE x IS NOT NULL |
+              {
+                last_known_survival_status: x.last_known_survival_status,
+                cause_of_death: x.cause_of_death,
+                first_event: x.first_event,
+                age_at_last_known_survival_status: x.age_at_last_known_survival_status
+              }
+            ] AS survival_filters
+
+          OPTIONAL MATCH (p)<-[:of_treatment_chemotherapy]-(tchemo:treatment_chemotherapy)
+
+          WITH
+            file_guid,
+            p,
+            samples,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            [x IN collect(DISTINCT tchemo) WHERE x IS NOT NULL |
+              {
+                treatment_type: coalesce(x.treatment_type, x.chemotherapy_type, 'chemotherapy'),
+                treatment_agent: coalesce(x.treatment_agent, x.chemotherapy_agent),
+                age_at_treatment_start: x.age_at_treatment_start,
+                age_at_treatment_end: x.age_at_treatment_end
+              }
+            ] AS chemo_filters
+
+          OPTIONAL MATCH (p)<-[:of_treatment_radiation]-(trad:treatment_radiation)
+
+          WITH
+            file_guid,
+            p,
+            samples,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            chemo_filters,
+            [x IN collect(DISTINCT trad) WHERE x IS NOT NULL |
+              {
+                treatment_type: coalesce(x.treatment_type, x.radiation_type, 'radiation'),
+                treatment_agent: coalesce(x.treatment_agent, x.radiation_agent),
+                age_at_treatment_start: x.age_at_treatment_start,
+                age_at_treatment_end: x.age_at_treatment_end
+              }
+            ] AS radiation_filters
+
+          OPTIONAL MATCH (p)<-[:of_treatment_surgery]-(tsurg:treatment_surgery)
+
+          WITH
+            file_guid,
+            p,
+            samples,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            chemo_filters,
+            radiation_filters,
+            [x IN collect(DISTINCT tsurg) WHERE x IS NOT NULL |
+              {
+                treatment_type: coalesce(x.treatment_type, x.surgery_type, 'surgery'),
+                treatment_agent: coalesce(x.treatment_agent, x.surgery_agent),
+                age_at_treatment_start: x.age_at_treatment_start,
+                age_at_treatment_end: x.age_at_treatment_end
+              }
+            ] AS surgery_filters
+
+          OPTIONAL MATCH (p)<-[:of_treatment_other]-(tother:treatment_other)
+
+          WITH
+            file_guid,
+            p,
+            samples,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            chemo_filters,
+            radiation_filters,
+            surgery_filters,
+            [x IN collect(DISTINCT tother) WHERE x IS NOT NULL |
+              {
+                treatment_type: coalesce(x.treatment_type, x.other_treatment_type, 'other'),
+                treatment_agent: coalesce(x.treatment_agent, x.other_treatment_agent),
+                age_at_treatment_start: x.age_at_treatment_start,
+                age_at_treatment_end: x.age_at_treatment_end
+              }
+            ] AS other_filters
+
+          WITH
+            file_guid,
+            p,
+            samples,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            chemo_filters + radiation_filters + surgery_filters + other_filters AS treatment_filters
+
+          OPTIONAL MATCH (p)<-[:of_treatment_response]-(tresp:treatment_response)
+
+          WITH
+            file_guid,
+            p,
+            samples,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            treatment_filters,
+            [x IN collect(DISTINCT tresp) WHERE x IS NOT NULL |
+              {
+                response_category: x.response_category,
+                age_at_response: x.age_at_response,
+                response: x.response,
+                response_system: x.response_system
+              }
+            ] AS treatment_response_filters
+
+          OPTIONAL MATCH (p)-[:of_participant]->(cg:consent_group)
+
+          WITH
+            file_guid,
+            p,
+            [x IN samples WHERE x IS NOT NULL] AS sample_maps_for_participant,
+            sample_diagnosis_genetic_analysis_filters,
+            survival_filters,
+            treatment_filters,
+            treatment_response_filters,
+            [x IN collect(DISTINCT cg.consent_group_name) WHERE x IS NOT NULL] AS consent_codes_for_participant
+
+          WITH
+            file_guid,
+            {
+              pids: CASE WHEN p IS NOT NULL THEN [p.guid] ELSE [] END,
+              participant_ids: CASE WHEN p IS NOT NULL THEN [p.participant_id] ELSE [] END,
+              consent_codes: consent_codes_for_participant,
+              sample_maps: sample_maps_for_participant,
+              combined_filters: [{
+                participant_id: CASE WHEN p IS NOT NULL THEN p.participant_id ELSE null END,
+                race: CASE WHEN p IS NOT NULL THEN p.race ELSE null END,
+                sex_at_birth: CASE WHEN p IS NOT NULL THEN p.sex_at_birth ELSE null END,
+                sample_diagnosis_genetic_analysis_filters: sample_diagnosis_genetic_analysis_filters,
+                survival_filters: survival_filters,
+                treatment_filters: treatment_filters,
+                treatment_response_filters: treatment_response_filters
+              }]
+            } AS output_row
+
+          WITH
+            file_guid,
+            collect(output_row) AS output_rows
+
+          WITH
+            file_guid,
+            reduce(acc = [], r IN output_rows | acc + r.pids) AS raw_pids,
+            reduce(acc = [], r IN output_rows | acc + r.participant_ids) AS raw_participant_ids,
+            reduce(acc = [], r IN output_rows | acc + r.consent_codes) AS raw_consent_codes,
+            reduce(acc = [], r IN output_rows | acc + r.sample_maps) AS raw_sample_maps,
+            reduce(acc = [], r IN output_rows | acc + r.combined_filters) AS raw_combined_filters
+
+          WITH
+            file_guid,
+            reduce(acc = [], x IN raw_pids |
+              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
+            ) AS pids,
+            reduce(acc = [], x IN raw_participant_ids |
+              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
+            ) AS participant_ids,
+            reduce(acc = [], x IN raw_consent_codes |
+              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
+            ) AS consent_codes,
+            reduce(acc = [], x IN raw_sample_maps |
+              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
+            ) AS sample_maps,
+            reduce(acc = [], x IN raw_combined_filters |
+              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
+            ) AS combined_filters
+
+          RETURN
+            file_guid AS id,
+            file_guid AS file_id,
+            pids AS pid,
+            participant_ids AS participant_id,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.sample_id IS NULL OR x.sample_id IN acc THEN acc ELSE acc + [x.sample_id] END
+            ) AS sample_id,
+            consent_codes AS consent_codes,
+            reduce(acc = [], x IN sample_maps |
+              reduce(inner_acc = acc, site IN coalesce(x.anatomic_site, []) |
+                CASE
+                  WHEN site IS NULL OR site IN inner_acc THEN inner_acc
+                  ELSE inner_acc + [site]
+                END
+              )
+            ) AS anatomic_site,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.participant_age_at_collection IS NULL OR x.participant_age_at_collection IN acc THEN acc ELSE acc + [x.participant_age_at_collection] END
+            ) AS participant_age_at_collection,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.sample_tumor_status IS NULL OR x.sample_tumor_status IN acc THEN acc ELSE acc + [x.sample_tumor_status] END
+            ) AS sample_tumor_status,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.tumor_spatial_extent IS NULL OR x.tumor_spatial_extent IN acc THEN acc ELSE acc + [x.tumor_spatial_extent] END
+            ) AS tumor_spatial_extent,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.sample_description IS NULL OR x.sample_description IN acc THEN acc ELSE acc + [x.sample_description] END
+            ) AS sample_description,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.percent_tumor IS NULL OR x.percent_tumor IN acc THEN acc ELSE acc + [x.percent_tumor] END
+            ) AS percent_tumor,
+            reduce(acc = [], x IN sample_maps |
+              CASE WHEN x.percent_necrosis IS NULL OR x.percent_necrosis IN acc THEN acc ELSE acc + [x.percent_necrosis] END
+            ) AS percent_necrosis,
+            [file_guid] AS files,
+            combined_filters AS combined_filters
+        page_size: 100
       - name: "study_properties"
         query: |
           MATCH (f:
@@ -4970,432 +5399,4 @@ indices:
             [file_guid] AS files,
             combined_filters AS combined_filters
         page_size: 1000
-      - name: "combined_filters_sample_level"
-        query: |
-          MATCH (f:
-            sequencing_file |
-            generic_file |
-            pathology_file |
-            methylation_array_file |
-            cytogenomic_file
-          )-->(:sample)
 
-          WITH
-            f.dcf_indexd_guid AS file_guid,
-            collect(DISTINCT f) AS file_nodes
-
-          ORDER BY file_guid
-          SKIP $skip
-          LIMIT $limit
-
-          UNWIND file_nodes AS f
-
-          OPTIONAL MATCH (f)-[:of_generic_file|of_cytogenomic_file|of_methylation_array_file|of_pathology_file|of_sequencing_file]->(file_sm:sample)
-          OPTIONAL MATCH (file_sm)-[:of_sample]->(p_from_sample:participant)
-
-          WITH
-            file_guid,
-            f,
-            collect(DISTINCT CASE
-              WHEN file_sm IS NOT NULL AND p_from_sample IS NOT NULL THEN {
-                p: p_from_sample,
-                sm: file_sm,
-                source_sm: file_sm
-              }
-            END) AS c1
-
-          OPTIONAL MATCH (f)-[:of_generic_file|of_cytogenomic_file|of_methylation_array_file|of_pathology_file|of_sequencing_file]->(model_file_sm:sample)
-          OPTIONAL MATCH (model_file_sm)-[:of_sample]->(model_for_participant)
-          WHERE model_for_participant:cell_line OR model_for_participant:pdx
-          OPTIONAL MATCH (model_for_participant)-[:of_cell_line|of_pdx]->(st:study)
-
-          WITH
-            file_guid,
-            f,
-            c1,
-            collect(DISTINCT CASE
-              WHEN model_file_sm IS NOT NULL AND st IS NOT NULL THEN {
-                p: null, // No participant for (file)->(smaple)->(cell line/pdx)->(study) files
-                sm: model_file_sm,
-                source_sm: model_file_sm
-              }
-            END) AS c2
-
-          OPTIONAL MATCH (f)-[:of_generic_file|of_cytogenomic_file|of_methylation_array_file|of_pathology_file|of_sequencing_file]->(sm2_model:sample)
-          OPTIONAL MATCH (sm2_model)-[:of_sample]->(model)
-          WHERE model:cell_line OR model:pdx
-          OPTIONAL MATCH (model)-[:of_cell_line|of_pdx]->(sm1_model:sample)
-          OPTIONAL MATCH (sm1_model)-[:of_sample]->(p:participant)
-
-          WITH
-            file_guid,
-            f,
-            c1,
-            c2,
-            collect(DISTINCT CASE
-              WHEN p IS NOT NULL AND sm1_model IS NOT NULL THEN {
-                p: p,
-                sm: sm1_model,
-                source_sm: sm1_model
-              }
-            END)
-            +
-            collect(DISTINCT CASE
-              WHEN p IS NOT NULL AND sm2_model IS NOT NULL THEN {
-                p: p,
-                sm: sm2_model,
-                source_sm: sm2_model
-              }
-            END)
-            +
-            collect(DISTINCT CASE
-              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
-                p: p,
-                sm: sm1_model,
-                source_sm: sm2_model
-              }
-            END)
-            +
-            collect(DISTINCT CASE
-              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
-                p: p,
-                sm: sm2_model,
-                source_sm: sm1_model
-              }
-            END) AS c3
-
-          OPTIONAL MATCH (f)-[:of_generic_file|of_cytogenomic_file|of_methylation_array_file|of_pathology_file|of_sequencing_file]->(sm1_model:sample)
-          OPTIONAL MATCH (sm1_model)<-[:of_cell_line|of_pdx]-(model)
-          WHERE model:cell_line OR model:pdx
-          OPTIONAL MATCH (model)<-[:of_sample]-(sm2_model:sample)
-          OPTIONAL MATCH (sm1_model)-[:of_sample]->(p:participant)
-
-          WITH
-            file_guid,
-            f,
-            c1,
-            c2,
-            c3,
-            collect(DISTINCT CASE
-              WHEN p IS NOT NULL AND sm1_model IS NOT NULL THEN {
-                p: p,
-                sm: sm1_model,
-                source_sm: sm1_model
-              }
-            END)
-            +
-            collect(DISTINCT CASE
-              WHEN p IS NOT NULL AND sm2_model IS NOT NULL THEN {
-                p: p,
-                sm: sm2_model,
-                source_sm: sm2_model
-              }
-            END)
-            +
-            collect(DISTINCT CASE
-              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
-                p: p,
-                sm: sm1_model,
-                source_sm: sm2_model
-              }
-            END)
-            +
-            collect(DISTINCT CASE
-              WHEN p IS NOT NULL AND sm1_model IS NOT NULL AND sm2_model IS NOT NULL THEN {
-                p: p,
-                sm: sm2_model,
-                source_sm: sm1_model
-              }
-            END) AS c4
-
-          WITH
-            file_guid,
-            f,
-            c1 + c2 + c3 + c4 AS raw_contexts
-
-          WITH
-            file_guid,
-            [ctx IN raw_contexts WHERE ctx IS NOT NULL] AS contexts
-
-          UNWIND contexts AS ctx
-
-          WITH DISTINCT
-            file_guid,
-            ctx.p AS p,
-            ctx.sm AS sm,
-            ctx.source_sm AS source_sm
-
-          OPTIONAL MATCH (source_sm)<-[:of_diagnosis]-(sample_dg:diagnosis)
-          OPTIONAL MATCH (p)<-[:of_diagnosis]-(participant_dg:diagnosis)
-
-          WITH
-            file_guid,
-            p,
-            sm,
-            source_sm,
-            collect(DISTINCT sample_dg) + collect(DISTINCT participant_dg) AS diagnosis_nodes
-
-          OPTIONAL MATCH (source_sm)<-[:of_genetic_analysis]-(sample_ga:genetic_analysis)
-          OPTIONAL MATCH (p)<-[:of_genetic_analysis]-(participant_ga:genetic_analysis)
-
-          WITH
-            file_guid,
-            p,
-            sm,
-            [x IN diagnosis_nodes WHERE x IS NOT NULL] AS diagnoses,
-            collect(DISTINCT sample_ga) + collect(DISTINCT participant_ga) AS ga_nodes
-
-          WITH
-            file_guid,
-            p,
-            sm,
-            diagnoses,
-            [x IN ga_nodes WHERE x IS NOT NULL] AS gas
-
-          UNWIND CASE WHEN size(diagnoses) = 0 THEN [null] ELSE diagnoses END AS dg
-          UNWIND CASE WHEN size(gas) = 0 THEN [null] ELSE gas END AS ga
-
-          // ── group by (file_guid, p) here to collapse sm rows ──────────────
-          // sample_map collected as DISTINCT to dedup across the dg x ga explosion;
-          // survival/treatment matched AFTER this point so they are collected
-          // exactly once per participant, not once per (participant, sm) row.
-          WITH
-            file_guid,
-            p,
-            collect(distinct sm) AS samples,
-            collect(DISTINCT {
-              sample_anatomic_site: CASE WHEN sm IS NOT NULL THEN sm.anatomic_site ELSE null END,
-              participant_age_at_collection: CASE WHEN sm IS NOT NULL THEN sm.participant_age_at_collection ELSE null END,
-              sample_tumor_status: CASE WHEN sm IS NOT NULL THEN sm.sample_tumor_status ELSE null END,
-              tumor_spatial_extent: CASE WHEN sm IS NOT NULL THEN sm.tumor_spatial_extent ELSE null END,
-              age_at_diagnosis: CASE WHEN dg IS NOT NULL THEN dg.age_at_diagnosis ELSE null END,
-              diagnosis_anatomic_site: CASE WHEN dg IS NOT NULL THEN dg.anatomic_site ELSE null END,
-              disease_phase: CASE WHEN dg IS NOT NULL THEN dg.disease_phase ELSE null END,
-              diagnosis_classification_system: CASE WHEN dg IS NOT NULL THEN dg.diagnosis_classification_system ELSE null END,
-              diagnosis_category: CASE WHEN dg IS NOT NULL THEN dg.diagnosis_category ELSE null END,
-              diagnosis_basis: CASE WHEN dg IS NOT NULL THEN dg.diagnosis_basis ELSE null END,
-              diagnosis: CASE WHEN dg IS NOT NULL THEN dg.diagnosis ELSE null END,
-              reported_significance: CASE WHEN ga IS NOT NULL THEN ga.reported_significance ELSE null END,
-              reported_significance_system: CASE WHEN ga IS NOT NULL THEN ga.reported_significance_system ELSE null END,
-              gene_symbol: CASE WHEN ga IS NOT NULL THEN ga.gene_symbol ELSE null END,
-              alteration: CASE WHEN ga IS NOT NULL THEN ga.alteration ELSE null END,
-              fusion_partner_gene: CASE WHEN ga IS NOT NULL THEN ga.fusion_partner_gene ELSE null END,
-              alteration_type: CASE WHEN ga IS NOT NULL THEN ga.alteration_type ELSE null END,
-              status: CASE WHEN ga IS NOT NULL THEN ga.status ELSE null END
-            }) AS sample_diagnosis_genetic_analysis_filters
-
-          // ── survival/treatment matched after (file_guid, p) grouping ──────
-          OPTIONAL MATCH (p)<-[:of_survival]-(su:survival)
-
-          WITH
-            file_guid,
-            p,
-            samples,
-            sample_diagnosis_genetic_analysis_filters,
-            [x IN collect(DISTINCT su) WHERE x IS NOT NULL |
-              {
-                last_known_survival_status: x.last_known_survival_status,
-                cause_of_death: x.cause_of_death,
-                first_event: x.first_event,
-                age_at_last_known_survival_status: x.age_at_last_known_survival_status
-              }
-            ] AS survival_filters
-
-          OPTIONAL MATCH (p)<-[:of_treatment_chemotherapy]-(tchemo:treatment_chemotherapy)
-
-          WITH
-            file_guid,
-            p,
-            samples,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            [x IN collect(DISTINCT tchemo) WHERE x IS NOT NULL |
-              {
-                treatment_type: coalesce(x.treatment_type, x.chemotherapy_type, 'chemotherapy'),
-                treatment_agent: coalesce(x.treatment_agent, x.chemotherapy_agent),
-                age_at_treatment_start: x.age_at_treatment_start,
-                age_at_treatment_end: x.age_at_treatment_end
-              }
-            ] AS chemo_filters
-
-          OPTIONAL MATCH (p)<-[:of_treatment_radiation]-(trad:treatment_radiation)
-
-          WITH
-            file_guid,
-            p,
-            samples,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            chemo_filters,
-            [x IN collect(DISTINCT trad) WHERE x IS NOT NULL |
-              {
-                treatment_type: coalesce(x.treatment_type, x.radiation_type, 'radiation'),
-                treatment_agent: coalesce(x.treatment_agent, x.radiation_agent),
-                age_at_treatment_start: x.age_at_treatment_start,
-                age_at_treatment_end: x.age_at_treatment_end
-              }
-            ] AS radiation_filters
-
-          OPTIONAL MATCH (p)<-[:of_treatment_surgery]-(tsurg:treatment_surgery)
-
-          WITH
-            file_guid,
-            p,
-            samples,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            chemo_filters,
-            radiation_filters,
-            [x IN collect(DISTINCT tsurg) WHERE x IS NOT NULL |
-              {
-                treatment_type: coalesce(x.treatment_type, x.surgery_type, 'surgery'),
-                treatment_agent: coalesce(x.treatment_agent, x.surgery_agent),
-                age_at_treatment_start: x.age_at_treatment_start,
-                age_at_treatment_end: x.age_at_treatment_end
-              }
-            ] AS surgery_filters
-
-          OPTIONAL MATCH (p)<-[:of_treatment_other]-(tother:treatment_other)
-
-          WITH
-            file_guid,
-            p,
-            samples,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            chemo_filters,
-            radiation_filters,
-            surgery_filters,
-            [x IN collect(DISTINCT tother) WHERE x IS NOT NULL |
-              {
-                treatment_type: coalesce(x.treatment_type, x.other_treatment_type, 'other'),
-                treatment_agent: coalesce(x.treatment_agent, x.other_treatment_agent),
-                age_at_treatment_start: x.age_at_treatment_start,
-                age_at_treatment_end: x.age_at_treatment_end
-              }
-            ] AS other_filters
-
-          WITH
-            file_guid,
-            p,
-            samples,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            chemo_filters + radiation_filters + surgery_filters + other_filters AS treatment_filters
-
-          OPTIONAL MATCH (p)<-[:of_treatment_response]-(tresp:treatment_response)
-
-          WITH
-            file_guid,
-            p,
-            samples,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            treatment_filters,
-            [x IN collect(DISTINCT tresp) WHERE x IS NOT NULL |
-              {
-                response_category: x.response_category,
-                age_at_response: x.age_at_response,
-                response: x.response,
-                response_system: x.response_system
-              }
-            ] AS treatment_response_filters
-
-          OPTIONAL MATCH (p)-[:of_participant]->(cg:consent_group)
-
-          WITH
-            file_guid,
-            p,
-            [x IN samples WHERE x IS NOT NULL] AS sample_maps_for_participant,
-            sample_diagnosis_genetic_analysis_filters,
-            survival_filters,
-            treatment_filters,
-            treatment_response_filters,
-            [x IN collect(DISTINCT cg.consent_group_name) WHERE x IS NOT NULL] AS consent_codes_for_participant
-
-          WITH
-            file_guid,
-            {
-              pids: CASE WHEN p IS NOT NULL THEN [p.guid] ELSE [] END,
-              participant_ids: CASE WHEN p IS NOT NULL THEN [p.participant_id] ELSE [] END,
-              consent_codes: consent_codes_for_participant,
-              sample_maps: sample_maps_for_participant,
-              combined_filters: [{
-                participant_id: CASE WHEN p IS NOT NULL THEN p.participant_id ELSE null END,
-                race: CASE WHEN p IS NOT NULL THEN p.race ELSE null END,
-                sex_at_birth: CASE WHEN p IS NOT NULL THEN p.sex_at_birth ELSE null END,
-                sample_diagnosis_genetic_analysis_filters: sample_diagnosis_genetic_analysis_filters,
-                survival_filters: survival_filters,
-                treatment_filters: treatment_filters,
-                treatment_response_filters: treatment_response_filters
-              }]
-            } AS output_row
-
-          WITH
-            file_guid,
-            collect(output_row) AS output_rows
-
-          WITH
-            file_guid,
-            reduce(acc = [], r IN output_rows | acc + r.pids) AS raw_pids,
-            reduce(acc = [], r IN output_rows | acc + r.participant_ids) AS raw_participant_ids,
-            reduce(acc = [], r IN output_rows | acc + r.consent_codes) AS raw_consent_codes,
-            reduce(acc = [], r IN output_rows | acc + r.sample_maps) AS raw_sample_maps,
-            reduce(acc = [], r IN output_rows | acc + r.combined_filters) AS raw_combined_filters
-
-          WITH
-            file_guid,
-            reduce(acc = [], x IN raw_pids |
-              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-            ) AS pids,
-            reduce(acc = [], x IN raw_participant_ids |
-              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-            ) AS participant_ids,
-            reduce(acc = [], x IN raw_consent_codes |
-              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-            ) AS consent_codes,
-            reduce(acc = [], x IN raw_sample_maps |
-              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-            ) AS sample_maps,
-            reduce(acc = [], x IN raw_combined_filters |
-              CASE WHEN x IS NULL OR x IN acc THEN acc ELSE acc + [x] END
-            ) AS combined_filters
-
-          RETURN
-            file_guid AS id,
-            file_guid AS file_id,
-            pids AS pid,
-            participant_ids AS participant_id,
-            reduce(acc = [], x IN sample_maps |
-              CASE WHEN x.sample_id IS NULL OR x.sample_id IN acc THEN acc ELSE acc + [x.sample_id] END
-            ) AS sample_id,
-            consent_codes AS consent_codes,
-            reduce(acc = [], x IN sample_maps |
-              reduce(inner_acc = acc, site IN coalesce(x.anatomic_site, []) |
-                CASE
-                  WHEN site IS NULL OR site IN inner_acc THEN inner_acc
-                  ELSE inner_acc + [site]
-                END
-              )
-            ) AS anatomic_site,
-            reduce(acc = [], x IN sample_maps |
-              CASE WHEN x.participant_age_at_collection IS NULL OR x.participant_age_at_collection IN acc THEN acc ELSE acc + [x.participant_age_at_collection] END
-            ) AS participant_age_at_collection,
-            reduce(acc = [], x IN sample_maps |
-              CASE WHEN x.sample_tumor_status IS NULL OR x.sample_tumor_status IN acc THEN acc ELSE acc + [x.sample_tumor_status] END
-            ) AS sample_tumor_status,
-            reduce(acc = [], x IN sample_maps |
-              CASE WHEN x.tumor_spatial_extent IS NULL OR x.tumor_spatial_extent IN acc THEN acc ELSE acc + [x.tumor_spatial_extent] END
-            ) AS tumor_spatial_extent,
-            reduce(acc = [], x IN sample_maps |
-              CASE WHEN x.sample_description IS NULL OR x.sample_description IN acc THEN acc ELSE acc + [x.sample_description] END
-            ) AS sample_description,
-            reduce(acc = [], x IN sample_maps |
-              CASE WHEN x.percent_tumor IS NULL OR x.percent_tumor IN acc THEN acc ELSE acc + [x.percent_tumor] END
-            ) AS percent_tumor,
-            reduce(acc = [], x IN sample_maps |
-              CASE WHEN x.percent_necrosis IS NULL OR x.percent_necrosis IN acc THEN acc ELSE acc + [x.percent_necrosis] END
-            ) AS percent_necrosis,
-            [file_guid] AS files,
-            combined_filters AS combined_filters
-        page_size: 1000
