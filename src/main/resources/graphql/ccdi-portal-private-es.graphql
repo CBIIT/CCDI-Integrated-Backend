@@ -51,7 +51,7 @@ type GS_Samples {
     sample_anatomic_site_str: String
     sample_tumor_status: String
     diagnosis_str: String
-    tumor_classification: String
+    tumor_spatial_extent: String
     diagnosis_category_str: String
 }
 
@@ -201,7 +201,7 @@ type SearchParticipantsResult {
     filterParticipantCountBySampleAnatomicSite: [SearchParticipantsReturnObject]
     filterParticipantCountBySampleAge: RangeCount
     filterParticipantCountByTumorStatus: [SearchParticipantsReturnObject]
-    filterParticipantCountByTumorClassification: [SearchParticipantsReturnObject]
+    filterParticipantCountByTumorSpatialExtent: [SearchParticipantsReturnObject]
     filterFileCountByDataCategory: [SearchParticipantsReturnObject]
     filterFileCountByFileType: [SearchParticipantsReturnObject]
     filterFileCountByFileMappingLevel: [SearchParticipantsReturnObject]
@@ -295,7 +295,7 @@ type DiagnosisOverViewResult {
     diagnosis_basis: String
     age_at_diagnosis: Int
     diagnosis_comment: String
-    tumor_classification: String
+    tumor_spatial_extent: String
     toronto_childhood_cancer_staging: String
     tumor_grade: String
     tumor_stage_clinical_t: String
@@ -358,7 +358,7 @@ type SampleOverViewResult {
     anatomic_site: String
     participant_age_at_collection: Int
     sample_tumor_status: String
-    tumor_classification: String
+    tumor_spatial_extent: String
     diagnosis: String
     diagnosis_category: String
     files: [String]
@@ -602,7 +602,7 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
         
         # Files
         data_category: [String] = [""],
@@ -613,7 +613,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
@@ -685,7 +684,7 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
+        tumor_spatial_extent: [String] = [""],
         
         # Files
         data_category: [String] = [""],
@@ -696,7 +695,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
@@ -774,8 +772,8 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
-
+        tumor_spatial_extent: [String] = [""],
+        
         # Files
         data_category: [String] = [""],
         file_type: [String] = [""],
@@ -785,7 +783,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
@@ -863,8 +860,8 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
-
+        tumor_spatial_extent: [String] = [""],
+        
         # Files
         data_category: [String] = [""],
         file_type: [String] = [""],
@@ -874,7 +871,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
@@ -952,8 +948,8 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
-
+        tumor_spatial_extent: [String] = [""],
+        
         # Files
         data_category: [String] = [""],
         file_type: [String] = [""],
@@ -963,7 +959,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
@@ -1041,8 +1036,8 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
-
+        tumor_spatial_extent: [String] = [""],
+        
         # Files
         data_category: [String] = [""],
         file_type: [String] = [""],
@@ -1052,7 +1047,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
@@ -1130,8 +1124,8 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
-
+        tumor_spatial_extent: [String] = [""],
+        
         # Files
         data_category: [String] = [""],
         file_type: [String] = [""],
@@ -1141,7 +1135,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
@@ -1219,8 +1212,8 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
-
+        tumor_spatial_extent: [String] = [""],
+        
         # Files
         data_category: [String] = [""],
         file_type: [String] = [""],
@@ -1230,7 +1223,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
@@ -1308,8 +1300,8 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
-
+        tumor_spatial_extent: [String] = [""],
+        
         # Files
         data_category: [String] = [""],
         file_type: [String] = [""],
@@ -1319,7 +1311,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
@@ -1397,8 +1388,8 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
-
+        tumor_spatial_extent: [String] = [""],
+        
         # Files
         data_category: [String] = [""],
         file_type: [String] = [""],
@@ -1408,7 +1399,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
@@ -1487,8 +1477,8 @@ type QueryType {
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
         sample_tumor_status: [String] = [""],
-        tumor_classification: [String] = [""],
-
+        tumor_spatial_extent: [String] = [""],
+        
         # Files
         data_category: [String] = [""],
         file_type: [String] = [""],
@@ -1498,7 +1488,6 @@ type QueryType {
         library_source_molecule: [String] = [""],
         library_strategy: [String] = [""],
         anatomic_site: [String] = [""],
-        tumor_spatial_extent: [String] = [""],
         sample_description: [String] = [""],
         percent_tumor: [String] = [""],
         percent_necrosis: [String] = [""],
