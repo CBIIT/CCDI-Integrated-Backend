@@ -1800,7 +1800,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             for (String cohortName : cohorts.keySet()) {
                 // Prepare map of data for the cohort
                 Map<String, Object> cohortData = new HashMap<String, Object>();
-                Map<String, Object> cohortParams = Map.of(indexName.equals("participants_table") ? "id" : "pid", cohorts.get(cohortName));  // Changed from participant_pk to id
+                Map<String, Object> cohortParams = Map.of(cohortIdProperty, cohorts.get(cohortName));  // Changed from participant_pk to id
                 cohortData.put("cohort", cohortName);
 
                 // Retrieve data for the cohort
