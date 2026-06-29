@@ -874,7 +874,7 @@ indices:
             WHERE survival.age_at_last_known_survival_status = max_surv_age] AS max_survs
 
         RETURN
-          p.guid AS guid,
+          p.guid AS id,
           max_surv_age - min_diag_age AS time,
           CASE
             WHEN ANY(surv IN max_survs WHERE surv.last_known_survival_status = "Dead") THEN 1
