@@ -385,12 +385,12 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, STUDIES_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "study_count",
                 GS_RESULT_FIELD, "studies",
-                GS_SEARCH_FIELD, List.of("study_id_gs", "study_name_gs", "study_status_gs"),
+                GS_SEARCH_FIELD, List.of("study_id_gs", "study_name_gs", "study_phase_gs"),
                 GS_SORT_FIELD, "study_id",
                 GS_COLLECT_FIELDS, new String[][]{
                         new String[]{"study_id", "study_id"},
                         new String[]{"study_name", "study_name"},
-                        new String[]{"study_status", "study_status"},
+                        new String[]{"study_phase", "study_phase"},
                         new String[]{"num_of_participants", "num_of_participants"},
                         new String[]{"num_of_samples", "num_of_samples"},
                         new String[]{"num_of_files", "num_of_files"},
@@ -2317,7 +2317,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"grant_id", "grant_id"},
             new String[]{"dbgap_accession", "dbgap_accession"},
             new String[]{"study_name", "study_name"},
-            new String[]{"study_status", "study_status"},
+            new String[]{"study_phase", "study_phase"},
             new String[]{"personnel_name", "PIs"},
             new String[]{"num_of_participants", "num_of_participants"},
             new String[]{"diagnosis", "diagnosis_cancer"},
@@ -2337,15 +2337,15 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("grant_id", "grant_id"),
                 Map.entry("dbgap_accession", "dbgap_accession"),
                 Map.entry("study_name", "study_name"),
-                Map.entry("study_status", "study_status"),
+                Map.entry("study_phase", "study_phase"),
                 Map.entry("personnel_name", "PIs"),
                 Map.entry("num_of_participants", "num_of_participants"),
                 Map.entry("num_of_samples", "num_of_samples"),
                 Map.entry("num_of_files", "num_of_files")
         );
 
-        Request request = new Request("GET", FILES_END_POINT);
-        Map<String, Object> query = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(PAGE_SIZE, OFFSET, ORDER_BY, SORT_DIRECTION), Set.of(), "nested_filters", "files_table");
+        Request request = new Request("GET", PARTICIPANTS_END_POINT);
+        Map<String, Object> query = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(PAGE_SIZE, OFFSET, ORDER_BY, SORT_DIRECTION), Set.of(), "nested_filters", "participants_table");
         String[] AGG_NAMES = new String[] {"study_id"};
         query = inventoryESService.addAggregations(query, AGG_NAMES);
         // System.out.println(gson.toJson(query));

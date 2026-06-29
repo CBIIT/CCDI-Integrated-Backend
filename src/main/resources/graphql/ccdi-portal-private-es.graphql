@@ -37,7 +37,7 @@ type GS_participant {
 type GS_Studies {
     study_id: String
     study_name: String
-    study_status: String
+    study_phase: String
     num_of_participants: Int
     num_of_samples: Int
     num_of_files: Float
@@ -338,7 +338,7 @@ type StudyOverViewResult {
     grant_id: String
     dbgap_accession: String
     study_name: String
-    study_status: String
+    study_phase: String
     personnel_name: String
     num_of_participants: String
     diagnosis: [String]
@@ -710,7 +710,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],
+        study_phase: [String] = [""],
 
         # Table config
         first: Int = 10,
@@ -799,7 +799,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],
+        study_phase: [String] = [""],
 
         # Table config
         first: Int = 10,
@@ -888,7 +888,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],
+        study_phase: [String] = [""],
 
         # Table config
         first: Int = 10,
@@ -977,7 +977,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],  
+        study_phase: [String] = [""],
 
         # Table config
         first: Int = 10,
@@ -1066,7 +1066,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],
+        study_phase: [String] = [""],
 
         # Table config
         first: Int = 10,
@@ -1155,7 +1155,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],
+        study_phase: [String] = [""],
 
         # Table config
         first: Int = 10,
@@ -1244,7 +1244,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],
+        study_phase: [String] = [""],
 
         # Table config
         first: Int = 10,
@@ -1333,7 +1333,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],
+        study_phase: [String] = [""],
 
         # Table config
         first: Int = 10,
@@ -1422,7 +1422,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],
+        study_phase: [String] = [""],
 
         # Table config
         first: Int = 10,
@@ -1512,7 +1512,7 @@ type QueryType {
         # Studies
         dbgap_accession: [String] = [""],
         study_name: [String] = [""],
-        study_status: [String] = [""],
+        study_phase: [String] = [""],
 
         # Table config
         first: Int = 10,
