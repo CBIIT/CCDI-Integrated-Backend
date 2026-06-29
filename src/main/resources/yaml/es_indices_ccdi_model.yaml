@@ -388,7 +388,7 @@ Indices:
         type: keyword
       dbgap_accession:
         type: keyword
-      study_status:
+      study_phase:
         type: keyword
       study_acronym:
         type: keyword
@@ -973,7 +973,7 @@ Indices:
             p.sex_at_birth as sex_at_birth,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             survival_filters as survival_filters,
@@ -1197,7 +1197,7 @@ Indices:
             p.sex_at_birth as sex_at_birth,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             survival_filters as survival_filters,
@@ -1321,7 +1321,7 @@ Indices:
             p.sex_at_birth as sex_at_birth,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             survival_filters as survival_filters,
@@ -1445,7 +1445,7 @@ Indices:
             p.sex_at_birth as sex_at_birth,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             survival_filters as survival_filters,
@@ -1569,7 +1569,7 @@ Indices:
             p.sex_at_birth as sex_at_birth,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             survival_filters as survival_filters,
@@ -1671,7 +1671,7 @@ Indices:
         type: keyword
       dbgap_accession:
         type: keyword
-      study_status:
+      study_phase:
         type: keyword
       study_acronym:
         type: keyword
@@ -2265,7 +2265,7 @@ Indices:
             p.sex_at_birth as sex_at_birth,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             survival_filters as survival_filters,
@@ -2315,7 +2315,7 @@ Indices:
         type: keyword
       dbgap_accession:
         type: keyword
-      study_status:
+      study_phase:
         type: keyword
       study_acronym:
         type: keyword
@@ -2900,7 +2900,7 @@ Indices:
             su.cause_of_death as cause_of_death,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             treatment_filters as treatment_filters,
@@ -2930,7 +2930,7 @@ Indices:
         type: keyword
       dbgap_accession:
         type: keyword
-      study_status:
+      study_phase:
         type: keyword
       study_acronym:
         type: keyword
@@ -3531,7 +3531,7 @@ Indices:
             tr.treatment_type AS treatment_type_str,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             survival_filters as survival_filters,
@@ -3561,7 +3561,7 @@ Indices:
         type: keyword
       dbgap_accession:
         type: keyword
-      study_status:
+      study_phase:
         type: keyword
       study_acronym:
         type: keyword
@@ -4149,7 +4149,7 @@ Indices:
             tresp.response_system AS response_system,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             survival_filters as survival_filters,
@@ -4176,7 +4176,7 @@ Indices:
       # Study fields
       dbgap_accession:
         type: keyword
-      study_status:
+      study_phase:
         type: keyword
       study_id:
         type: keyword
@@ -4605,7 +4605,7 @@ Indices:
             opensearch_data.sex_at_birth as sex_at_birth,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             dg.diagnosis as diagnosis,
@@ -5174,7 +5174,7 @@ Indices:
             p.sex_at_birth as sex_at_birth,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             dg.diagnosis as diagnosis,
@@ -5220,7 +5220,7 @@ Indices:
       # Study fields
       dbgap_accession:
         type: keyword
-      study_status:
+      study_phase:
         type: keyword
       study_id:
         type: keyword
@@ -5650,7 +5650,7 @@ Indices:
             opensearch_data.sex_at_birth as sex_at_birth,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             // Genetic Analysis fields
@@ -6225,7 +6225,7 @@ Indices:
             p.sex_at_birth as sex_at_birth,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             // Genetic Analysis fields
@@ -6267,7 +6267,7 @@ Indices:
         type: keyword
       dbgap_accession:
         type: keyword
-      study_status:
+      study_phase:
         type: keyword
       study_name:
         type: keyword
@@ -6366,14 +6366,14 @@ Indices:
             apoc.text.join(COLLECT(DISTINCT stf.grant_id), ';') as grant_id,
             apoc.text.join([p IN pub_ids WHERE p IS NOT NULL], ';') as pubmed_ids,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_name as study_name,
             st.study_description as study_description,
             st.study_acronym as study_acronym,
             apoc.text.join(COLLECT(DISTINCT stp.personnel_name), ';') as PIs,
             st.study_id as study_id_gs,
             st.study_name as study_name_gs,
-            st.study_status as study_status_gs,
+            st.study_phase as study_phase_gs,
             num_p as num_of_participants,
             num_diag as num_of_diagnoses,
             cancers as diagnosis_cancer,
@@ -6408,7 +6408,7 @@ Indices:
         type: keyword
       dbgap_accession:
         type: keyword
-      study_status:
+      study_phase:
         type: keyword
       study_acronym:
         type: keyword
@@ -6711,7 +6711,7 @@ Indices:
           WITH sm, apoc.map.merge(opensearch_data, {
             study_id: st.study_id,
             dbgap_accession: st.dbgap_accession,
-            study_status: st.study_status,
+            study_phase: st.study_phase,
             study_acronym: st.study_acronym,
             study_name: st.study_name
           }) AS opensearch_data
@@ -6794,7 +6794,7 @@ Indices:
             sm.tumor_classification as tumor_classification,
             st.study_id as study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             COLLECT(DISTINCT {
@@ -6859,7 +6859,7 @@ Indices:
         type: keyword
       dbgap_accession:
         type: keyword
-      study_status:
+      study_phase:
         type: keyword
       study_acronym:
         type: keyword
@@ -7224,7 +7224,7 @@ Indices:
             null AS sample_id,
             st.study_id AS study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             file.dcf_indexd_guid AS guid,
@@ -7598,7 +7598,7 @@ Indices:
             sample_ids AS sample_id,
             st.study_id AS study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             file.dcf_indexd_guid AS guid,
@@ -7887,7 +7887,7 @@ Indices:
             null AS sample_id,
             st.study_id AS study_id,
             st.dbgap_accession as dbgap_accession,
-            st.study_status AS study_status,
+            st.study_phase AS study_phase,
             st.study_acronym as study_acronym,
             st.study_name as study_name,
             file.dcf_indexd_guid AS guid,
