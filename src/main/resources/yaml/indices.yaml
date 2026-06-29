@@ -756,7 +756,6 @@ indices:
             }) AS sample_diagnosis_genetic_analysis_file_filters
         page_size: 5000
 
-  # TODO: Joon to revisit this index based on CCDI model 3.1.0 for now, later on, we will pump up to use CCDI-DCC 1.0.0
   # Data points for KM plot
   # Excludes survival records with bad age_at_last_known_survival_status
   # Excludes survival records associated with bad age_at_diagnosis
