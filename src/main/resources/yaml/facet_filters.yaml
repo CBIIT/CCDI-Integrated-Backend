@@ -153,9 +153,9 @@ samples_table:
     additional_update:
       Normal: 4000
       Tumor: 4500
-  - agg_name: tumor_classification
+  - agg_name: tumor_spatial_extent
     cardinality_agg_name: pid
-    filter_count_name: filterParticipantCountByTumorClassification
+    filter_count_name: filterParticipantCountByTumorSpatialExtent
     widget_count_name: null
     additional_update:
       'Not Applicable': 4000

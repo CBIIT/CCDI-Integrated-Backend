@@ -403,7 +403,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, SAMPLES_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "sample_count",
                 GS_RESULT_FIELD, "samples",
-                GS_SEARCH_FIELD, List.of("sample_id_gs", "participant_id_gs", "study_id_gs", "sample_anatomic_site_str_gs", "diagnosis_category_str_gs", "sample_tumor_status_gs", "diagnosis_str_gs", "tumor_classification_gs"),
+                GS_SEARCH_FIELD, List.of("sample_id_gs", "participant_id_gs", "study_id_gs", "sample_anatomic_site_str_gs", "diagnosis_category_str_gs", "sample_tumor_status_gs", "diagnosis_str_gs", "tumor_spatial_extent_gs"),
                 GS_SORT_FIELD, "sample_id",
                 GS_COLLECT_FIELDS, new String[][]{
                         new String[]{"sample_id", "sample_id"},
@@ -413,7 +413,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         new String[]{"sample_tumor_status", "sample_tumor_status"},
                         new String[]{"diagnosis_str", "diagnosis_str"},
                         new String[]{"diagnosis_category_str", "diagnosis_category_str"},
-                        new String[]{"tumor_classification", "tumor_classification"}
+                        new String[]{"tumor_spatial_extent", "tumor_spatial_extent"}
                 },
                 GS_CATEGORY_TYPE, "sample"
         ));
@@ -2122,7 +2122,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"diagnosis_category", "diagnosis_category"},
             new String[]{"age_at_diagnosis", "age_at_diagnosis"},
             new String[]{"diagnosis_comment", "diagnosis_comment"},
-            new String[]{"tumor_classification", "tumor_classification"},
+            new String[]{"tumor_spatial_extent", "tumor_spatial_extent"},
             new String[]{"toronto_childhood_cancer_staging", "toronto_childhood_cancer_staging"},
             new String[]{"tumor_grade", "tumor_grade"},
             new String[]{"tumor_stage_clinical_t", "tumor_stage_clinical_t"},
@@ -2146,7 +2146,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("diagnosis_classification_system", "diagnosis_classification_system"),
                 Map.entry("age_at_diagnosis", "age_at_diagnosis"),
                 Map.entry("diagnosis_comment", "diagnosis_comment"),
-                Map.entry("tumor_classification", "tumor_classification"),
+                Map.entry("tumor_spatial_extent", "tumor_spatial_extent"),
                 Map.entry("toronto_childhood_cancer_staging", "toronto_childhood_cancer_staging"),
                 Map.entry("tumor_grade", "tumor_grade"),
                 Map.entry("tumor_stage_clinical_t", "tumor_stage_clinical_t"),
@@ -2385,7 +2385,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"anatomic_site", "sample_anatomic_site_str"},
             new String[]{"participant_age_at_collection", "participant_age_at_collection"},
             new String[]{"sample_tumor_status", "sample_tumor_status"},
-            new String[]{"tumor_classification", "tumor_classification"},
+            new String[]{"tumor_spatial_extent", "tumor_spatial_extent"},
             new String[]{"diagnosis", "diagnosis_str"},
             new String[]{"diagnosis_category", "diagnosis_category_str"},
             new String[]{"files", "files"}
@@ -2400,7 +2400,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("anatomic_site", "sample_anatomic_site_str"),
                 Map.entry("participant_age_at_collection", "participant_age_at_collection"),
                 Map.entry("sample_tumor_status", "sample_tumor_status"),
-                Map.entry("tumor_classification", "tumor_classification"),
+                Map.entry("tumor_spatial_extent", "tumor_spatial_extent"),
                 Map.entry("diagnosis", "diagnosis_str"),
                 Map.entry("diagnosis_category", "diagnosis_category_str")
         );
@@ -3313,7 +3313,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         
         // Sample properties
         if ("sample_anatomic_site".equals(propertyName) || "sample_tumor_status".equals(propertyName) || 
-            "tumor_classification".equals(propertyName)) {
+            "tumor_spatial_extent".equals(propertyName)) {
             return Map.of(
                 "index", "samples",
                 "endpoint", SAMPLES_END_POINT,

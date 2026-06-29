@@ -23,7 +23,7 @@ indices:
         - diagnoses.diagnosis_comment
         - diagnoses.disease_phase
         - diagnoses.toronto_childhood_cancer_staging
-        - diagnoses.tumor_classification
+        - diagnoses.tumor_spatial_extent
         - diagnoses.tumor_grade
         - diagnoses.tumor_stage_clinical_m
         - diagnoses.tumor_stage_clinical_n
@@ -67,7 +67,7 @@ indices:
         - samples.sample_id
         - samples.anatomic_site
         - samples.sample_tumor_status
-        - samples.tumor_classification
+        - samples.tumor_spatial_extent
         - samples.sample_description
         - files.id
         - files.file_id
@@ -125,7 +125,7 @@ indices:
                 diagnosis_comment: d.diagnosis_comment,
                 disease_phase: d.disease_phase,
                 toronto_childhood_cancer_staging: d.toronto_childhood_cancer_staging,
-                tumor_classification: d.tumor_classification,
+                tumor_spatial_extent: d.tumor_spatial_extent,
                 diagnosis_category: d.diagnosis_category,
                 tumor_grade: d.tumor_grade,
                 tumor_stage_clinical_m: d.tumor_stage_clinical_m,
@@ -216,7 +216,7 @@ indices:
                 anatomic_site: s.anatomic_site,
                 participant_age_at_collection: s.participant_age_at_collection,
                 sample_tumor_status: s.sample_tumor_status,
-                tumor_classification: s.tumor_classification,
+                tumor_spatial_extent: s.tumor_spatial_extent,
                 sample_description: s.sample_description
               })
               ELSE []
