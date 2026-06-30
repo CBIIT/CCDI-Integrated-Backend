@@ -1743,6 +1743,9 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         // Generate charts for each configuration
         for (Map<String, Object> chartConfig : chartConfigs) {
             // Prepare map that represents the entire chart
+            String cohortIdProperty; // The index's property used to filter participant IDs listed in the cohort
+            String endpoint; // The endpoint of the main index of the property - used for bucket aggregation
+            String indexName; // The main index of the property - used for bucket aggregation
             String property = (String) chartConfig.get("property");
             String type = (String) chartConfig.get("type");
             Map<String, Object> chartData = new HashMap<String, Object>();
@@ -1764,11 +1767,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             if (cardinalityAggName.equals("")) {
                 cardinalityAggName = null;
             }
-            String endpoint = propertyConfig.get("endpoint");
-            String indexName = propertyConfig.get("index");
-
+            endpoint = propertyConfig.get("endpoint");
+            indexName = propertyConfig.get("index");
+            cohortIdProperty = indexName.equals("participants_table") ? "id" : "pid";
             // Determine most populous buckets
-            Map<String, Object> combinedCohortParams = Map.of("id", cohortsCombined);  // Changed from participant_pk to id
+            Map<String, Object> combinedCohortParams = Map.of(cohortIdProperty, cohortsCombined);  // Changed from participant_pk to id
             bucketNames = inventoryESService.getBucketNames(property, combinedCohortParams, RANGE_PARAMS, cardinalityAggName, indexName, endpoint);
 
             if (bucketNames.size() > COHORT_CHART_BUCKET_LIMIT_LOW) {
@@ -1785,7 +1788,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
             // If chart type is percentage, then count the total number of participants
             if ("percentage".equals(type)) {
-                Map<String, Object> combinedCohortsQuery = inventoryESService.buildFacetFilterQuery(combinedCohortParams, RANGE_PARAMS, Set.of(), Set.of(), "", "participants_table");
+                Map<String, Object> combinedCohortParticipantParams = Map.of("id", cohortsCombined);  // Changed from participant_pk to id
+                Map<String, Object> combinedCohortsQuery = inventoryESService.buildFacetFilterQuery(combinedCohortParticipantParams, RANGE_PARAMS, Set.of(), Set.of(), "", "participants_table");
                 totalNumberOfParticipants = inventoryESService.getCount(combinedCohortsQuery, "participants_table");
             }
 
@@ -1796,7 +1800,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             for (String cohortName : cohorts.keySet()) {
                 // Prepare map of data for the cohort
                 Map<String, Object> cohortData = new HashMap<String, Object>();
-                Map<String, Object> cohortParams = Map.of("id", cohorts.get(cohortName));  // Changed from participant_pk to id
+                Map<String, Object> cohortParams = Map.of(cohortIdProperty, cohorts.get(cohortName));  // Changed from participant_pk to id
                 cohortData.put("cohort", cohortName);
 
                 // Retrieve data for the cohort
@@ -3286,7 +3290,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         // Treatment Response properties
         if ("response".equals(propertyName) || "response_category".equals(propertyName)) {
             return Map.of(
-                "index", "treatment_responses",
+                "index", "treatment_responses_table",
                 "endpoint", TREATMENT_RESPONSES_END_POINT,
                 "cardinalityAggName", "pid"  // Count unique participants
             );
@@ -3296,7 +3300,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         if ("diagnosis".equals(propertyName) || "diagnosis_anatomic_site".equals(propertyName) || 
             "disease_phase".equals(propertyName) || "diagnosis_classification_system".equals(propertyName)) {
             return Map.of(
-                "index", "diagnosis",
+                "index", "diagnosis_table",
                 "endpoint", DIAGNOSIS_END_POINT,
                 "cardinalityAggName", "pid"  // Count unique participants
             );
@@ -3305,7 +3309,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         // Survival properties
         if ("last_known_survival_status".equals(propertyName) || "first_event".equals(propertyName)) {
             return Map.of(
-                "index", "survivals",
+                "index", "survivals_table",
                 "endpoint", SURVIVALS_END_POINT,
                 "cardinalityAggName", "pid"  // Count unique participants
             );
@@ -3315,7 +3319,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         if ("sample_anatomic_site".equals(propertyName) || "sample_tumor_status".equals(propertyName) || 
             "tumor_spatial_extent".equals(propertyName)) {
             return Map.of(
-                "index", "samples",
+                "index", "samples_table",
                 "endpoint", SAMPLES_END_POINT,
                 "cardinalityAggName", "pid"  // Count unique participants
             );
@@ -3325,7 +3329,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         if ("dbgap_accession".equals(propertyName) || "study_name".equals(propertyName) || 
             "study_acronym".equals(propertyName)) {
             return Map.of(
-                "index", "studies",
+                "index", "studies_table",
                 "endpoint", STUDIES_END_POINT,
                 "cardinalityAggName", ""  // No cardinality needed
             );
