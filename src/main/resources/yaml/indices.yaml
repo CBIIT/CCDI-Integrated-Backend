@@ -4134,6 +4134,10 @@ indices:
         - sample_anatomic_site_str
         - sample_tumor_status
         - tumor_spatial_extent
+        - laterality
+        - sample_description
+        - pdx_id
+        - cell_line_id
         - diagnosis_filters.diagnosis_anatomic_site
         - diagnosis_filters.disease_phase
         - diagnosis_filters.diagnosis_classification_system
@@ -4172,6 +4176,9 @@ indices:
         - treatment_response_filters.age_at_response
         - file_count
         - direct_file_count
+      float:
+        - percent_tumor
+        - percent_necrosis
     # Cypher queries will be used to retrieve data from Neo4j, and index into Elasticsearch.
     # Uses the GC initial_query + update_queries pattern: initial_query seeds the index with
     # primary keys, then each update_query is applied independently and merged into the
@@ -4203,7 +4210,57 @@ indices:
             ) AS sample_anatomic_site_str,
             sm.participant_age_at_collection AS participant_age_at_collection,
             sm.sample_tumor_status AS sample_tumor_status,
-            sm.tumor_spatial_extent AS tumor_spatial_extent
+            sm.tumor_spatial_extent AS tumor_spatial_extent,
+            sm.laterality AS laterality,
+            sm.sample_description AS sample_description,
+            sm.percent_tumor AS percent_tumor,
+            sm.percent_necrosis AS percent_necrosis
+        page_size: 1000
+      - name: "cell_line_ids"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (sm)-[:of_sample]->(out_cell:cell_line)
+          WITH sm, collect(DISTINCT out_cell.cell_line_id) AS outgoing_cell_line_ids
+          OPTIONAL MATCH (sm)<-[:of_cell_line]-(in_cell:cell_line)
+          WITH
+            sm,
+            outgoing_cell_line_ids,
+            collect(DISTINCT in_cell.cell_line_id) AS incoming_cell_line_ids
+          RETURN
+            sm.guid AS id,
+            reduce(
+              cell_line_ids = [],
+              cell_line_id IN outgoing_cell_line_ids + incoming_cell_line_ids |
+                CASE
+                  WHEN cell_line_id IS NULL OR cell_line_id IN cell_line_ids THEN cell_line_ids
+                  ELSE cell_line_ids + [cell_line_id]
+                END
+            ) AS cell_line_id
+        page_size: 1000
+      - name: "pdx_ids"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (sm)-[:of_sample]->(out_pdx:pdx)
+          WITH sm, collect(DISTINCT out_pdx.pdx_id) AS outgoing_pdx_ids
+          OPTIONAL MATCH (sm)<-[:of_pdx]-(in_pdx:pdx)
+          WITH
+            sm,
+            outgoing_pdx_ids,
+            collect(DISTINCT in_pdx.pdx_id) AS incoming_pdx_ids
+          RETURN
+            sm.guid AS id,
+            reduce(
+              pdx_ids = [],
+              pdx_id IN outgoing_pdx_ids + incoming_pdx_ids |
+                CASE
+                  WHEN pdx_id IS NULL OR pdx_id IN pdx_ids THEN pdx_ids
+                  ELSE pdx_ids + [pdx_id]
+                END
+            ) AS pdx_id
         page_size: 1000
       - name: "participant_properties"
         query: |
