@@ -358,6 +358,12 @@ type SampleOverViewResult {
     anatomic_site: String
     participant_age_at_collection: Int
     sample_tumor_status: String
+    sample_description: String
+    laterality: String
+    percent_tumor: String
+    percent_necrosis: String
+    pdx_id: [String]
+    cell_line_id: [String]
     tumor_spatial_extent: String
     diagnosis: String
     diagnosis_category: String
