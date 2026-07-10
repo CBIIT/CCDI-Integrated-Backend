@@ -66,6 +66,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String PARTICIPANTS_END_POINT = "/participants_table/_search";
     final String SURVIVALS_END_POINT = "/survivals_table/_search";
     final String KM_PLOT_DATA_END_POINT = "/km_plot_data/_search";
+    final String KM_PLOT_DATA_INDEX = "km_plot_data";
+    final String KM_PLOT_DATA_IS_VALID = "is_valid";
     final String TREATMENTS_END_POINT = "/treatments_table/_search";
     final String TREATMENT_RESPONSES_END_POINT = "/treatment_responses_table/_search";
     final String DIAGNOSIS_END_POINT = "/diagnoses_table/_search";
@@ -1934,14 +1936,22 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 continue;
             }
 
-            Map<String, Object> cohortParams = Map.ofEntries(
-                Map.entry("id", cohort),
-                Map.entry(ORDER_BY, "time"),
-                Map.entry(SORT_DIRECTION, "ASC"),
-                Map.entry(PAGE_SIZE, ESService.MAX_ES_SIZE),
-                Map.entry(OFFSET, 0)
+            List<Object> filters = new ArrayList<>();
+            filters.add(Map.of("terms", Map.of("id", cohort)));
+            filters.add(kmPlotDataIsValidFilter());
+
+            Map<String, Object> query = new HashMap<>();
+            query.put("query", Map.of("bool", Map.of("filter", filters)));
+            query.put("sort", mapSortOrderWithMetadata("time", "asc", defaultSort, mapping));
+
+            Request request = new Request("GET", KM_PLOT_DATA_END_POINT);
+            List<Map<String, Object>> cohortKMPlotData = inventoryESService.collectPage(
+                request,
+                query,
+                mapProperties(PROPERTIES),
+                ESService.MAX_ES_SIZE,
+                0
             );
-            List<Map<String, Object>> cohortKMPlotData = overview(KM_PLOT_DATA_END_POINT, cohortParams, PROPERTIES, defaultSort, mapping, "participants");
 
             // Specify cohort for each data point
             cohortKMPlotData.forEach(data -> {
@@ -2028,6 +2038,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 "query", Map.of(
                     "bool", Map.of(
                         "filter", Set.of(
+                            kmPlotDataIsValidFilter(),
                             Map.of(
                                 "terms", Map.of(
                                     "id", cohort
@@ -2039,7 +2050,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             );
 
             // Obtain initial count
-            initialCount = inventoryESService.getCount(initialCountQuery, "km_plot_data");
+            initialCount = inventoryESService.getCount(initialCountQuery, KM_PLOT_DATA_INDEX);
             runningCount = initialCount; // To be used later for each cutoff time
             table.add(Map.ofEntries(
                 Map.entry("group", "0 Months"),
@@ -2052,6 +2063,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 "query", Map.of(
                     "bool", Map.of(
                         "filter", Set.of(
+                            kmPlotDataIsValidFilter(),
                             Map.of(
                                 "term", Map.of(
                                     "event", 1
@@ -2800,6 +2812,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         int offset = (int) params.get(OFFSET);
         List<Map<String, Object>> page = inventoryESService.collectPage(request, query, mapProperties(properties), pageSize, offset);
         return page;
+    }
+
+    private Map<String, Object> kmPlotDataIsValidFilter() {
+        return Map.of("term", Map.of(KM_PLOT_DATA_IS_VALID, true));
     }
 
     private List<Map<String, Object>> findParticipantIdsInList(Map<String, Object> params) throws IOException {
