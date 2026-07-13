@@ -1160,6 +1160,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"files", "files"},
             new String[]{"diagnosis", "diagnosis_str"},
             new String[]{"anatomic_site", "diagnosis_anatomic_site_str"},
+            new String[]{"_nested_filters", "sample_diagnosis_genetic_analysis_file_filters"},
             new String[]{"diagnosis_category", "diagnosis_category_str"},
             new String[]{"age_at_diagnosis", "age_at_diagnosis_str"},
             new String[]{"treatment_agent", "treatment_agent_str"},
@@ -1194,11 +1195,29 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         
         // Get the participant list from overview
         List<Map<String, Object>> participant_list = overview(PARTICIPANTS_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "participants_table");
+        enrichParticipantAnatomicSiteFromNestedFilters(participant_list);
 
         insertCPIDataIntoParticipants(participant_list);
 
         // System.out.println("Participant list size after enrichment: " + gson.toJson(participant_list));
         return participant_list;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void enrichParticipantAnatomicSiteFromNestedFilters(List<Map<String, Object>> participantList) {
+        for (Map<String, Object> participant : participantList) {
+            Object existing = participant.get("anatomic_site");
+            if (existing != null && !existing.toString().trim().isEmpty()) {
+                participant.remove("_nested_filters");
+                continue;
+            }
+            Object filtersObj = participant.remove("_nested_filters");
+            if (filtersObj instanceof List) {
+                participant.put("anatomic_site",
+                        InventoryESService.aggregateNestedFilterField(
+                                (List<Map<String, Object>>) filtersObj, "diagnosis_anatomic_site"));
+            }
+        }
     }
     
     /**
@@ -2112,14 +2131,15 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> diagnosisOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
-            new String[]{"d_id", "id"},
+            new String[]{"id", "id"},
             new String[]{"pid", "pid"},
             new String[]{"diagnosis_id", "diagnosis_id"},
             new String[]{"participant_id", "participant_id"},
             new String[]{"dbgap_accession", "dbgap_accession"},
             new String[]{"study_id", "study_id"},
             new String[]{"diagnosis", "diagnosis"},
-            new String[]{"anatomic_site", "diagnosis_anatomic_site_str"},
+            new String[]{"_anatomic_site_list", "diagnosis_anatomic_site"},
+            new String[]{"_anatomic_site_str", "diagnosis_anatomic_site_str"},
             new String[]{"disease_phase", "disease_phase"},
             new String[]{"diagnosis_classification_system", "diagnosis_classification_system"},
             new String[]{"diagnosis_basis", "diagnosis_basis"},
@@ -2159,7 +2179,19 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("tumor_stage_clinical_o", "tumor_stage_clinical_o")
         );
 
-        return overview(DIAGNOSIS_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "diagnoses_table");
+        List<Map<String, Object>> diagnosisList = overview(DIAGNOSIS_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "diagnoses_table");
+        for (Map<String, Object> diagnosis : diagnosisList) {
+            // Index stores diagnosis_anatomic_site as a list; FE expects semicolon-delimited string.
+            diagnosis.put("anatomic_site", InventoryESService.resolveDiagnosisAnatomicSiteDisplay(
+                    diagnosis.remove("_anatomic_site_list"), diagnosis.remove("_anatomic_site_str")));
+            diagnosis.put("diagnosis_category",
+                    InventoryESService.formatFieldAsDisplayString(diagnosis.get("diagnosis_category")));
+            diagnosis.put("diagnosis_basis",
+                    InventoryESService.formatFieldAsDisplayString(diagnosis.get("diagnosis_basis")));
+            diagnosis.put("diagnosis_classification_system",
+                    InventoryESService.formatFieldAsDisplayString(diagnosis.get("diagnosis_classification_system")));
+        }
+        return diagnosisList;
     }
 
     private List<Map<String, Object>> geneticAnalysisOverview(Map<String, Object> params) throws IOException {
@@ -2740,7 +2772,9 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         query.put("sort", mapSortOrder(order_by, direction, defaultSort, mapping));
         // "_source": {"exclude": [ "sample_diagnosis_file_filters"]}
         if (overviewType.equals("participants_table")) {
-            query.put("_source", Map.of("exclude", Set.of("sample_diagnosis_genetic_analysis_file_filters", "survival_filters", "treatment_filters", "treatment_response_filters")));
+            // Keep sample_diagnosis_genetic_analysis_file_filters so overview can build
+            // diagnosis_anatomic_site display strings from list-valued nested filter fields.
+            query.put("_source", Map.of("exclude", Set.of("survival_filters", "treatment_filters", "treatment_response_filters")));
         }
         if (overviewType.equals("studies_table")) {
             query.put("_source", Map.of("exclude", Set.of("files")));

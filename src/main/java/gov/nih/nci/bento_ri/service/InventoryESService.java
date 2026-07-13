@@ -1499,4 +1499,74 @@ public class InventoryESService extends ESService {
         return bucketNames;
     }
 
+    /**
+     * Formats list or scalar OpenSearch values as a semicolon-delimited display string
+     * (matches the historical FE contract for fields like diagnosis_anatomic_site).
+     */
+    public static String formatFieldAsDisplayString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof List) {
+            LinkedHashSet<String> uniqueValues = new LinkedHashSet<>();
+            for (Object item : (List<?>) value) {
+                if (item != null) {
+                    String formatted = item.toString().trim();
+                    if (!formatted.isEmpty()) {
+                        uniqueValues.add(formatted);
+                    }
+                }
+            }
+            return uniqueValues.isEmpty() ? null : String.join("; ", uniqueValues);
+        }
+        String formatted = value.toString().trim();
+        return formatted.isEmpty() ? null : formatted;
+    }
+
+    /**
+     * Prefer list field values; fall back to a precomputed semicolon string if present.
+     */
+    public static String resolveDiagnosisAnatomicSiteDisplay(Object listValue, Object stringValue) {
+        String fromList = formatFieldAsDisplayString(listValue);
+        if (fromList != null && !fromList.isEmpty()) {
+            return fromList;
+        }
+        return formatFieldAsDisplayString(stringValue);
+    }
+
+    /**
+     * Aggregate unique values of a nested filter field into a semicolon-delimited string.
+     */
+    @SuppressWarnings("unchecked")
+    public static String aggregateNestedFilterField(List<Map<String, Object>> filters, String fieldName) {
+        if (filters == null || filters.isEmpty()) {
+            return null;
+        }
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        for (Map<String, Object> filter : filters) {
+            if (filter == null) {
+                continue;
+            }
+            Object fieldValue = filter.get(fieldName);
+            if (fieldValue instanceof List) {
+                for (Object item : (List<?>) fieldValue) {
+                    addDisplayValue(values, item);
+                }
+            } else {
+                addDisplayValue(values, fieldValue);
+            }
+        }
+        return values.isEmpty() ? null : String.join("; ", values);
+    }
+
+    private static void addDisplayValue(LinkedHashSet<String> values, Object item) {
+        if (item == null) {
+            return;
+        }
+        String formatted = item.toString().trim();
+        if (!formatted.isEmpty()) {
+            values.add(formatted);
+        }
+    }
+
 }
