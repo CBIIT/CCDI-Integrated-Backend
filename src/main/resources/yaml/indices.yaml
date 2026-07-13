@@ -3105,10 +3105,10 @@ indices:
                 END
             ) AS diagnosis_category_str,
             dg.age_at_diagnosis AS age_at_diagnosis,
-            dg.diagnosis_anatomic_site AS diagnosis_anatomic_site,
+            dg.anatomic_site AS diagnosis_anatomic_site,
             reduce(
               s = '',
-              site IN coalesce(dg.diagnosis_anatomic_site, []) |
+              site IN coalesce(dg.anatomic_site, []) |
                 CASE
                   WHEN s = '' THEN site
                   ELSE s + ';' + site
