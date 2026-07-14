@@ -1,3 +1,10 @@
+# Build stage
+FROM maven:3.9.11-eclipse-temurin-21 AS build
+
+WORKDIR /usr/src/app
+COPY . .
+RUN mvn package -DskipTests
+
 # Runtime stage - Tomcat 11 with JRE 21
 FROM tomcat:11.0-jre21-temurin AS final
 
@@ -27,6 +34,6 @@ WORKDIR ${CATALINA_HOME}
 
 EXPOSE 8080
 
-COPY target/Bento-0.0.1.war ${CATALINA_HOME}/webapps/ROOT.war
+COPY --from=build /usr/src/app/target/Bento-0.0.1.war ${CATALINA_HOME}/webapps/ROOT.war
 
 CMD ["catalina.sh", "run"]
