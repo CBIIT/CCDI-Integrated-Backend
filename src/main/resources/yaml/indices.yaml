@@ -62,6 +62,7 @@ indices:
         - clinical_measure_files.dcf_indexd_guid
         - clinical_measure_files.checksum_algorithm
         - clinical_measure_files.checksum_value
+        - clinical_measure_files.participant_list
         - clinical_measure_files.guid
         - clinical_measure_files.crdc_id
         - cytogenomic_files.cytogenomic_file_id
@@ -128,13 +129,21 @@ indices:
         - radiology_files.authz
         - radiology_files.file_url
         - radiology_files.dcf_indexd_guid
-        - radiology_files.submitted_anatomic_site
         - radiology_files.anatomic_site
         - radiology_files.image_modality
         - radiology_files.deidentification_method
+        - radiology_files.magnetic_field_strength
         - radiology_files.scanner_manufacturer
         - radiology_files.scanner_model
+        - radiology_files.imaging_frequency
+        - radiology_files.repetition_time
+        - radiology_files.echo_time
+        - radiology_files.inversion_time
+        - radiology_files.flip_angle
+        - radiology_files.pixel_spacing
+        - radiology_files.slice_thickness
         - radiology_files.echoPulseSequenceCategoryCode
+        - radiology_files.diffusionBValue
         - radiology_files.diffusionDirectionalityCode
         - radiology_files.resonantNucleusCode
         - radiology_files.acquisitionContrastCode
@@ -207,14 +216,25 @@ indices:
         - sequencing_files.crdc_id
         - genetic_analyses.genetic_analysis_id
         - genetic_analyses.alteration_category
+        - genetic_analyses.genomic_source_category
         - genetic_analyses.reported_significance
+        - genetic_analyses.reported_significance_system
+        - genetic_analyses.test
+        - genetic_analyses.method
+        - genetic_analyses.result
         - genetic_analyses.platform
         - genetic_analyses.analysis_type
         - genetic_analyses.analysis_method
         - genetic_analyses.reference_genome
         - genetic_analyses.chromosome
         - genetic_analyses.cytoband
+        - genetic_analyses.exon
         - genetic_analyses.gene_symbol
+        - genetic_analyses.fusion_partner_gene
+        - genetic_analyses.fusion_partner_transcript
+        - genetic_analyses.fusion_partner_exon
+        - genetic_analyses.translocation_partner_chromosome
+        - genetic_analyses.translocation_partner_cytoband
         - genetic_analyses.alteration_region
         - genetic_analyses.alteration_location_role
         - genetic_analyses.transcript
@@ -244,6 +264,12 @@ indices:
         - survivals.first_event
         - survivals.event_free_survival_status
         - survivals.cause_of_death
+        - survivals.follow_up_category
+        - survivals.follow_up_other
+        - survivals.adverse_event
+        - survivals.comorbidity
+        - survivals.comorbidity_method_of_diagnosis
+        - survivals.risk_factor
         - survivals.guid
         - treatment_responses.treatment_response_id
         - treatment_responses.response
@@ -283,8 +309,8 @@ indices:
         - treatments_other.other_treatment_type
         - treatments_other.guid
       integer:
-        - study_period_start
-        - study_period_stop
+        - study.study_period_start
+        - study.study_period_stop
         - diagnoses.age_at_diagnosis
         - diagnoses.year_of_diagnosis
         - clinical_measure_files.file_size
@@ -292,7 +318,6 @@ indices:
         - methylation_array_files.file_size
         - pathology_files.file_size
         - radiology_files.file_size
-        - radiology_files.participant_age_at_imaging
         - generic_files.file_size
         - sequencing_files.file_size
         - sequencing_files.number_of_bp
@@ -321,15 +346,7 @@ indices:
         - treatments_other.age_at_treatment_start
         - treatments_other.age_at_treatment_end
       float:
-        - radiology_files.magnetic_field_strength
-        - radiology_files.imaging_frequency
-        - radiology_files.repetition_time
-        - radiology_files.echo_time
-        - radiology_files.inversion_time
-        - radiology_files.flip_angle
-        - radiology_files.pixel_spacing
-        - radiology_files.slice_thickness
-        - radiology_files.diffusionBValue
+        - radiology_files.participant_age_at_imaging
         - sequencing_files.coverage
         - genetic_analyses.allelic_ratio
         - genetic_analyses.vaf_numeric
@@ -520,8 +537,9 @@ indices:
             ] AS clinical_measure_files
 
           RETURN
-            p.guid AS guid,
+            p.guid AS id,
             clinical_measure_files;
+        page_size: 5000
       - name: "generic_files_participant_level"
         query: |
           MATCH (p:participant)
@@ -536,22 +554,28 @@ indices:
             [file IN collect(DISTINCT f)
             WHERE file IS NOT NULL |
             {
-              id: file.dcf_indexd_guid,
               generic_file_id: file.generic_file_id,
-              dcf_indexd_guid: file.dcf_indexd_guid,
               file_name: file.file_name,
-              file_access: file.file_access,
               data_category: file.data_category,
               file_type: file.file_type,
               file_description: file.file_description,
               file_size: file.file_size,
-              md5sum: file.md5sum
+              md5sum: file.md5sum,
+              file_mapping_level: file.file_mapping_level,
+              file_access: file.file_access,
+              acl: file.acl,
+              authz: file.authz,
+              file_url: file.file_url,
+              dcf_indexd_guid: file.dcf_indexd_guid,
+              guid: file.guid,
+              crdc_id: file.crdc_id
             }
             ] AS generic_files
 
           RETURN
-            p.guid AS guid,
+            p.guid AS id,
             generic_files;
+        page_size: 5000
       - name: "radiology_files_participant_level"
         query: |
           MATCH (p:participant)
@@ -566,27 +590,59 @@ indices:
             [file IN collect(DISTINCT f)
             WHERE file IS NOT NULL |
             {
-              id: file.dcf_indexd_guid,
               radiology_file_id: file.radiology_file_id,
-              dcf_indexd_guid: file.dcf_indexd_guid,
               file_name: file.file_name,
-              file_access: file.file_access,
               data_category: file.data_category,
               file_type: file.file_type,
               file_description: file.file_description,
               file_size: file.file_size,
               md5sum: file.md5sum,
-              submitted_anatomic_site: file.submitted_anatomic_site,
+              file_mapping_level: file.file_mapping_level,
+              file_access: file.file_access,
+              acl: file.acl,
+              authz: file.authz,
+              file_url: file.file_url,
+              dcf_indexd_guid: file.dcf_indexd_guid,
               anatomic_site: file.anatomic_site,
               participant_age_at_imaging: file.participant_age_at_imaging,
               image_modality: file.image_modality,
-              deidentification_method: file.deidentification_method
+              deidentification_method: file.deidentification_method,
+              magnetic_field_strength: file.magnetic_field_strength,
+              scanner_manufacturer: file.scanner_manufacturer,
+              scanner_model: file.scanner_model,
+              imaging_frequency: file.imaging_frequency,
+              repetition_time: file.repetition_time,
+              echo_time: file.echo_time,
+              inversion_time: file.inversion_time,
+              flip_angle: file.flip_angle,
+              pixel_spacing: file.pixel_spacing,
+              slice_thickness: file.slice_thickness,
+              echoPulseSequenceCategoryCode: file.echoPulseSequenceCategoryCode,
+              diffusionBValue: file.diffusionBValue,
+              diffusionDirectionalityCode: file.diffusionDirectionalityCode,
+              resonantNucleusCode: file.resonantNucleusCode,
+              acquisitionContrastCode: file.acquisitionContrastCode,
+              inversionRecoveryIndicator: file.inversionRecoveryIndicator,
+              pulseSequenceName: file.pulseSequenceName,
+              multipleSpinEchoIndicator: file.multipleSpinEchoIndicator,
+              phaseContrastIndicator: file.phaseContrastIndicator,
+              timeOfFlightContrastIndicator: file.timeOfFlightContrastIndicator,
+              arterialSpinLabelingContrastCode: file.arterialSpinLabelingContrastCode,
+              steadyStatePulseSequenceCode: file.steadyStatePulseSequenceCode,
+              echoPlanarPulseSequenceIndicator: file.echoPlanarPulseSequenceIndicator,
+              saturationRecoveryIndicator: file.saturationRecoveryIndicator,
+              spectrallySelectedSuppressionCode: file.spectrallySelectedSuppressionCode,
+              mrImageReconstructionProtocolElement: file.mrImageReconstructionProtocolElement,
+              complexImageComponentCode: file.complexImageComponentCode,
+              guid: file.guid,
+              crdc_id: file.crdc_id
             }
             ] AS radiology_files
 
           RETURN
-            p.guid AS guid,
+            p.guid AS id,
             radiology_files;
+        page_size: 5000
       - name: "cytogenomic_files" # TODO
         query: |
           MATCH (p:participant)
