@@ -484,11 +484,109 @@ indices:
               year_of_diagnosis: dg.year_of_diagnosis
             }] AS diagnoses
         page_size: 5000
-      - name: "clinical_measure_files" # TODO
+      - name: "clinical_measure_files_participant_level"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
+
+          OPTIONAL MATCH
+            (f:clinical_measure_file)-[:of_clinical_measure_file]->(p)
+
+          WITH
+            p,
+            [file IN collect(DISTINCT f)
+            WHERE file IS NOT NULL |
+            {
+              clinical_measure_file_id: file.clinical_measure_file_id,
+              file_name: file.file_name,
+              data_category: file.data_category,
+              file_type: file.file_type,
+              file_description: file.file_description,
+              file_size: file.file_size,
+              md5sum: file.md5sum,
+              file_mapping_level: file.file_mapping_level,
+              file_access: file.file_access,
+              acl: file.acl,
+              authz: file.authz,
+              file_url: file.file_url,
+              dcf_indexd_guid: file.dcf_indexd_guid,
+              checksum_algorithm: file.checksum_algorithm,
+              checksum_value: file.checksum_value,
+              participant_list: file.participant_list,
+              guid: file.guid,
+              crdc_id: file.crdc_id
+            }
+            ] AS clinical_measure_files
+
+          RETURN
+            p.guid AS guid,
+            clinical_measure_files;
+      - name: "generic_files_participant_level"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+
+          OPTIONAL MATCH
+            (f:generic_file)-[:of_generic_file]->(p)
+
+          WITH
+            p,
+            [file IN collect(DISTINCT f)
+            WHERE file IS NOT NULL |
+            {
+              id: file.dcf_indexd_guid,
+              generic_file_id: file.generic_file_id,
+              dcf_indexd_guid: file.dcf_indexd_guid,
+              file_name: file.file_name,
+              file_access: file.file_access,
+              data_category: file.data_category,
+              file_type: file.file_type,
+              file_description: file.file_description,
+              file_size: file.file_size,
+              md5sum: file.md5sum
+            }
+            ] AS generic_files
+
+          RETURN
+            p.guid AS guid,
+            generic_files;
+      - name: "radiology_files_participant_level"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+
+          OPTIONAL MATCH
+            (f:radiology_file)-[:of_radiology_file]->(p)
+
+          WITH
+            p,
+            [file IN collect(DISTINCT f)
+            WHERE file IS NOT NULL |
+            {
+              id: file.dcf_indexd_guid,
+              radiology_file_id: file.radiology_file_id,
+              dcf_indexd_guid: file.dcf_indexd_guid,
+              file_name: file.file_name,
+              file_access: file.file_access,
+              data_category: file.data_category,
+              file_type: file.file_type,
+              file_description: file.file_description,
+              file_size: file.file_size,
+              md5sum: file.md5sum,
+              submitted_anatomic_site: file.submitted_anatomic_site,
+              anatomic_site: file.anatomic_site,
+              participant_age_at_imaging: file.participant_age_at_imaging,
+              image_modality: file.image_modality,
+              deidentification_method: file.deidentification_method
+            }
+            ] AS radiology_files
+
+          RETURN
+            p.guid AS guid,
+            radiology_files;
       - name: "cytogenomic_files" # TODO
         query: |
           MATCH (p:participant)
