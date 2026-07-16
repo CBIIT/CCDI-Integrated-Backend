@@ -4650,8 +4650,10 @@ indices:
           RETURN
             id,
             first_study.study_id AS study_id,
-            first_study.study_name AS study_name,
-            first_study.study_acronym AS study_acronym
+            first_study.dbgap_accession AS dbgap_accession,
+            first_study.study_phase AS study_phase,
+            first_study.study_acronym AS study_acronym,
+            first_study.study_name AS study_name
         page_size: 5000
       - name: "file_properties"
         query: |
