@@ -10,7 +10,7 @@ FROM amazoncorretto:21-al2023 AS final
 
 ENV CATALINA_HOME=/usr/local/tomcat
 ENV PATH=$CATALINA_HOME/bin:$PATH
-ENV TOMCAT_VERSION=11.0.12
+ENV TOMCAT_VERSION=11.0.22
 
 RUN dnf update -y && \
     dnf install -y unzip tar gzip shadow-utils wget && \
