@@ -6,7 +6,6 @@ import gov.nih.nci.bento.model.search.yaml.YamlQueryFactory;
 import gov.nih.nci.bento.service.ESService;
 import gov.nih.nci.bento_ri.service.InventoryESService;
 import gov.nih.nci.bento_ri.service.CPIFetcherService;
-import gov.nih.nci.bento_ri.model.FormattedCPIResponse;
 import graphql.schema.idl.RuntimeWiring;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
+import static gov.nih.nci.bento_ri.util.ValueUtils.toStringList;
 
 @Component
 public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
@@ -1641,6 +1641,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         participants = overview(COHORTS_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "cohorts");
         
         // Sort survivals array by age_at_last_known_survival_status for each participant
+        // and normalize treatment_agent / treatment_type to List<String>
         participants.forEach((Map<String, Object> participant) -> {
             Object survivalsObj = participant.get("survivals");
             if (survivalsObj instanceof List) {
@@ -1661,6 +1662,16 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     
                     return Double.compare(aAge, bAge);
                 });
+            }
+
+            Object treatmentsObj = participant.get("treatments");
+            if (treatmentsObj instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> treatments = (List<Map<String, Object>>) treatmentsObj;
+                for (Map<String, Object> treatment : treatments) {
+                    treatment.put("treatment_agent", toStringList(treatment.get("treatment_agent")));
+                    treatment.put("treatment_type", toStringList(treatment.get("treatment_type")));
+                }
             }
         });
         
