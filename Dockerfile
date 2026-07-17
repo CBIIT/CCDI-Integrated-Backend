@@ -5,8 +5,8 @@ WORKDIR /usr/src/app
 COPY . .
 RUN mvn package -DskipTests
 
-# Runtime stage - minimal distroless Java 21, non-root
-FROM gcr.io/distroless/java21-debian12:nonroot AS final
+# Runtime stage - Java 21 JRE on a maintained Ubuntu base
+FROM eclipse-temurin:21-jre-jammy AS final
 
 WORKDIR /app
 
