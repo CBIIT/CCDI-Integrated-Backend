@@ -14,4 +14,5 @@ EXPOSE 8080
 
 COPY --from=build /usr/src/app/target/Bento-0.0.1.war /app/app.war
 
-CMD ["-jar", "/app/app.war"]
+# Spring Boot executable WAR - run directly
+ENTRYPOINT ["java", "-jar", "/app/app.war"]
