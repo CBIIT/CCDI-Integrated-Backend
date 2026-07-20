@@ -292,17 +292,62 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     private Map<String, Object> getGlobalSearchQuery(String input, Map<String, Object> category) {
         List<String> searchFields = (List<String>)category.get(GS_SEARCH_FIELD);
         List<Object> searchClauses = new ArrayList<>();
+        String normalizedInput = input == null ? "" : input.trim();
+        // Integrated indexes use keyword fields (no *_gs search_as_you_type fields like WebService).
+        // Use case-insensitive prefix + contains wildcards so typing still returns matches.
+        String wildcardValue = "*" + escapeWildcard(normalizedInput) + "*";
         for (String searchFieldName: searchFields) {
-            searchClauses.add(Map.of("match_phrase_prefix", Map.of(searchFieldName, input)));
+            if (normalizedInput.isEmpty()) {
+                continue;
+            }
+            searchClauses.add(Map.of(
+                    "prefix", Map.of(searchFieldName, Map.of(
+                            "value", normalizedInput,
+                            "case_insensitive", true
+                    ))
+            ));
+            searchClauses.add(Map.of(
+                    "wildcard", Map.of(searchFieldName, Map.of(
+                            "value", wildcardValue,
+                            "case_insensitive", true
+                    ))
+            ));
         }
         Map<String, Object> query = new HashMap<>();
+        if (searchClauses.isEmpty()) {
+            // No searchable input: return zero hits instead of match_all.
+            query.put("query", Map.of("bool", Map.of("must_not", Map.of("match_all", Map.of()))));
+            return query;
+        }
         String indexType = (String)category.get(GS_CATEGORY_TYPE);
         if (indexType.equals("file")) {
-            query.put("query", Map.of("bool", Map.of("must", Map.of("exists", Map.of("field", "file_id")), "should", searchClauses, "minimum_should_match", 1)));
+            query.put("query", Map.of("bool", Map.of(
+                    "must", Map.of("exists", Map.of("field", "file_id")),
+                    "should", searchClauses,
+                    "minimum_should_match", 1
+            )));
         } else {
-            query.put("query", Map.of("bool", Map.of("should", searchClauses)));
+            query.put("query", Map.of("bool", Map.of(
+                    "should", searchClauses,
+                    "minimum_should_match", 1
+            )));
         }
         return query;
+    }
+
+    private String escapeWildcard(String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+        StringBuilder escaped = new StringBuilder();
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '\\' || c == '*' || c == '?') {
+                escaped.append('\\');
+            }
+            escaped.append(c);
+        }
+        return escaped.toString();
     }
 
     private List paginate(List org, int pageSize, int offset) {
@@ -331,7 +376,14 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         );
         Request request = new Request("GET", GS_ABOUT_END_POINT);
         request.setJsonEntity(gson.toJson(query));
-        JsonObject jsonObject = esService.send(request);
+        JsonObject jsonObject;
+        try {
+            jsonObject = esService.send(request);
+        } catch (IOException e) {
+            // About-page index (ccdi_hub_static_pages) may not be present in all environments.
+            logger.warn("About-page global search skipped: " + e.getMessage());
+            return new ArrayList<>();
+        }
 
         List<Map<String, Object>> result = new ArrayList<>();
 
@@ -365,7 +417,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, PARTICIPANTS_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "participant_count",
                 GS_RESULT_FIELD, "participants",
-                GS_SEARCH_FIELD, List.of("participant_id_gs","diagnosis_str_gs", "diagnosis_category_str_gs", "study_id_gs", "age_at_diagnosis_str_gs", "treatment_type_str_gs", "sex_at_birth_gs", "treatment_agent_str_gs", "race_str_gs", "last_known_survival_status_str_gs"),
+                // Integrated properties (keyword) — WebService used parallel *_gs search_as_you_type fields.
+                GS_SEARCH_FIELD, List.of(
+                        "participant_id", "study_id", "race_str", "sex_at_birth",
+                        "study_name", "study_acronym", "study_phase", "dbgap_accession"
+                ),
                 GS_SORT_FIELD, "participant_id",
                 GS_COLLECT_FIELDS, new String[][]{
                         new String[]{"id", "id"},
@@ -378,7 +434,12 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         new String[]{"study_id", "study_id"},
                         new String[]{"race_str", "race_str"},
                         new String[]{"sex_at_birth", "sex_at_birth"},
-                        new String[]{"last_known_survival_status_str", "last_known_survival_status_str"}
+                        new String[]{"last_known_survival_status_str", "last_known_survival_status_str"},
+                        new String[]{"consent_codes", "consent_codes"},
+                        // Nested filter arrays used to build display strings after fetch
+                        new String[]{"_sample_diagnosis_filters", "sample_diagnosis_genetic_analysis_file_filters"},
+                        new String[]{"_treatment_filters", "treatment_filters"},
+                        new String[]{"_survival_filters", "survival_filters"}
                 },
                 GS_CATEGORY_TYPE, "subject"
         ));
@@ -387,7 +448,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, STUDIES_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "study_count",
                 GS_RESULT_FIELD, "studies",
-                GS_SEARCH_FIELD, List.of("study_id_gs", "study_name_gs", "study_phase_gs"),
+                GS_SEARCH_FIELD, List.of(
+                        "study_id", "study_name", "study_phase", "study_acronym",
+                        "study_description", "dbgap_accession"
+                ),
                 GS_SORT_FIELD, "study_id",
                 GS_COLLECT_FIELDS, new String[][]{
                         new String[]{"study_id", "study_id"},
@@ -405,7 +469,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, SAMPLES_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "sample_count",
                 GS_RESULT_FIELD, "samples",
-                GS_SEARCH_FIELD, List.of("sample_id_gs", "participant_id_gs", "study_id_gs", "sample_anatomic_site_str_gs", "diagnosis_category_str_gs", "sample_tumor_status_gs", "diagnosis_str_gs", "tumor_spatial_extent_gs"),
+                GS_SEARCH_FIELD, List.of(
+                        "sample_id", "participant_id", "study_id", "sample_anatomic_site_str",
+                        "sample_tumor_status", "tumor_spatial_extent", "study_name", "sample_description"
+                ),
                 GS_SORT_FIELD, "sample_id",
                 GS_COLLECT_FIELDS, new String[][]{
                         new String[]{"sample_id", "sample_id"},
@@ -415,7 +482,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         new String[]{"sample_tumor_status", "sample_tumor_status"},
                         new String[]{"diagnosis_str", "diagnosis_str"},
                         new String[]{"diagnosis_category_str", "diagnosis_category_str"},
-                        new String[]{"tumor_spatial_extent", "tumor_spatial_extent"}
+                        new String[]{"tumor_spatial_extent", "tumor_spatial_extent"},
+                        new String[]{"_diagnosis_filters", "diagnosis_filters"}
                 },
                 GS_CATEGORY_TYPE, "sample"
         ));
@@ -424,7 +492,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, FILES_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "file_count",
                 GS_RESULT_FIELD, "files",
-                GS_SEARCH_FIELD, List.of("participant_id_gs","sample_id_gs","study_id_gs","file_description_gs","file_type_gs","file_name_gs","data_category_gs"),
+                GS_SEARCH_FIELD, List.of(
+                        "participant_id", "sample_id", "study_id", "file_description",
+                        "file_type", "file_name", "data_category"
+                ),
                 GS_SORT_FIELD, "file_id",
                 GS_COLLECT_FIELDS, new String[][]{
                         new String[]{"id", "id"},
@@ -439,63 +510,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 },
                 GS_CATEGORY_TYPE, "file"
         ));
-        searchCategories.add(Map.of(
-                GS_END_POINT, NODES_END_POINT,
-                GS_COUNT_ENDPOINT, NODES_COUNT_END_POINT,
-                GS_COUNT_RESULT_FIELD, "model_count",
-                GS_RESULT_FIELD, "model",
-                GS_SEARCH_FIELD, List.of("node"),
-                GS_SORT_FIELD, "node_kw",
-                GS_COLLECT_FIELDS, new String[][]{
-                        new String[]{"node", "node"}
-                },
-                GS_HIGHLIGHT_FIELDS, new String[][] {
-                        new String[]{"highlight", "node"}
-                },
-                GS_CATEGORY_TYPE, "node"
-        ));
-        searchCategories.add(Map.of(
-                GS_END_POINT, PROPERTIES_END_POINT,
-                GS_COUNT_ENDPOINT, PROPERTIES_COUNT_END_POINT,
-                GS_COUNT_RESULT_FIELD, "model_count",
-                GS_RESULT_FIELD, "model",
-                GS_SEARCH_FIELD, List.of("property", "property_description", "property_type", "property_required"),
-                GS_SORT_FIELD, "property_kw",
-                GS_COLLECT_FIELDS, new String[][]{
-                        new String[]{"node", "node"},
-                        new String[]{"property", "property"},
-                        new String[]{"property_type", "property_type"},
-                        new String[]{"property_required", "property_required"},
-                        new String[]{"property_description", "property_description"}
-                },
-                GS_HIGHLIGHT_FIELDS, new String[][] {
-                        new String[]{"highlight", "property"},
-                        new String[]{"highlight", "property_description"},
-                        new String[]{"highlight", "property_type"},
-                        new String[]{"highlight", "property_required"}
-                },
-                GS_CATEGORY_TYPE, "property"
-        ));
-        searchCategories.add(Map.of(
-                GS_END_POINT, VALUES_END_POINT,
-                GS_COUNT_ENDPOINT, VALUES_COUNT_END_POINT,
-                GS_COUNT_RESULT_FIELD, "model_count",
-                GS_RESULT_FIELD, "model",
-                GS_SEARCH_FIELD, List.of("value"),
-                GS_SORT_FIELD, "value_kw",
-                GS_COLLECT_FIELDS, new String[][]{
-                        new String[]{"node", "node"},
-                        new String[]{"property", "property"},
-                        new String[]{"property_type", "property_type"},
-                        new String[]{"property_required", "property_required"},
-                        new String[]{"property_description", "property_description"},
-                        new String[]{"value", "value"}
-                },
-                GS_HIGHLIGHT_FIELDS, new String[][] {
-                        new String[]{"highlight", "value"}
-                },
-                GS_CATEGORY_TYPE, "value"
-        ));
+        // model_nodes / model_properties / model_values are Bento template indexes and are not
+        // present in the CCDI OpenSearch cluster. Keep GraphQL contract with empty model results.
+        result.put("model", new ArrayList<>());
+        result.put("model_count", 0);
 
         Set<String> combinedCategories = Set.of("model") ;
 
@@ -537,8 +555,14 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 object.put(GS_CATEGORY_TYPE, category.get(GS_CATEGORY_TYPE));
             }
 
+            if (resultFieldName.equals("samples") && objects != null && !objects.isEmpty()) {
+                enrichGlobalSearchSamplesFromNestedFilters(objects);
+            }
+
             // Add CPI data enrichment for participants
             if (resultFieldName.equals("participants") && objects != null && !objects.isEmpty()) {
+                enrichGlobalSearchParticipantsFromNestedFilters(objects);
+                enrichGlobalSearchParticipantsWithConsentCodes(objects);
                 // Check if CPIFetcherService is properly injected
                 if (cpiFetcherService != null) {
                     try {
@@ -567,6 +591,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 }
             }
 
+            if (resultFieldName.equals("studies") && objects != null && !objects.isEmpty()) {
+                normalizeGlobalSearchConsentCodes(objects);
+            }
+
             List<Map<String, Object>> existingObjects = (List<Map<String, Object>>)result.getOrDefault(resultFieldName, null);
             if (existingObjects != null) {
                 existingObjects.addAll(objects);
@@ -589,6 +617,213 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         }
 
         return result;
+    }
+
+    /**
+     * Integrated participants_table stores diagnosis/treatment/survival values in nested filter
+     * arrays rather than root-level *_str fields used by WebService. Aggregate unique nested
+     * values into semicolon-delimited display strings for global search cards.
+     */
+    @SuppressWarnings("unchecked")
+    private void enrichGlobalSearchParticipantsFromNestedFilters(List<Map<String, Object>> participants) {
+        if (participants == null || participants.isEmpty()) {
+            return;
+        }
+        for (Map<String, Object> participant : participants) {
+            List<Map<String, Object>> diagnosisFilters =
+                    asListOfMaps(participant.remove("_sample_diagnosis_filters"));
+            List<Map<String, Object>> treatmentFilters =
+                    asListOfMaps(participant.remove("_treatment_filters"));
+            List<Map<String, Object>> survivalFilters =
+                    asListOfMaps(participant.remove("_survival_filters"));
+
+            putIfBlank(participant, "diagnosis_str",
+                    aggregateNestedFilterValues(diagnosisFilters, "diagnosis"));
+            putIfBlank(participant, "diagnosis_category_str",
+                    aggregateNestedFilterValues(diagnosisFilters, "diagnosis_category"));
+            putIfBlank(participant, "age_at_diagnosis_str",
+                    aggregateNestedFilterValues(diagnosisFilters, "age_at_diagnosis"));
+            putIfBlank(participant, "treatment_type_str",
+                    aggregateNestedFilterValues(treatmentFilters, "treatment_type"));
+            putIfBlank(participant, "treatment_agent_str",
+                    aggregateNestedFilterValues(treatmentFilters, "treatment_agent"));
+            putIfBlank(participant, "last_known_survival_status_str",
+                    aggregateNestedFilterValues(survivalFilters, "last_known_survival_status"));
+        }
+    }
+
+    /**
+     * samples_table stores diagnosis values under diagnosis_filters rather than root *_str fields.
+     */
+    @SuppressWarnings("unchecked")
+    private void enrichGlobalSearchSamplesFromNestedFilters(List<Map<String, Object>> samples) {
+        if (samples == null || samples.isEmpty()) {
+            return;
+        }
+        for (Map<String, Object> sample : samples) {
+            List<Map<String, Object>> diagnosisFilters =
+                    asListOfMaps(sample.remove("_diagnosis_filters"));
+            putIfBlank(sample, "diagnosis_str",
+                    aggregateNestedFilterValues(diagnosisFilters, "diagnosis"));
+            putIfBlank(sample, "diagnosis_category_str",
+                    aggregateNestedFilterValues(diagnosisFilters, "diagnosis_category"));
+        }
+    }
+
+    /**
+     * participants_table does not store consent_codes (unlike WebService). Look up codes from
+     * studies_table by study_id and return them as a GraphQL String.
+     */
+    private void enrichGlobalSearchParticipantsWithConsentCodes(List<Map<String, Object>> participants) {
+        if (participants == null || participants.isEmpty()) {
+            return;
+        }
+        LinkedHashSet<String> studyIds = new LinkedHashSet<>();
+        for (Map<String, Object> participant : participants) {
+            Object studyId = participant.get("study_id");
+            if (studyId != null && !studyId.toString().trim().isEmpty()) {
+                studyIds.add(studyId.toString().trim());
+            }
+        }
+        Map<String, String> consentByStudyId = lookupConsentCodesByStudyIds(studyIds);
+        for (Map<String, Object> participant : participants) {
+            Object existing = participant.get("consent_codes");
+            String formattedExisting = formatConsentCodesValue(existing);
+            if (formattedExisting != null) {
+                participant.put("consent_codes", formattedExisting);
+                continue;
+            }
+            Object studyId = participant.get("study_id");
+            if (studyId == null) {
+                participant.put("consent_codes", null);
+                continue;
+            }
+            participant.put("consent_codes", consentByStudyId.get(studyId.toString().trim()));
+        }
+    }
+
+    private void normalizeGlobalSearchConsentCodes(List<Map<String, Object>> records) {
+        if (records == null || records.isEmpty()) {
+            return;
+        }
+        for (Map<String, Object> record : records) {
+            record.put("consent_codes", formatConsentCodesValue(record.get("consent_codes")));
+        }
+    }
+
+    private Map<String, String> lookupConsentCodesByStudyIds(Set<String> studyIds) {
+        Map<String, String> consentByStudyId = new HashMap<>();
+        if (studyIds == null || studyIds.isEmpty()) {
+            return consentByStudyId;
+        }
+        try {
+            Map<String, Object> query = new HashMap<>();
+            query.put("size", studyIds.size());
+            query.put("query", Map.of("terms", Map.of("study_id", new ArrayList<>(studyIds))));
+            query.put("_source", Map.of("includes", List.of("study_id", "consent_codes")));
+            Request request = new Request("GET", STUDIES_END_POINT);
+            request.setJsonEntity(gson.toJson(query));
+            JsonObject jsonObject = inventoryESService.send(request);
+            JsonArray hits = jsonObject.getAsJsonObject("hits").getAsJsonArray("hits");
+            for (JsonElement hit : hits) {
+                JsonObject source = hit.getAsJsonObject().getAsJsonObject("_source");
+                if (source == null || !source.has("study_id") || source.get("study_id").isJsonNull()) {
+                    continue;
+                }
+                String studyId = source.get("study_id").getAsString();
+                Object consentCodes = source.has("consent_codes")
+                        ? parseJsonElement(source.get("consent_codes"))
+                        : null;
+                consentByStudyId.put(studyId, formatConsentCodesValue(consentCodes));
+            }
+        } catch (Exception e) {
+            logger.warn("Unable to look up consent_codes from studies_table for global search: " + e.getMessage());
+        }
+        return consentByStudyId;
+    }
+
+    private Object parseJsonElement(JsonElement element) {
+        if (element == null || element.isJsonNull()) {
+            return null;
+        }
+        if (element.isJsonArray()) {
+            List<Object> values = new ArrayList<>();
+            for (JsonElement entry : element.getAsJsonArray()) {
+                values.add(parseJsonElement(entry));
+            }
+            return values;
+        }
+        if (element.isJsonObject()) {
+            return element.toString();
+        }
+        return element.getAsString();
+    }
+
+    private String formatConsentCodesValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        addNestedDisplayValues(values, value);
+        return values.isEmpty() ? null : String.join("; ", values);
+    }
+
+    private void putIfBlank(Map<String, Object> target, String key, String value) {
+        Object existing = target.get(key);
+        if (existing != null && !existing.toString().trim().isEmpty()
+                && !"null".equalsIgnoreCase(existing.toString().trim())) {
+            return;
+        }
+        target.put(key, value);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> asListOfMaps(Object value) {
+        if (!(value instanceof List<?>)) {
+            return List.of();
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object item : (List<?>) value) {
+            if (item instanceof Map<?, ?>) {
+                result.add((Map<String, Object>) item);
+            }
+        }
+        return result;
+    }
+
+    private String aggregateNestedFilterValues(List<Map<String, Object>> filters, String fieldName) {
+        if (filters == null || filters.isEmpty()) {
+            return null;
+        }
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        for (Map<String, Object> filter : filters) {
+            if (filter == null) {
+                continue;
+            }
+            addNestedDisplayValues(values, filter.get(fieldName));
+        }
+        return values.isEmpty() ? null : String.join("; ", values);
+    }
+
+    private void addNestedDisplayValues(LinkedHashSet<String> values, Object fieldValue) {
+        if (fieldValue == null) {
+            return;
+        }
+        if (fieldValue instanceof List<?>) {
+            for (Object item : (List<?>) fieldValue) {
+                addNestedDisplayValues(values, item);
+            }
+            return;
+        }
+        String formatted = fieldValue.toString().trim();
+        if (formatted.isEmpty() || "null".equalsIgnoreCase(formatted)) {
+            return;
+        }
+        // Unknown coded ages / sentinel values used across CCDI indexes
+        if ("-999".equals(formatted) || "-1".equals(formatted)) {
+            return;
+        }
+        values.add(formatted);
     }
 
     private List<Map<String, Object>> subjectCountBy(String category, Map<String, Object> params, String endpoint, String cardinalityAggName, String indexType) throws IOException {
@@ -2932,56 +3167,137 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
     
     private List<String> fileIDsFromList(Map<String, Object> params) throws IOException {
-        List<String> participantIDsSet = (List<String>) params.get("participant_ids");
-        List<String> diagnosisIDsSet = (List<String>) params.get("diagnosis_ids");
-        List<String> studyIDsSet = (List<String>) params.get("study_ids");
-        List<String> sampleIDsSet = (List<String>) params.get("sample_ids");
-        List<String> fileIDsSet = (List<String>) params.get("file_ids");
-        
-        if (participantIDsSet.size() > 0 && !(participantIDsSet.size() == 1 && participantIDsSet.get(0).equals(""))) {
-            Map<String, Object> query = inventoryESService.buildGetFileIDsQuery(participantIDsSet);
-            Request request = new Request("GET", PARTICIPANTS_END_POINT);
-            // System.out.println(gson.toJson(query));
-            request.setJsonEntity(gson.toJson(query));
-            JsonObject jsonObject = inventoryESService.send(request);
-            List<String> result = inventoryESService.collectFileIDs(jsonObject);
-            return result;
+        List<String> participantIDsSet = castIdList(params.get("participant_ids"));
+        List<String> diagnosisIDsSet = castIdList(params.get("diagnosis_ids"));
+        List<String> studyIDsSet = castIdList(params.get("study_ids"));
+        List<String> sampleIDsSet = castIdList(params.get("sample_ids"));
+        List<String> fileIDsSet = castIdList(params.get("file_ids"));
+
+        // FE passes document GUIDs (participants_table.id). Integrated participants do not
+        // embed a files[] array (unlike WebService), so resolve through files_table.pid.
+        if (hasUsableIds(participantIDsSet)) {
+            return fileIDsFromFilesTableField("pid", participantIDsSet);
         }
 
-        if (studyIDsSet.size() > 0 && !(studyIDsSet.size() == 1 && studyIDsSet.get(0).equals(""))) {
+        if (hasUsableIds(diagnosisIDsSet)) {
+            Map<String, Object> query = inventoryESService.buildGetFileIDsQuery(diagnosisIDsSet);
+            Request request = new Request("GET", DIAGNOSIS_END_POINT);
+            request.setJsonEntity(gson.toJson(query));
+            JsonObject jsonObject = inventoryESService.send(request);
+            List<String> embedded = inventoryESService.collectFileIDs(jsonObject);
+            if (!embedded.isEmpty()) {
+                return embedded;
+            }
+            // diagnoses_table may not embed files; fall back to participant linkage via pid.
+            return fileIDsFromFilesTableField("pid", diagnosisIDsSet);
+        }
+
+        if (hasUsableIds(studyIDsSet)) {
             Map<String, Object> query = inventoryESService.buildGetFileIDsQuery(studyIDsSet);
             Request request = new Request("GET", STUDIES_END_POINT);
-            // System.out.println(gson.toJson(query));
             request.setJsonEntity(gson.toJson(query));
             JsonObject jsonObject = inventoryESService.send(request);
-            List<String> result = inventoryESService.collectFileIDs(jsonObject);
-            return result;
+            List<String> embedded = inventoryESService.collectFileIDs(jsonObject);
+            if (!embedded.isEmpty()) {
+                return embedded;
+            }
+            // Fallback when FE passes study_id strings instead of study document GUIDs.
+            return fileIDsFromFilesTableField("study_id", studyIDsSet);
         }
 
-        if (sampleIDsSet.size() > 0 && !(sampleIDsSet.size() == 1 && sampleIDsSet.get(0).equals(""))) {
-            Map<String, Object> query = inventoryESService.buildGetFileIDsQuery(sampleIDsSet);
-            Request request = new Request("GET", SAMPLES_END_POINT);
-            // System.out.println(gson.toJson(query));
-            request.setJsonEntity(gson.toJson(query));
-            JsonObject jsonObject = inventoryESService.send(request);
-            List<String> result = inventoryESService.collectFileIDs(jsonObject);
-            return result;
+        if (hasUsableIds(sampleIDsSet)) {
+            // samples_table.files is intentionally empty in indexing; resolve human-readable
+            // sample_id values then query files_table.
+            List<String> sampleIds = resolveSampleIds(sampleIDsSet);
+            if (sampleIds.isEmpty()) {
+                return new ArrayList<>();
+            }
+            return fileIDsFromFilesTableField("sample_id", sampleIds);
         }
 
-        if (fileIDsSet.size() > 0 && !(fileIDsSet.size() == 1 && fileIDsSet.get(0).equals(""))) {
-            //return with the same file ids
-            
+        if (hasUsableIds(fileIDsSet)) {
             return fileIDsSet;
-            // Map<String, Object> query = inventoryESService.buildGetFileIDsQuery(fileIDsSet, "file_id");
-            // Request request = new Request("GET", FILES_END_POINT);
-            // System.out.println(gson.toJson(query));
-            // request.setJsonEntity(gson.toJson(query));
-            // JsonObject jsonObject = inventoryESService.send(request);
-            // List<String> result = inventoryESService.collectFileIDs(jsonObject, "file_id");
-            // return result;
         }
 
         return new ArrayList<>();
+    }
+
+    private boolean hasUsableIds(List<String> ids) {
+        return ids != null && !ids.isEmpty() && !(ids.size() == 1 && "".equals(ids.get(0)));
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> castIdList(Object raw) {
+        if (!(raw instanceof List<?>)) {
+            return new ArrayList<>();
+        }
+        List<String> ids = new ArrayList<>();
+        for (Object item : (List<?>) raw) {
+            if (item != null) {
+                ids.add(item.toString());
+            }
+        }
+        return ids;
+    }
+
+    private List<String> fileIDsFromFilesTableField(String fieldName, List<String> ids) throws IOException {
+        Map<String, Object> query = inventoryESService.buildFilesTableIDsQuery(fieldName, ids);
+        Request request = new Request("GET", FILES_END_POINT);
+        String[][] properties = new String[][]{
+                new String[]{"file_id", "file_id"},
+                new String[]{"id", "id"}
+        };
+        // Use scroll-backed collectPage so we stay under index.max_result_window (10k).
+        List<Map<String, Object>> rows = inventoryESService.collectPage(
+                request, query, properties, ESService.MAX_ES_SIZE, 0);
+        LinkedHashSet<String> fileIds = new LinkedHashSet<>();
+        for (Map<String, Object> row : rows) {
+            Object fileId = row.get("file_id");
+            if (fileId != null && !fileId.toString().isBlank()) {
+                fileIds.add(fileId.toString());
+                continue;
+            }
+            Object id = row.get("id");
+            if (id != null && !id.toString().isBlank()) {
+                fileIds.add(id.toString());
+            }
+        }
+        return new ArrayList<>(fileIds);
+    }
+
+    private List<String> resolveSampleIds(List<String> sampleDocumentOrSampleIds) throws IOException {
+        LinkedHashSet<String> sampleIds = new LinkedHashSet<>();
+        // Values may already be sample_id strings; also keep them as lookup candidates.
+        for (String value : sampleDocumentOrSampleIds) {
+            if (value != null && !value.isBlank()) {
+                sampleIds.add(value.trim());
+            }
+        }
+        Map<String, Object> query = new HashMap<>();
+        query.put("size", Math.max(sampleDocumentOrSampleIds.size(), 1));
+        query.put("query", Map.of("terms", Map.of("id", sampleDocumentOrSampleIds)));
+        query.put("_source", Map.of("includes", List.of("id", "sample_id")));
+        Request request = new Request("GET", SAMPLES_END_POINT);
+        request.setJsonEntity(gson.toJson(query));
+        JsonObject jsonObject = inventoryESService.send(request);
+        JsonArray hits = jsonObject.getAsJsonObject("hits").getAsJsonArray("hits");
+        for (JsonElement hit : hits) {
+            JsonObject source = hit.getAsJsonObject().getAsJsonObject("_source");
+            if (source == null || !source.has("sample_id") || source.get("sample_id").isJsonNull()) {
+                continue;
+            }
+            JsonElement sampleIdElement = source.get("sample_id");
+            if (sampleIdElement.isJsonArray()) {
+                for (JsonElement entry : sampleIdElement.getAsJsonArray()) {
+                    if (!entry.isJsonNull()) {
+                        sampleIds.add(entry.getAsString());
+                    }
+                }
+            } else {
+                sampleIds.add(sampleIdElement.getAsString());
+            }
+        }
+        return new ArrayList<>(sampleIds);
     }
 
     private String generateCacheKey(Map<String, Object> params) throws IOException {
