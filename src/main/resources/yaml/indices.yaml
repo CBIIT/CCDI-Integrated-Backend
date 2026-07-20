@@ -14,6 +14,23 @@ indices:
         - crdc_id
         - consent_group_guid
         - study_guid
+        - clinical_measure_files.clinical_measure_file_id
+        - clinical_measure_files.file_name
+        - clinical_measure_files.data_category
+        - clinical_measure_files.file_type
+        - clinical_measure_files.file_description
+        - clinical_measure_files.md5sum
+        - clinical_measure_files.file_mapping_level
+        - clinical_measure_files.file_access
+        - clinical_measure_files.acl
+        - clinical_measure_files.authz
+        - clinical_measure_files.file_url
+        - clinical_measure_files.dcf_indexd_guid
+        - clinical_measure_files.checksum_algorithm
+        - clinical_measure_files.checksum_value
+        - clinical_measure_files.participant_list
+        - clinical_measure_files.guid
+        - clinical_measure_files.crdc_id
         - diagnoses.diagnosis_id
         - diagnoses.submitted_diagnosis
         - diagnoses.diagnosis
@@ -32,25 +49,142 @@ indices:
         - diagnoses.tumor_stage_source
         - diagnoses.tumor_grade
         - diagnoses.tumor_grade_source
+        - diagnoses.year_of_diagnosis
         - diagnoses.laterality
         - diagnoses.guid
-        - clinical_measure_files.clinical_measure_file_id
-        - clinical_measure_files.file_name
-        - clinical_measure_files.data_category
-        - clinical_measure_files.file_type
-        - clinical_measure_files.file_description
-        - clinical_measure_files.md5sum
-        - clinical_measure_files.file_mapping_level
-        - clinical_measure_files.file_access
-        - clinical_measure_files.acl
-        - clinical_measure_files.authz
-        - clinical_measure_files.file_url
-        - clinical_measure_files.dcf_indexd_guid
-        - clinical_measure_files.checksum_algorithm
-        - clinical_measure_files.checksum_value
-        - clinical_measure_files.participant_list
-        - clinical_measure_files.guid
-        - clinical_measure_files.crdc_id
+        - exposures.exposure_id
+        - exposures.alcohol_history
+        - exposures.alcohol_intensity
+        - exposures.asbestos_exposure
+        - exposures.coal_dust_exposure
+        - exposures.environmental_tobacco_smoke_exposure
+        - exposures.radon_exposure
+        - exposures.respirable_crystalline_silica_exposure
+        - exposures.smoking_frequency
+        - exposures.time_between_waking_and_first_smoke
+        - exposures.tobacco_smoking_status
+        - exposures.type_of_smoke_exposure
+        - exposures.type_of_tobacco_used
+        - exposures.guid
+        - family_relationships.family_relationship_id
+        - family_relationships.relationship
+        - family_relationships.family_id
+        - family_relationships.guid
+        - laboratory_tests.laboratory_test_id
+        - laboratory_tests.laboratory_test_method
+        - laboratory_tests.laboratory_test_name
+        - laboratory_tests.specimen
+        - laboratory_tests.test_result_text
+        - laboratory_tests.test_result_modifier
+        - laboratory_tests.test_result_numeric
+        - laboratory_tests.test_result_unit
+        - laboratory_tests.guid
+        - medical_histories.medical_history_id
+        - medical_histories.medical_history_category
+        - medical_histories.medical_history_condition
+        - medical_histories.guid
+        - radiology_files.radiology_file_id
+        - radiology_files.file_name
+        - radiology_files.data_category
+        - radiology_files.file_type
+        - radiology_files.file_description
+        - radiology_files.md5sum
+        - radiology_files.file_mapping_level
+        - radiology_files.file_access
+        - radiology_files.acl
+        - radiology_files.authz
+        - radiology_files.file_url
+        - radiology_files.dcf_indexd_guid
+        - radiology_files.anatomic_site
+        - radiology_files.image_modality
+        - radiology_files.deidentification_method
+        - radiology_files.magnetic_field_strength
+        - radiology_files.scanner_manufacturer
+        - radiology_files.scanner_model
+        - radiology_files.imaging_frequency
+        - radiology_files.repetition_time
+        - radiology_files.echo_time
+        - radiology_files.inversion_time
+        - radiology_files.flip_angle
+        - radiology_files.pixel_spacing
+        - radiology_files.slice_thickness
+        - radiology_files.echoPulseSequenceCategoryCode
+        - radiology_files.diffusionBValue
+        - radiology_files.diffusionDirectionalityCode
+        - radiology_files.resonantNucleusCode
+        - radiology_files.acquisitionContrastCode
+        - radiology_files.inversionRecoveryIndicator
+        - radiology_files.pulseSequenceName
+        - radiology_files.multipleSpinEchoIndicator
+        - radiology_files.phaseContrastIndicator
+        - radiology_files.timeOfFlightContrastIndicator
+        - radiology_files.arterialSpinLabelingContrastCode
+        - radiology_files.steadyStatePulseSequenceCode
+        - radiology_files.echoPlanarPulseSequenceIndicator
+        - radiology_files.saturationRecoveryIndicator
+        - radiology_files.spectrallySelectedSuppressionCode
+        - radiology_files.mrImageReconstructionProtocolElement
+        - radiology_files.complexImageComponentCode
+        - radiology_files.guid
+        - radiology_files.crdc_id
+        - survivals.survival_id
+        - survivals.last_known_survival_status
+        - survivals.first_event
+        - survivals.event_free_survival_status
+        - survivals.follow_up_category
+        - survivals.follow_up_other
+        - survivals.adverse_event
+        - survivals.comorbidity
+        - survivals.comorbidity_method_of_diagnosis
+        - survivals.risk_factor
+        - survivals.cause_of_death
+        - survivals.guid
+        - synonyms.synonym_id
+        - synonyms.repository_of_synonym_id
+        - synonyms.associated_id
+        - synonyms.domain_description
+        - synonyms.domain_category
+        - synonyms.data_location
+        - synonyms.guid
+        - treatments_chemotherapy.treatment_chemotherapy_id
+        - treatments_chemotherapy.treatment_type
+        - treatments_chemotherapy.chemotherapy_type
+        - treatments_chemotherapy.chemotherapy_agent
+        - treatments_chemotherapy.chemotherapy_class
+        - treatments_chemotherapy.chemotherapy_subclass
+        - treatments_chemotherapy.dose
+        - treatments_chemotherapy.dose_unit
+        - treatments_chemotherapy.dose_route
+        - treatments_chemotherapy.dose_frequency
+        - treatments_chemotherapy.protocol
+        - treatments_chemotherapy.guid
+        - treatments_other.treatment_other_id
+        - treatments_other.treatment_type
+        - treatments_other.other_treatment_type
+        - treatments_other.guid
+        - treatments_radiation.treatment_radiation_id
+        - treatments_radiation.treatment_type
+        - treatments_radiation.radiation_therapy_type
+        - treatments_radiation.beam_radiation_type
+        - treatments_radiation.total_radiation_dose
+        - treatments_radiation.total_radiation_dose_unit
+        - treatments_radiation.anatomic_site
+        - treatments_radiation.laterality_of_radiation_field
+        - treatments_radiation.radiation_therapy_fraction
+        - treatments_radiation.fraction_radiation_dose
+        - treatments_radiation.fraction_radiation_dose_unit
+        - treatments_radiation.guid
+        - treatment_responses.treatment_response_id
+        - treatment_responses.response
+        - treatment_responses.response_category
+        - treatment_responses.response_system
+        - treatment_responses.guid
+        - treatments_surgery.treatment_surgery_id
+        - treatments_surgery.treatment_type
+        - treatments_surgery.surgery_type
+        - treatments_surgery.anatomic_site
+        - treatments_surgery.resection_margin_status
+        - treatments_surgery.guid
         - cytogenomic_files.cytogenomic_file_id
         - cytogenomic_files.file_name
         - cytogenomic_files.data_category
@@ -103,50 +237,6 @@ indices:
         - pathology_files.slim_url
         - pathology_files.guid
         - pathology_files.crdc_id
-        - radiology_files.radiology_file_id
-        - radiology_files.file_name
-        - radiology_files.data_category
-        - radiology_files.file_type
-        - radiology_files.file_description
-        - radiology_files.md5sum
-        - radiology_files.file_mapping_level
-        - radiology_files.file_access
-        - radiology_files.acl
-        - radiology_files.authz
-        - radiology_files.file_url
-        - radiology_files.dcf_indexd_guid
-        - radiology_files.anatomic_site
-        - radiology_files.image_modality
-        - radiology_files.deidentification_method
-        - radiology_files.magnetic_field_strength
-        - radiology_files.scanner_manufacturer
-        - radiology_files.scanner_model
-        - radiology_files.imaging_frequency
-        - radiology_files.repetition_time
-        - radiology_files.echo_time
-        - radiology_files.inversion_time
-        - radiology_files.flip_angle
-        - radiology_files.pixel_spacing
-        - radiology_files.slice_thickness
-        - radiology_files.echoPulseSequenceCategoryCode
-        - radiology_files.diffusionBValue
-        - radiology_files.diffusionDirectionalityCode
-        - radiology_files.resonantNucleusCode
-        - radiology_files.acquisitionContrastCode
-        - radiology_files.inversionRecoveryIndicator
-        - radiology_files.pulseSequenceName
-        - radiology_files.multipleSpinEchoIndicator
-        - radiology_files.phaseContrastIndicator
-        - radiology_files.timeOfFlightContrastIndicator
-        - radiology_files.arterialSpinLabelingContrastCode
-        - radiology_files.steadyStatePulseSequenceCode
-        - radiology_files.echoPlanarPulseSequenceIndicator
-        - radiology_files.saturationRecoveryIndicator
-        - radiology_files.spectrallySelectedSuppressionCode
-        - radiology_files.mrImageReconstructionProtocolElement
-        - radiology_files.complexImageComponentCode
-        - radiology_files.guid
-        - radiology_files.crdc_id
         - generic_files.generic_file_id
         - generic_files.file_name
         - generic_files.data_category
@@ -245,63 +335,15 @@ indices:
         - samples.laterality
         - samples.guid
         - samples.crdc_id
-        - survivals.survival_id
-        - survivals.last_known_survival_status
-        - survivals.first_event
-        - survivals.event_free_survival_status
-        - survivals.cause_of_death
-        - survivals.follow_up_category
-        - survivals.follow_up_other
-        - survivals.adverse_event
-        - survivals.comorbidity
-        - survivals.comorbidity_method_of_diagnosis
-        - survivals.risk_factor
-        - survivals.guid
-        - treatment_responses.treatment_response_id
-        - treatment_responses.response
-        - treatment_responses.response_category
-        - treatment_responses.response_system
-        - treatment_responses.guid
-        - treatments_chemotherapy.treatment_chemotherapy_id
-        - treatments_chemotherapy.treatment_type
-        - treatments_chemotherapy.chemotherapy_type
-        - treatments_chemotherapy.chemotherapy_agent
-        - treatments_chemotherapy.chemotherapy_class
-        - treatments_chemotherapy.chemotherapy_subclass
-        - treatments_chemotherapy.dose_unit
-        - treatments_chemotherapy.dose_route
-        - treatments_chemotherapy.dose_frequency
-        - treatments_chemotherapy.protocol
-        - treatments_chemotherapy.guid
-        - treatments_radiation.treatment_radiation_id
-        - treatments_radiation.treatment_type
-        - treatments_radiation.radiation_therapy_type
-        - treatments_radiation.beam_radiation_type
-        - treatments_radiation.total_radiation_dose_unit
-        - treatments_radiation.submitted_anatomic_site
-        - treatments_radiation.anatomic_site
-        - treatments_radiation.laterality_of_radiation_field
-        - treatments_radiation.fraction_radiation_dose_unit
-        - treatments_radiation.guid
-        - treatments_surgery.treatment_surgery_id
-        - treatments_surgery.treatment_type
-        - treatments_surgery.surgery_type
-        - treatments_surgery.submitted_anatomic_site
-        - treatments_surgery.anatomic_site
-        - treatments_surgery.resection_margin_status
-        - treatments_surgery.guid
-        - treatments_other.treatment_other_id
-        - treatments_other.treatment_type
-        - treatments_other.other_treatment_type
-        - treatments_other.guid
       integer:
-        - diagnoses.age_at_diagnosis
-        - diagnoses.year_of_diagnosis
         - clinical_measure_files.file_size
+        - exposures.cigarettes_per_day
+        - exposures.tobacco_smoking_onset_year
+        - exposures.tobacco_smoking_quit_year
+        - radiology_files.file_size
         - cytogenomic_files.file_size
         - methylation_array_files.file_size
         - pathology_files.file_size
-        - radiology_files.file_size
         - generic_files.file_size
         - sequencing_files.file_size
         - sequencing_files.number_of_bp
@@ -317,29 +359,33 @@ indices:
         - genetic_analyses.age_at_genetic_analysis
         - genetic_analyses.alteration_region_number
         - samples.participant_age_at_collection
+      float:
+        - diagnoses.age_at_diagnosis
+        - exposures.age_at_exposure
+        - exposures.pack_years_smoked
+        - exposures.years_smoked
+        - exposures.alcohol_days_per_week
+        - exposures.alcohol_drinks_per_day
+        - laboratory_tests.age_at_laboratory_test
+        - laboratory_tests.sensitivity
+        - radiology_files.participant_age_at_imaging
         - survivals.age_at_last_known_survival_status
         - survivals.age_at_event_free_survival_status
-        - treatment_responses.age_at_response
         - treatments_chemotherapy.age_at_treatment_start
         - treatments_chemotherapy.age_at_treatment_end
-        - treatments_radiation.age_at_treatment_start
-        - treatments_radiation.age_at_treatment_end
-        - treatments_radiation.radiation_therapy_fraction
-        - treatments_surgery.age_at_treatment_start
-        - treatments_surgery.age_at_treatment_end
         - treatments_other.age_at_treatment_start
         - treatments_other.age_at_treatment_end
-      float:
-        - radiology_files.participant_age_at_imaging
+        - treatments_radiation.age_at_treatment_start
+        - treatments_radiation.age_at_treatment_end
+        - treatment_responses.age_at_response
+        - treatments_surgery.age_at_treatment_start
+        - treatments_surgery.age_at_treatment_end
         - sequencing_files.coverage
         - genetic_analyses.allelic_ratio
         - genetic_analyses.vaf_numeric
         - genetic_analyses.dna_index_numeric
         - samples.percent_tumor
         - samples.percent_necrosis
-        - treatments_chemotherapy.dose
-        - treatments_radiation.total_radiation_dose
-        - treatments_radiation.fraction_radiation_dose
     initial_query:
       query: |
         MATCH
@@ -367,897 +413,369 @@ indices:
             p.guid AS id,
             p.crdc_id AS crdc_id
         page_size: 5000
+      - name: "clinical_measure_files"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (child:clinical_measure_file)-[:of_clinical_measure_file]->(p)
+          WITH
+            p,
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              clinical_measure_file_id: item.clinical_measure_file_id,
+              file_name: item.file_name,
+              data_category: item.data_category,
+              file_type: item.file_type,
+              file_description: item.file_description,
+              file_size: item.file_size,
+              md5sum: item.md5sum,
+              file_mapping_level: item.file_mapping_level,
+              file_access: item.file_access,
+              acl: item.acl,
+              authz: item.authz,
+              file_url: item.file_url,
+              dcf_indexd_guid: item.dcf_indexd_guid,
+              checksum_algorithm: item.checksum_algorithm,
+              checksum_value: item.checksum_value,
+              participant_list: item.participant_list,
+              guid: item.guid,
+              crdc_id: item.crdc_id
+            }] AS clinical_measure_files
+          RETURN p.guid AS id, clinical_measure_files
+        page_size: 5000
       - name: "diagnoses"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-
-          // Direct participant samples: self-context
-          OPTIONAL MATCH (p)<--(s1:sample)
+          OPTIONAL MATCH (child:diagnosis)-[:of_diagnosis]->(p)
           WITH
             p,
-            collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
-
-          // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
-          OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
-          WHERE model:cell_line OR model:pdx
-
-          WITH
-            p,
-            [ctx IN (
-              direct_contexts
-              + collect(DISTINCT { sm: s1_model, source_sm: s1_model })
-              + collect(DISTINCT { sm: s2, source_sm: s2 })
-              + collect(DISTINCT { sm: s1_model, source_sm: s2 })
-              + collect(DISTINCT { sm: s2, source_sm: s1_model })
-            )
-            WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
-
-          WITH
-            p,
-            CASE
-              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
-              ELSE sample_contexts
-            END AS sample_contexts
-
-          UNWIND sample_contexts AS ctx
-          WITH
-            p,
-            ctx.source_sm AS source_sm
-
-          // Diagnoses linked via any source sample
-          OPTIONAL MATCH (source_sm)<--(sample_dg:diagnosis)
-          WITH
-            p,
-            collect(DISTINCT sample_dg) AS sample_diagnoses
-
-          // Diagnoses directly linked to the participant
-          OPTIONAL MATCH (p)<--(participant_dg:diagnosis)
-
-          WITH
-            p.guid AS id,
-            [dg IN (sample_diagnoses + collect(DISTINCT participant_dg)) WHERE dg IS NOT NULL] AS diagnoses
-
-          RETURN
-            id,
-            [dg IN diagnoses | {
-              diagnosis_id: dg.diagnosis_id,
-              submitted_diagnosis: dg.submitted_diagnosis,
-              diagnosis: dg.diagnosis,
-              diagnosis_category: dg.diagnosis_category,
-              diagnosis_classification_system: dg.diagnosis_classification_system,
-              diagnosis_basis: dg.diagnosis_basis,
-              diagnosis_comment: dg.diagnosis_comment,
-              disease_phase: dg.disease_phase,
-              tumor_spatial_extent: dg.tumor_spatial_extent,
-              submitted_anatomic_site: dg.submitted_anatomic_site,
-              anatomic_site: dg.anatomic_site,
-              toronto_childhood_cancer_staging: dg.toronto_childhood_cancer_staging,
-              tumor_stage_clinical_t: dg.tumor_stage_clinical_t,
-              tumor_stage_clinical_n: dg.tumor_stage_clinical_n,
-              tumor_stage_clinical_m: dg.tumor_stage_clinical_m,
-              tumor_stage_source: dg.tumor_stage_source,
-              tumor_grade: dg.tumor_grade,
-              tumor_grade_source: dg.tumor_grade_source,
-              laterality: dg.laterality,
-              guid: dg.guid,
-              age_at_diagnosis: dg.age_at_diagnosis,
-              year_of_diagnosis: dg.year_of_diagnosis
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              diagnosis_id: item.diagnosis_id,
+              submitted_diagnosis: item.submitted_diagnosis,
+              diagnosis: item.diagnosis,
+              diagnosis_category: item.diagnosis_category,
+              diagnosis_classification_system: item.diagnosis_classification_system,
+              diagnosis_basis: item.diagnosis_basis,
+              diagnosis_comment: item.diagnosis_comment,
+              disease_phase: item.disease_phase,
+              tumor_spatial_extent: item.tumor_spatial_extent,
+              submitted_anatomic_site: item.submitted_anatomic_site,
+              anatomic_site: item.anatomic_site,
+              age_at_diagnosis: item.age_at_diagnosis,
+              toronto_childhood_cancer_staging: item.toronto_childhood_cancer_staging,
+              tumor_stage_clinical_t: item.tumor_stage_clinical_t,
+              tumor_stage_clinical_n: item.tumor_stage_clinical_n,
+              tumor_stage_clinical_m: item.tumor_stage_clinical_m,
+              tumor_stage_source: item.tumor_stage_source,
+              tumor_grade: item.tumor_grade,
+              tumor_grade_source: item.tumor_grade_source,
+              year_of_diagnosis: item.year_of_diagnosis,
+              laterality: item.laterality,
+              guid: item.guid
             }] AS diagnoses
+          RETURN p.guid AS id, diagnoses
         page_size: 5000
-      - name: "clinical_measure_files_participant_level"
+      - name: "exposures"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-
-          OPTIONAL MATCH
-            (f:clinical_measure_file)-[:of_clinical_measure_file]->(p)
-
+          OPTIONAL MATCH (child:exposure)-[:of_exposure]->(p)
           WITH
             p,
-            [file IN collect(DISTINCT f)
-            WHERE file IS NOT NULL |
-            {
-              clinical_measure_file_id: file.clinical_measure_file_id,
-              file_name: file.file_name,
-              data_category: file.data_category,
-              file_type: file.file_type,
-              file_description: file.file_description,
-              file_size: file.file_size,
-              md5sum: file.md5sum,
-              file_mapping_level: file.file_mapping_level,
-              file_access: file.file_access,
-              acl: file.acl,
-              authz: file.authz,
-              file_url: file.file_url,
-              dcf_indexd_guid: file.dcf_indexd_guid,
-              checksum_algorithm: file.checksum_algorithm,
-              checksum_value: file.checksum_value,
-              participant_list: file.participant_list,
-              guid: file.guid,
-              crdc_id: file.crdc_id
-            }
-            ] AS clinical_measure_files
-
-          RETURN
-            p.guid AS id,
-            clinical_measure_files;
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              exposure_id: item.exposure_id,
+              age_at_exposure: item.age_at_exposure,
+              pack_years_smoked: item.pack_years_smoked,
+              years_smoked: item.years_smoked,
+              alcohol_days_per_week: item.alcohol_days_per_week,
+              alcohol_drinks_per_day: item.alcohol_drinks_per_day,
+              alcohol_history: item.alcohol_history,
+              alcohol_intensity: item.alcohol_intensity,
+              asbestos_exposure: item.asbestos_exposure,
+              cigarettes_per_day: item.cigarettes_per_day,
+              coal_dust_exposure: item.coal_dust_exposure,
+              environmental_tobacco_smoke_exposure: item.environmental_tobacco_smoke_exposure,
+              radon_exposure: item.radon_exposure,
+              respirable_crystalline_silica_exposure: item.respirable_crystalline_silica_exposure,
+              smoking_frequency: item.smoking_frequency,
+              time_between_waking_and_first_smoke: item.time_between_waking_and_first_smoke,
+              tobacco_smoking_onset_year: item.tobacco_smoking_onset_year,
+              tobacco_smoking_quit_year: item.tobacco_smoking_quit_year,
+              tobacco_smoking_status: item.tobacco_smoking_status,
+              type_of_smoke_exposure: item.type_of_smoke_exposure,
+              type_of_tobacco_used: item.type_of_tobacco_used,
+              guid: item.guid
+            }] AS exposures
+          RETURN p.guid AS id, exposures
         page_size: 5000
-      - name: "generic_files_participant_level"
+      - name: "family_relationships"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-
-          OPTIONAL MATCH
-            (f:generic_file)-[:of_generic_file]->(p)
-
+          OPTIONAL MATCH (child:family_relationship)-[:of_family_relationship]->(p)
           WITH
             p,
-            [file IN collect(DISTINCT f)
-            WHERE file IS NOT NULL |
-            {
-              generic_file_id: file.generic_file_id,
-              file_name: file.file_name,
-              data_category: file.data_category,
-              file_type: file.file_type,
-              file_description: file.file_description,
-              file_size: file.file_size,
-              md5sum: file.md5sum,
-              file_mapping_level: file.file_mapping_level,
-              file_access: file.file_access,
-              acl: file.acl,
-              authz: file.authz,
-              file_url: file.file_url,
-              dcf_indexd_guid: file.dcf_indexd_guid,
-              guid: file.guid,
-              crdc_id: file.crdc_id
-            }
-            ] AS generic_files
-
-          RETURN
-            p.guid AS id,
-            generic_files;
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              family_relationship_id: item.family_relationship_id,
+              relationship: item.relationship,
+              family_id: item.family_id,
+              guid: item.guid
+            }] AS family_relationships
+          RETURN p.guid AS id, family_relationships
         page_size: 5000
-      - name: "radiology_files_participant_level"
+      - name: "laboratory_tests"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-
-          OPTIONAL MATCH
-            (f:radiology_file)-[:of_radiology_file]->(p)
-
+          OPTIONAL MATCH (child:laboratory_test)-[:of_laboratory_test]->(p)
           WITH
             p,
-            [file IN collect(DISTINCT f)
-            WHERE file IS NOT NULL |
-            {
-              radiology_file_id: file.radiology_file_id,
-              file_name: file.file_name,
-              data_category: file.data_category,
-              file_type: file.file_type,
-              file_description: file.file_description,
-              file_size: file.file_size,
-              md5sum: file.md5sum,
-              file_mapping_level: file.file_mapping_level,
-              file_access: file.file_access,
-              acl: file.acl,
-              authz: file.authz,
-              file_url: file.file_url,
-              dcf_indexd_guid: file.dcf_indexd_guid,
-              anatomic_site: file.anatomic_site,
-              participant_age_at_imaging: file.participant_age_at_imaging,
-              image_modality: file.image_modality,
-              deidentification_method: file.deidentification_method,
-              magnetic_field_strength: file.magnetic_field_strength,
-              scanner_manufacturer: file.scanner_manufacturer,
-              scanner_model: file.scanner_model,
-              imaging_frequency: file.imaging_frequency,
-              repetition_time: file.repetition_time,
-              echo_time: file.echo_time,
-              inversion_time: file.inversion_time,
-              flip_angle: file.flip_angle,
-              pixel_spacing: file.pixel_spacing,
-              slice_thickness: file.slice_thickness,
-              echoPulseSequenceCategoryCode: file.echoPulseSequenceCategoryCode,
-              diffusionBValue: file.diffusionBValue,
-              diffusionDirectionalityCode: file.diffusionDirectionalityCode,
-              resonantNucleusCode: file.resonantNucleusCode,
-              acquisitionContrastCode: file.acquisitionContrastCode,
-              inversionRecoveryIndicator: file.inversionRecoveryIndicator,
-              pulseSequenceName: file.pulseSequenceName,
-              multipleSpinEchoIndicator: file.multipleSpinEchoIndicator,
-              phaseContrastIndicator: file.phaseContrastIndicator,
-              timeOfFlightContrastIndicator: file.timeOfFlightContrastIndicator,
-              arterialSpinLabelingContrastCode: file.arterialSpinLabelingContrastCode,
-              steadyStatePulseSequenceCode: file.steadyStatePulseSequenceCode,
-              echoPlanarPulseSequenceIndicator: file.echoPlanarPulseSequenceIndicator,
-              saturationRecoveryIndicator: file.saturationRecoveryIndicator,
-              spectrallySelectedSuppressionCode: file.spectrallySelectedSuppressionCode,
-              mrImageReconstructionProtocolElement: file.mrImageReconstructionProtocolElement,
-              complexImageComponentCode: file.complexImageComponentCode,
-              guid: file.guid,
-              crdc_id: file.crdc_id
-            }
-            ] AS radiology_files
-
-          RETURN
-            p.guid AS id,
-            radiology_files;
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              laboratory_test_id: item.laboratory_test_id,
+              age_at_laboratory_test: item.age_at_laboratory_test,
+              laboratory_test_method: item.laboratory_test_method,
+              laboratory_test_name: item.laboratory_test_name,
+              specimen: item.specimen,
+              test_result_text: item.test_result_text,
+              test_result_modifier: item.test_result_modifier,
+              test_result_numeric: item.test_result_numeric,
+              test_result_unit: item.test_result_unit,
+              sensitivity: item.sensitivity,
+              guid: item.guid
+            }] AS laboratory_tests
+          RETURN p.guid AS id, laboratory_tests
         page_size: 5000
-      - name: "cytogenomic_files" # TODO
+      - name: "medical_histories"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-      - name: "methylation_array_files" # TODO
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-      - name: "pathology_files" # TODO
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (child:medical_history)-[:of_medical_history]->(p)
+          WITH
+            p,
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              medical_history_id: item.medical_history_id,
+              medical_history_category: item.medical_history_category,
+              medical_history_condition: item.medical_history_condition,
+              guid: item.guid
+            }] AS medical_histories
+          RETURN p.guid AS id, medical_histories
+        page_size: 5000
       - name: "radiology_files"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (f:radiology_file)-[:of_radiology_file]->(p)
-          WITH
-            p.guid AS id,
-            count(f) AS file_count,
-            collect({
-              radiology_file_id: f.radiology_file_id,
-              file_name: f.file_name,
-              data_category: f.data_category,
-              file_type: f.file_type,
-              file_description: f.file_description,
-              md5sum: f.md5sum,
-              file_mapping_level: f.file_mapping_level,
-              file_access: f.file_access,
-              acl: f.acl,
-              authz: f.authz,
-              file_url: f.file_url,
-              dcf_indexd_guid: f.dcf_indexd_guid,
-              submitted_anatomic_site: f.submitted_anatomic_site,
-              anatomic_site: f.anatomic_site,
-              image_modality: f.image_modality,
-              deidentification_method: f.deidentification_method,
-              scanner_manufacturer: f.scanner_manufacturer,
-              scanner_model: f.scanner_model,
-              echoPulseSequenceCategoryCode: f.echoPulseSequenceCategoryCode,
-              diffusionDirectionalityCode: f.diffusionDirectionalityCode,
-              resonantNucleusCode: f.resonantNucleusCode,
-              acquisitionContrastCode: f.acquisitionContrastCode,
-              inversionRecoveryIndicator: f.inversionRecoveryIndicator,
-              pulseSequenceName: f.pulseSequenceName,
-              multipleSpinEchoIndicator: f.multipleSpinEchoIndicator,
-              phaseContrastIndicator: f.phaseContrastIndicator,
-              timeOfFlightContrastIndicator: f.timeOfFlightContrastIndicator,
-              arterialSpinLabelingContrastCode: f.arterialSpinLabelingContrastCode,
-              steadyStatePulseSequenceCode: f.steadyStatePulseSequenceCode,
-              echoPlanarPulseSequenceIndicator: f.echoPlanarPulseSequenceIndicator,
-              saturationRecoveryIndicator: f.saturationRecoveryIndicator,
-              spectrallySelectedSuppressionCode: f.spectrallySelectedSuppressionCode,
-              mrImageReconstructionProtocolElement: f.mrImageReconstructionProtocolElement,
-              complexImageComponentCode: f.complexImageComponentCode,
-              guid: f.guid,
-              crdc_id: f.crdc_id,
-              file_size: f.file_size,
-              participant_age_at_imaging: f.participant_age_at_imaging,
-              magnetic_field_strength: f.magnetic_field_strength,
-              imaging_frequency: f.imaging_frequency,
-              repetition_time: f.repetition_time,
-              echo_time: f.echo_time,
-              inversion_time: f.inversion_time,
-              flip_angle: f.flip_angle,
-              pixel_spacing: f.pixel_spacing,
-              slice_thickness: f.slice_thickness,
-              diffusionBValue: f.diffusionBValue
-            }) AS radiology_files
-          WITH
-            id,
-            CASE
-              WHEN file_count > 0
-              THEN radiology_files
-              ELSE []
-            END AS radiology_files
-          RETURN id, radiology_files
-      - name: "generic_files" # TODO
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-      - name: "sequencing_files" # TODO
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-      - name: "files"
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-
-          // Direct participant samples: self-context
-          OPTIONAL MATCH (p)<--(s1:sample)
+          OPTIONAL MATCH (child:radiology_file)-[:of_radiology_file]->(p)
           WITH
             p,
-            collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
-
-          // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
-          OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
-          WHERE model:cell_line OR model:pdx
-
-          WITH
-            p,
-            [ctx IN (
-              direct_contexts
-              + collect(DISTINCT { sm: s1_model, source_sm: s1_model })
-              + collect(DISTINCT { sm: s2, source_sm: s2 })
-              + collect(DISTINCT { sm: s1_model, source_sm: s2 })
-              + collect(DISTINCT { sm: s2, source_sm: s1_model })
-            )
-            WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
-
-          WITH
-            p,
-            CASE
-              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: p }]
-              ELSE sample_contexts
-            END AS sample_contexts
-
-          // Study-level files
-          OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
-          OPTIONAL MATCH (st)<--(study_file)
-          WHERE study_file:clinical_measure_file
-            OR study_file:generic_file
-
-          WITH
-            p,
-            sample_contexts,
-            [f IN collect(DISTINCT study_file) WHERE f IS NOT NULL] AS study_files
-
-          // Participant-level files
-          OPTIONAL MATCH (p)<--(participant_file)
-          WHERE participant_file:clinical_measure_file
-            OR participant_file:generic_file
-            OR participant_file:radiology_file
-
-          WITH
-            p,
-            sample_contexts,
-            study_files,
-            [f IN collect(DISTINCT participant_file) WHERE f IS NOT NULL] AS participant_files
-
-          UNWIND sample_contexts AS ctx
-
-          WITH
-            p,
-            ctx.source_sm AS source_sm,
-            study_files,
-            participant_files
-
-          // Source sample-level files
-          OPTIONAL MATCH (source_sm)<--(sample_file)
-          WHERE sample_file:sequencing_file
-            OR sample_file:generic_file
-            OR sample_file:methylation_array_file
-            OR sample_file:pathology_file
-            OR sample_file:cytogenomic_file
-
-          WITH
-            p.guid AS id,
-            study_files,
-            participant_files,
-            [f IN collect(DISTINCT sample_file) WHERE f IS NOT NULL] AS sample_files
-
-          WITH
-            id,
-            study_files + participant_files + sample_files AS all_files
-
-          UNWIND CASE
-            WHEN size(all_files) = 0 THEN [null]
-            ELSE all_files
-          END AS f
-
-          WITH
-            id,
-            collect(DISTINCT f) AS files
-
-          RETURN
-            id,
-            [f IN files WHERE f IS NOT NULL | {
-              guid: f.dcf_indexd_guid,
-              file_id: CASE labels(f)[0]
-                WHEN 'clinical_measure_file' THEN f.dcf_indexd_guid
-                WHEN 'generic_file' THEN f.dcf_indexd_guid
-                WHEN 'radiology_file' THEN f.dcf_indexd_guid
-                WHEN 'sequencing_file' THEN f.dcf_indexd_guid
-                WHEN 'methylation_array_file' THEN f.dcf_indexd_guid
-                WHEN 'pathology_file' THEN f.dcf_indexd_guid
-                WHEN 'cytogenomic_file' THEN f.dcf_indexd_guid
-                ELSE null
-              END,
-              dcf_indexd_guid: f.dcf_indexd_guid,
-              data_category: f.data_category,
-              file_access: f.file_access,
-              file_description: f.file_description,
-              file_name: f.file_name,
-              file_size: f.file_size,
-              file_type: f.file_type,
-              library_selection: CASE labels(f)[0]
-                WHEN 'sequencing_file' THEN f.library_selection
-                ELSE null
-              END,
-              library_source_material: CASE labels(f)[0]
-                WHEN 'sequencing_file' THEN f.library_source_material
-                ELSE null
-              END,
-              library_source_molecule: CASE labels(f)[0]
-                WHEN 'sequencing_file' THEN f.library_source_molecule
-                ELSE null
-              END,
-              library_strategy: CASE labels(f)[0]
-                WHEN 'sequencing_file' THEN f.library_strategy
-                ELSE null
-              END,
-              md5sum: f.md5sum
-            }] AS files
-        page_size: 1000
-      - name: "genetic_analyses"
-        query: |
-          MATCH (p:participant)
-          WITH DISTINCT p
-          SKIP $skip LIMIT $limit
-
-          CALL {
-            WITH p
-
-            // Direct participant samples: self-context
-            OPTIONAL MATCH (p)<--(s1:sample)
-            WITH
-              p,
-              collect(DISTINCT s1) AS direct_source_sms
-
-            // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
-            OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
-            WHERE model:cell_line OR model:pdx
-
-            WITH
-              p,
-              [
-                sm IN (
-                  direct_source_sms
-                  + collect(DISTINCT s1_model)
-                  + collect(DISTINCT s2)
-                )
-                WHERE sm IS NOT NULL
-              ] AS source_sms
-
-            UNWIND source_sms AS source_sm
-            WITH DISTINCT p, source_sm
-
-            OPTIONAL MATCH (source_sm)<--(sample_ga:genetic_analysis)
-
-            RETURN sample_ga AS ga
-
-            UNION
-
-            WITH p
-            OPTIONAL MATCH (p)<--(participant_ga:genetic_analysis)
-            RETURN participant_ga AS ga
-          }
-
-          WITH
-            p,
-            CASE
-              WHEN ga IS NULL THEN NULL
-              ELSE {
-                genetic_analysis_id: ga.genetic_analysis_id,
-                alteration_category: ga.alteration_category,
-                reported_significance: ga.reported_significance,
-                platform: ga.platform,
-                analysis_type: ga.analysis_type,
-                analysis_method: ga.analysis_method,
-                reference_genome: ga.reference_genome,
-                chromosome: ga.chromosome,
-                cytoband: ga.cytoband,
-                gene_symbol: ga.gene_symbol,
-                alteration_region: ga.alteration_region,
-                alteration_location_role: ga.alteration_location_role,
-                transcript: ga.transcript,
-                hgvs_coding: ga.hgvs_coding,
-                hgvs_protein: ga.hgvs_protein,
-                hgvs_genome: ga.hgvs_genome,
-                alteration: ga.alteration,
-                alteration_type: ga.alteration_type,
-                alteration_effect: ga.alteration_effect,
-                iscn: ga.iscn,
-                status: ga.status,
-                zygosity: ga.zygosity,
-                external_references: ga.external_references,
-                alteration_description: ga.alteration_description,
-                guid: ga.guid
-              }
-            END AS ga_map
-
-          WITH
-            p,
-            [x IN collect(DISTINCT ga_map) WHERE x IS NOT NULL] AS genetic_analyses
-
-          RETURN
-            p.guid AS id,
-            genetic_analyses
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              radiology_file_id: item.radiology_file_id,
+              file_name: item.file_name,
+              data_category: item.data_category,
+              file_type: item.file_type,
+              file_description: item.file_description,
+              file_size: item.file_size,
+              md5sum: item.md5sum,
+              file_mapping_level: item.file_mapping_level,
+              file_access: item.file_access,
+              acl: item.acl,
+              authz: item.authz,
+              file_url: item.file_url,
+              dcf_indexd_guid: item.dcf_indexd_guid,
+              anatomic_site: item.anatomic_site,
+              participant_age_at_imaging: item.participant_age_at_imaging,
+              image_modality: item.image_modality,
+              deidentification_method: item.deidentification_method,
+              magnetic_field_strength: item.magnetic_field_strength,
+              scanner_manufacturer: item.scanner_manufacturer,
+              scanner_model: item.scanner_model,
+              imaging_frequency: item.imaging_frequency,
+              repetition_time: item.repetition_time,
+              echo_time: item.echo_time,
+              inversion_time: item.inversion_time,
+              flip_angle: item.flip_angle,
+              pixel_spacing: item.pixel_spacing,
+              slice_thickness: item.slice_thickness,
+              echoPulseSequenceCategoryCode: item.echoPulseSequenceCategoryCode,
+              diffusionBValue: item.diffusionBValue,
+              diffusionDirectionalityCode: item.diffusionDirectionalityCode,
+              resonantNucleusCode: item.resonantNucleusCode,
+              acquisitionContrastCode: item.acquisitionContrastCode,
+              inversionRecoveryIndicator: item.inversionRecoveryIndicator,
+              pulseSequenceName: item.pulseSequenceName,
+              multipleSpinEchoIndicator: item.multipleSpinEchoIndicator,
+              phaseContrastIndicator: item.phaseContrastIndicator,
+              timeOfFlightContrastIndicator: item.timeOfFlightContrastIndicator,
+              arterialSpinLabelingContrastCode: item.arterialSpinLabelingContrastCode,
+              steadyStatePulseSequenceCode: item.steadyStatePulseSequenceCode,
+              echoPlanarPulseSequenceIndicator: item.echoPlanarPulseSequenceIndicator,
+              saturationRecoveryIndicator: item.saturationRecoveryIndicator,
+              spectrallySelectedSuppressionCode: item.spectrallySelectedSuppressionCode,
+              mrImageReconstructionProtocolElement: item.mrImageReconstructionProtocolElement,
+              complexImageComponentCode: item.complexImageComponentCode,
+              guid: item.guid,
+              crdc_id: item.crdc_id
+            }] AS radiology_files
+          RETURN p.guid AS id, radiology_files
         page_size: 5000
-      - name: "samples"
-        query: |
-          MATCH (p:participant)
-          WITH DISTINCT p.guid AS id, p
-          ORDER BY id
-          SKIP $skip LIMIT $limit
-
-          // ------------------------------------------------------------
-          // Context group 1:
-          // samples that point to participant, cell_line, or pdx
-          // ------------------------------------------------------------
-          OPTIONAL MATCH (p)<-[:of_cell_line]-(cl:cell_line)
-          WITH
-            id,
-            p,
-            collect(DISTINCT cl) AS cell_lines
-
-          OPTIONAL MATCH (p)<-[:of_pdx]-(px:pdx)
-          WITH
-            id,
-            p,
-            [p] + cell_lines + collect(DISTINCT px) AS sample_targets
-
-          UNWIND sample_targets AS sample_target
-
-          OPTIONAL MATCH (sample_target)<-[:of_sample]-(target_sample:sample)
-          WITH
-            id,
-            p,
-            collect(DISTINCT target_sample) AS target_samples
-
-          // ------------------------------------------------------------
-          // Context group 2:
-          // connector nodes that link participant to sample
-          // ------------------------------------------------------------
-          OPTIONAL MATCH (p)<-[:of_diagnosis]-(d:diagnosis)
-          WITH
-            id,
-            p,
-            target_samples,
-            collect(DISTINCT d) AS diagnoses
-
-          OPTIONAL MATCH (p)<-[:of_genetic_analysis]-(ga:genetic_analysis)
-          WITH
-            id,
-            p,
-            target_samples,
-            diagnoses,
-            collect(DISTINCT ga) AS genetic_analyses
-
-          OPTIONAL MATCH (p)<-[:of_laboratory_test]-(lt:laboratory_test)
-          WITH
-            id,
-            p,
-            target_samples,
-            diagnoses,
-            genetic_analyses,
-            collect(DISTINCT lt) AS laboratory_tests
-
-          OPTIONAL MATCH (p)<-[:of_clinical_measure_file]-(cmf:clinical_measure_file)
-          WITH
-            id,
-            p,
-            target_samples,
-            diagnoses,
-            genetic_analyses,
-            laboratory_tests,
-            collect(DISTINCT cmf) AS clinical_measure_files
-
-          OPTIONAL MATCH (p)<-[:of_generic_file]-(gf:generic_file)
-          WITH
-            id,
-            p,
-            target_samples,
-            diagnoses,
-            genetic_analyses,
-            laboratory_tests,
-            clinical_measure_files,
-            collect(DISTINCT gf) AS generic_files
-
-          OPTIONAL MATCH (p)<-[:of_synonym]-(syn:synonym)
-          WITH
-            id,
-            target_samples,
-            diagnoses
-              + genetic_analyses
-              + laboratory_tests
-              + clinical_measure_files
-              + generic_files
-              + collect(DISTINCT syn) AS sample_connectors
-
-          UNWIND
-            CASE
-              WHEN size(sample_connectors) = 0 THEN [null]
-              ELSE sample_connectors
-            END AS sample_connector
-
-          OPTIONAL MATCH (sample_connector)-[
-            :of_diagnosis |
-            :of_genetic_analysis |
-            :of_laboratory_test |
-            :of_clinical_measure_file |
-            :of_generic_file |
-            :of_synonym
-          ]->(connector_sample:sample)
-
-          WITH
-            id,
-            target_samples + collect(DISTINCT connector_sample) AS raw_samples
-
-          // ------------------------------------------------------------
-          // Final dedupe by final projected sample map GUID
-          // ------------------------------------------------------------
-          WITH
-            id,
-            [sample IN raw_samples WHERE sample IS NOT NULL] AS raw_samples
-
-          UNWIND
-            CASE
-              WHEN size(raw_samples) = 0 THEN [null]
-              ELSE raw_samples
-            END AS sample
-
-          WITH
-            id,
-            CASE
-              WHEN sample IS NULL THEN NULL
-              ELSE {
-                sample_id: sample.sample_id,
-                submitted_anatomic_site: sample.submitted_anatomic_site,
-                anatomic_site: sample.anatomic_site,
-                sample_tumor_status: sample.tumor_spatial_extent,
-                tumor_spatial_extent: sample.tumor_spatial_extent,
-                sample_description: sample.sample_description,
-                laterality: sample.laterality,
-                guid: sample.guid,
-                crdc_id: sample.crdc_id,
-                participant_age_at_collection: sample.participant_age_at_collection,
-                percent_tumor: sample.percent_tumor,
-                percent_necrosis: sample.percent_necrosis
-              }
-            END AS sample_map
-
-          WITH
-            id,
-            sample_map.guid AS sample_guid,
-            collect(DISTINCT sample_map)[0] AS sample_map
-
-          WITH
-            id,
-            [sample IN collect(sample_map) WHERE sample IS NOT NULL] AS samples
-
-          RETURN
-            id,
-            [sample IN samples | {
-              sample_id: sample.sample_id,
-              submitted_anatomic_site: sample.submitted_anatomic_site,
-              anatomic_site: sample.anatomic_site,
-              sample_tumor_status: sample.sample_tumor_status,
-              tumor_spatial_extent: sample.tumor_spatial_extent,
-              sample_description: sample.sample_description,
-              laterality: sample.laterality,
-              guid: sample.guid,
-              crdc_id: sample.crdc_id,
-              participant_age_at_collection: sample.participant_age_at_collection,
-              percent_tumor: sample.percent_tumor,
-              percent_necrosis: sample.percent_necrosis
-            }] AS samples
       - name: "survivals"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
+          OPTIONAL MATCH (child:survival)-[:of_survival]->(p)
           WITH
-            p.guid AS id,
-            count(sur) AS survival_count,
-            [item IN collect(
-              DISTINCT {
-                guid: sur.guid,
-                survival_id: sur.survival_id,
-                age_at_event_free_survival_status: sur.age_at_event_free_survival_status,
-                age_at_last_known_survival_status: sur.age_at_last_known_survival_status,
-                cause_of_death: sur.cause_of_death,
-                event_free_survival_status: sur.event_free_survival_status,
-                first_event: sur.first_event,
-                last_known_survival_status: sur.last_known_survival_status
-              }) WHERE item IS NOT NULL
-            ] AS survivals
-          WITH
-            id,
-            CASE
-              WHEN survival_count > 0
-              THEN survivals
-              ELSE []
-            END AS survivals
-          RETURN id, survivals
+            p,
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              survival_id: item.survival_id,
+              last_known_survival_status: item.last_known_survival_status,
+              age_at_last_known_survival_status: item.age_at_last_known_survival_status,
+              first_event: item.first_event,
+              event_free_survival_status: item.event_free_survival_status,
+              age_at_event_free_survival_status: item.age_at_event_free_survival_status,
+              follow_up_category: item.follow_up_category,
+              follow_up_other: item.follow_up_other,
+              adverse_event: item.adverse_event,
+              comorbidity: item.comorbidity,
+              comorbidity_method_of_diagnosis: item.comorbidity_method_of_diagnosis,
+              risk_factor: item.risk_factor,
+              cause_of_death: item.cause_of_death,
+              guid: item.guid
+            }] AS survivals
+          RETURN p.guid AS id, survivals
         page_size: 5000
-      - name: "treatments"
+      - name: "synonyms"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-
-          // Build a superlist of treatments
-          CALL {
-            // treatment_chemotherapy
-            WITH p
-            OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
-            WITH
-              p.guid AS id,
-              count(tchemo) AS tchemo_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    guid: tchemo.guid,
-                    treatment_id: tchemo.treatment_chemotherapy_id,
-                    treatment_agent: coalesce(tchemo.chemotherapy_agent, 'Not Reported'),
-                    treatment_type: tchemo.chemotherapy_type,
-                    age_at_treatment_end: tchemo.age_at_treatment_end,
-                    age_at_treatment_start: tchemo.age_at_treatment_start
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatments
-            WITH
-              id,
-              CASE
-                WHEN tchemo_count > 0
-                THEN treatments
-                ELSE []
-              END AS treatments
-            RETURN id, treatments
-
-            UNION
-
-            // treatment_radiation
-            WITH p
-            OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
-            WITH
-              p.guid AS id,
-              count(trad) AS trad_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    guid: trad.guid,
-                    treatment_id: trad.treatment_radiation_id,
-                    treatment_agent: trad.radiation_therapy_type,
-                    treatment_type: trad.treatment_type,
-                    age_at_treatment_end: trad.age_at_treatment_end,
-                    age_at_treatment_start: trad.age_at_treatment_start
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatments
-            WITH
-              id,
-              CASE
-                WHEN trad_count > 0
-                THEN treatments
-                ELSE []
-              END AS treatments
-            RETURN id, treatments
-
-            UNION
-
-            // treatment_surgery
-            WITH p
-            OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
-            WITH
-              p.guid AS id,
-              count(tsurg) AS tsurg_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    guid: tsurg.guid,
-                    treatment_id: tsurg.treatment_surgery_id,
-                    treatment_agent: tsurg.surgery_type,
-                    treatment_type: tsurg.treatment_type,
-                    age_at_treatment_end: tsurg.age_at_treatment_end,
-                    age_at_treatment_start: tsurg.age_at_treatment_start
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatments
-            WITH
-              id,
-              CASE
-                WHEN tsurg_count > 0
-                THEN treatments
-                ELSE []
-              END AS treatments
-            RETURN id, treatments
-
-            UNION
-
-            // treatment_other
-            WITH p
-            OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
-            WITH
-              p.guid AS id,
-              count(toth) AS toth_count,
-              coalesce(
-                [item in collect(
-                  DISTINCT {
-                    guid: toth.guid,
-                    treatment_id: toth.treatment_other_id,
-                    treatment_agent: toth.other_treatment_type,
-                    treatment_type: toth.treatment_type,
-                    age_at_treatment_end: toth.age_at_treatment_end,
-                    age_at_treatment_start: toth.age_at_treatment_start
-                  }
-                ) WHERE item IS NOT NULL],
-                []
-              ) AS treatments
-            WITH
-              id,
-              CASE
-                WHEN toth_count > 0
-                THEN treatments
-                ELSE []
-              END AS treatments
-            RETURN id, treatments
-          }
+          OPTIONAL MATCH (child:synonym)-[:of_synonym]->(p)
           WITH
-            id,
-            collect(treatments) AS treatment_superlist
+            p,
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              synonym_id: item.synonym_id,
+              repository_of_synonym_id: item.repository_of_synonym_id,
+              associated_id: item.associated_id,
+              domain_description: item.domain_description,
+              domain_category: item.domain_category,
+              data_location: item.data_location,
+              guid: item.guid
+            }] AS synonyms
+          RETURN p.guid AS id, synonyms
+        page_size: 5000
+      - name: "treatments_chemotherapy"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (child:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
           WITH
-            id,
-            reduce(all_treatments = [], t IN treatment_superlist | all_treatments + t) AS treatments
-          RETURN id, treatments
+            p,
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              treatment_chemotherapy_id: item.treatment_chemotherapy_id,
+              treatment_type: item.treatment_type,
+              chemotherapy_type: item.chemotherapy_type,
+              age_at_treatment_start: item.age_at_treatment_start,
+              age_at_treatment_end: item.age_at_treatment_end,
+              chemotherapy_agent: item.chemotherapy_agent,
+              chemotherapy_class: item.chemotherapy_class,
+              chemotherapy_subclass: item.chemotherapy_subclass,
+              dose: item.dose,
+              dose_unit: item.dose_unit,
+              dose_route: item.dose_route,
+              dose_frequency: item.dose_frequency,
+              protocol: item.protocol,
+              guid: item.guid
+            }] AS treatments_chemotherapy
+          RETURN p.guid AS id, treatments_chemotherapy
+        page_size: 5000
+      - name: "treatments_other"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (child:treatment_other)-[:of_treatment_other]->(p)
+          WITH
+            p,
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              treatment_other_id: item.treatment_other_id,
+              treatment_type: item.treatment_type,
+              other_treatment_type: item.other_treatment_type,
+              age_at_treatment_start: item.age_at_treatment_start,
+              age_at_treatment_end: item.age_at_treatment_end,
+              guid: item.guid
+            }] AS treatments_other
+          RETURN p.guid AS id, treatments_other
+        page_size: 5000
+      - name: "treatments_radiation"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (child:treatment_radiation)-[:of_treatment_radiation]->(p)
+          WITH
+            p,
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              treatment_radiation_id: item.treatment_radiation_id,
+              treatment_type: item.treatment_type,
+              radiation_therapy_type: item.radiation_therapy_type,
+              age_at_treatment_start: item.age_at_treatment_start,
+              age_at_treatment_end: item.age_at_treatment_end,
+              beam_radiation_type: item.beam_radiation_type,
+              total_radiation_dose: item.total_radiation_dose,
+              total_radiation_dose_unit: item.total_radiation_dose_unit,
+              anatomic_site: item.anatomic_site,
+              laterality_of_radiation_field: item.laterality_of_radiation_field,
+              radiation_therapy_fraction: item.radiation_therapy_fraction,
+              fraction_radiation_dose: item.fraction_radiation_dose,
+              fraction_radiation_dose_unit: item.fraction_radiation_dose_unit,
+              guid: item.guid
+            }] AS treatments_radiation
+          RETURN p.guid AS id, treatments_radiation
         page_size: 5000
       - name: "treatment_responses"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
+          OPTIONAL MATCH (child:treatment_response)-[:of_treatment_response]->(p)
           WITH
-            p.guid AS id,
-            count(tresp) AS treatment_response_count,
-            coalesce(
-              [item IN collect(
-                DISTINCT {
-                  guid: tresp.guid,
-                  treatment_response_id: tresp.treatment_response_id,
-                  age_at_response: tresp.age_at_response,
-                  response: tresp.response,
-                  response_category: tresp.response_category,
-                  response_system: tresp.response_system
-                }
-              ) WHERE item IS NOT NULL],
-              []
-            ) AS treatment_responses
+            p,
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              treatment_response_id: item.treatment_response_id,
+              response: item.response,
+              age_at_response: item.age_at_response,
+              response_category: item.response_category,
+              response_system: item.response_system,
+              guid: item.guid
+            }] AS treatment_responses
+          RETURN p.guid AS id, treatment_responses
+        page_size: 5000
+      - name: "treatments_surgery"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (child:treatment_surgery)-[:of_treatment_surgery]->(p)
           WITH
-            id,
-            CASE
-              WHEN treatment_response_count > 0
-              THEN treatment_responses
-              ELSE []
-            END AS treatment_responses
-          RETURN id, treatment_responses
+            p,
+            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+              treatment_surgery_id: item.treatment_surgery_id,
+              treatment_type: item.treatment_type,
+              surgery_type: item.surgery_type,
+              age_at_treatment_start: item.age_at_treatment_start,
+              age_at_treatment_end: item.age_at_treatment_end,
+              anatomic_site: item.anatomic_site,
+              resection_margin_status: item.resection_margin_status,
+              guid: item.guid
+            }] AS treatments_surgery
+          RETURN p.guid AS id, treatments_surgery
         page_size: 5000
 
   # Study-level cohort metadata excluding the participant path through consent_group.
