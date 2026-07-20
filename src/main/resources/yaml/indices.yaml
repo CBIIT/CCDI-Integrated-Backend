@@ -1386,6 +1386,10 @@ indices:
         - study_statuses.external_url
         - study_statuses.release_status
         - study_statuses.guid
+        - consent_groups.consent_group_id
+        - consent_groups.consent_group_name
+        - consent_groups.consent_group_suffix
+        - consent_groups.guid
         - cell_lines.cell_line_id
         - cell_lines.source
         - cell_lines.guid
@@ -1634,6 +1638,22 @@ indices:
               guid: item.guid
             }] AS study_statuses
           RETURN stu.guid AS guid, study_statuses
+        page_size: 100
+      - name: "consent_groups"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (consent_group:consent_group)-[:of_consent_group]->(stu)
+          WITH
+            stu,
+            [item IN collect(DISTINCT consent_group) WHERE item IS NOT NULL | {
+              consent_group_id: item.consent_group_id,
+              consent_group_name: item.consent_group_name,
+              consent_group_suffix: item.consent_group_suffix,
+              guid: item.guid
+            }] AS consent_groups
+          RETURN stu.guid AS guid, consent_groups
         page_size: 100
       - name: "cell_lines"
         query: |
