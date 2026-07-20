@@ -4615,14 +4615,45 @@ indices:
             sequencing_file |
             pathology_file |
             methylation_array_file
-          )-[*..6]->(st:study)
-          WITH DISTINCT f.dcf_indexd_guid AS id, head(collect(st)) as first_study
-          SKIP $skip LIMIT $limit
+          )
+          WHERE f.dcf_indexd_guid IS NOT NULL
+
+          WITH
+            f.dcf_indexd_guid AS id,
+            collect(DISTINCT f) AS file_nodes
+
+          SKIP $skip
+          LIMIT $limit
+
+          UNWIND file_nodes AS f
+
+          OPTIONAL MATCH (f)-[
+            :of_clinical_measure_file |
+            of_generic_file |
+            of_radiology_file |
+            of_cytogenomic_file |
+            of_sequencing_file |
+            of_pathology_file |
+            of_methylation_array_file |
+            of_sample |
+            of_pdx |
+            of_cell_line |
+            of_participant |
+            of_consent_group
+            *..6
+          ]->(st:study)
+
+          WITH
+            id,
+            head(collect(DISTINCT st)) AS first_study
+
           RETURN
             id,
             first_study.study_id AS study_id,
-            first_study.study_name AS study_name,
-            first_study.study_acronym AS study_acronym
+            first_study.dbgap_accession AS dbgap_accession,
+            first_study.study_phase AS study_phase,
+            first_study.study_acronym AS study_acronym,
+            first_study.study_name AS study_name
         page_size: 5000
       - name: "file_properties"
         query: |
@@ -4664,7 +4695,6 @@ indices:
           WITH
             distinct f.dcf_indexd_guid AS file_guid
 
-          ORDER BY file_guid
           SKIP $skip
           LIMIT $limit
 
@@ -4705,7 +4735,6 @@ indices:
             f.dcf_indexd_guid AS file_guid,
             collect(DISTINCT f) AS file_nodes
 
-          ORDER BY file_guid
           SKIP $skip
           LIMIT $limit
 
@@ -5135,7 +5164,6 @@ indices:
             f.dcf_indexd_guid AS file_guid,
             collect(DISTINCT direct_sm) AS direct_samples
 
-          ORDER BY file_guid
           SKIP $skip
           LIMIT $limit
 
