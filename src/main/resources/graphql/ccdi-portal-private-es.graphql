@@ -393,7 +393,7 @@ type TreatmentOverViewResult {
     age_at_treatment_end: Int
     age_at_treatment_start: Int
     treatment_agent: [String]
-    treatment_type: String
+    treatment_type: [String]
 }
 
 type TreatmentResponseOverViewResult {
