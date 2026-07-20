@@ -1134,8 +1134,19 @@ public class InventoryESService extends ESService {
         Map<String, Object> result = new HashMap<>();
         result.put("_source", Set.of("id", "files"));
         result.put("query", Map.of("terms", Map.of("id", ids)));
-        result.put("size", ids.size());
+        result.put("size", Math.max(ids.size(), 1));
         result.put("from", 0);
+        return result;
+    }
+
+    /**
+     * Query files_table by a keyword field (e.g. pid, sample_id, study_id).
+     * Caller should use ESService.collectPage (scroll) for large result sets.
+     */
+    public Map<String, Object> buildFilesTableIDsQuery(String fieldName, List<String> ids) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("_source", Set.of("id", "file_id"));
+        result.put("query", Map.of("terms", Map.of(fieldName, ids)));
         return result;
     }
 
@@ -1327,12 +1338,34 @@ public class InventoryESService extends ESService {
 
     public List<String> collectFileIDs(JsonObject jsonObject) {
         List<String> data = new ArrayList<>();
-        JsonArray searchHits = jsonObject.getAsJsonObject("hits").getAsJsonArray("hits");
+        if (jsonObject == null || !jsonObject.has("hits") || jsonObject.get("hits").isJsonNull()) {
+            return data;
+        }
+        JsonObject hitsObj = jsonObject.getAsJsonObject("hits");
+        if (!hitsObj.has("hits") || hitsObj.get("hits").isJsonNull()) {
+            return data;
+        }
+        JsonArray searchHits = hitsObj.getAsJsonArray("hits");
         for (var hit: searchHits) {
-            JsonObject obj = hit.getAsJsonObject().get("_source").getAsJsonObject();
-            JsonArray arr = obj.get("files").getAsJsonArray();
-            for (int i = 0; i < arr.size(); i++) {
-                data.add(arr.get(i).getAsString());
+            JsonObject source = hit.getAsJsonObject().getAsJsonObject("_source");
+            if (source == null) {
+                continue;
+            }
+            // Preferred: embedded files array (studies_table / WebService-style docs)
+            if (source.has("files") && source.get("files").isJsonArray()) {
+                JsonArray arr = source.getAsJsonArray("files");
+                for (int i = 0; i < arr.size(); i++) {
+                    if (!arr.get(i).isJsonNull()) {
+                        data.add(arr.get(i).getAsString());
+                    }
+                }
+                continue;
+            }
+            // Fallback: files_table docs expose file_id/id directly
+            if (source.has("file_id") && !source.get("file_id").isJsonNull()) {
+                data.add(source.get("file_id").getAsString());
+            } else if (source.has("id") && !source.get("id").isJsonNull()) {
+                data.add(source.get("id").getAsString());
             }
         }
         return data;
