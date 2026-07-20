@@ -929,8 +929,6 @@ indices:
         - study_statuses.number_of_participants
         - study_statuses.number_of_samples
         - study_statuses.number_of_files
-        - study_statuses.total_size_of_data_files
-        - cell_lines.samples.sequencing_files.file_size
         - cell_lines.samples.sequencing_files.number_of_bp
         - cell_lines.samples.sequencing_files.number_of_reads
       float:
@@ -940,6 +938,9 @@ indices:
         - cell_lines.samples.percent_necrosis
         - cell_lines.samples.sequencing_files.avg_read_length
         - cell_lines.samples.sequencing_files.coverage
+      long:
+        - study_statuses.total_size_of_data_files
+        - cell_lines.samples.sequencing_files.file_size
     initial_query:
       query: |
         MATCH (stu:study)
