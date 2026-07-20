@@ -6,28 +6,14 @@ indices:
     mapping: # Properties are listed in the same order as they appear in ccdi-dcc-model.yml
       keyword:
         - id
+        - guid # Identical to id in this index. Returned in cohort metadata JSON
         - participant_id
         - race
         - sex_at_birth
         - occupation
-        - guid # Identical to id in this index. Returned in cohort metadata JSON
         - crdc_id
-        - consent_group_id
-        - consent_group_name
-        - consent_group_suffix
-        - guid
-        - study.study_id
-        - study.dbgap_accession
-        - study.study_name
-        - study.study_acronym
-        - study.study_description
-        - study.external_url
-        - study.experimental_strategy_and_data_subtype
-        - study.study_phase
-        - study.study_data_types
-        - study.promotion_status
-        - study.guid
-        - study.crdc_id
+        - consent_group_guid
+        - study_guid
         - diagnoses.diagnosis_id
         - diagnoses.submitted_diagnosis
         - diagnoses.diagnosis
@@ -309,8 +295,6 @@ indices:
         - treatments_other.other_treatment_type
         - treatments_other.guid
       integer:
-        - study.study_period_start
-        - study.study_period_stop
         - diagnoses.age_at_diagnosis
         - diagnoses.year_of_diagnosis
         - clinical_measure_files.file_size
@@ -358,57 +342,18 @@ indices:
         - treatments_radiation.fraction_radiation_dose
     initial_query:
       query: |
-        MATCH (p:participant)
-        WITH p
+        MATCH
+          (p:participant)-[:of_participant]->(cg:consent_group),
+          (cg)-[:of_consent_group]->(stu:study)
+        WITH p, cg, stu
         SKIP $skip LIMIT $limit
-        RETURN p.guid AS id, p.guid AS guid
+        RETURN
+          p.guid AS id,
+          p.guid AS guid,
+          cg.guid AS consent_group_guid,
+          stu.guid AS study_guid
       page_size: 5000
     update_queries:
-      - name: "study_properties"
-        query: |
-          MATCH
-            // Participant -> Consent Group -> Study
-            (p:participant),
-            (cg:consent_group)<-[:of_participant]->(p),
-            (stu:study)<-[:of_consent_group]-(cg)
-          WITH p, stu
-          SKIP $skip LIMIT $limit
-          RETURN
-            p.guid AS id,
-            {
-              study_id: stu.study_id,
-              dbgap_accession: stu.dbgap_accession,
-              study_name: stu.study_name,
-              study_acronym: stu.study_acronym,
-              study_description: stu.study_description,
-              external_url: stu.external_url,
-              experimental_strategy_and_data_subtype: stu.experimental_strategy_and_data_subtype,
-              study_phase: stu.study_phase,
-              study_data_types: stu.study_data_types,
-              promotion_status: stu.promotion_status,
-              guid: stu.guid,
-              crdc_id: stu.crdc_id,
-              study_period_start: stu.study_period_start,
-              study_period_stop: stu.study_period_stop
-            } AS study
-        page_size: 5000
-      - name: "consent_group_properties"
-        query: |
-          MATCH
-            // Participant -> Consent Group
-            (p:participant),
-            (cg:consent_group)<-[:of_participant]->(p)
-          WITH p, cg
-          SKIP $skip LIMIT $limit
-          RETURN
-            p.guid AS id,
-            {
-              consent_group_id: cg.consent_group_id,
-              consent_group_name: cg.consent_group_name,
-              consent_group_suffix: cg.consent_group_suffix,
-              guid: cg.guid
-            } AS consent_group
-        page_size: 5000
       - name: "participant_properties"
         query: |
           MATCH (p:participant)
