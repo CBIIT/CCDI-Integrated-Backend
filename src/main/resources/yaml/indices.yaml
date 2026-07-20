@@ -784,6 +784,17 @@ indices:
     mapping: # Properties follow their node order in ccdi-dcc-model.yml tag 1.0.0.
       keyword:
         - guid
+        - study_id
+        - dbgap_accession
+        - study_name
+        - study_acronym
+        - study_description
+        - external_url
+        - experimental_strategy_and_data_subtype
+        - study_phase
+        - study_data_types
+        - promotion_status
+        - crdc_id
         - clinical_measure_files.clinical_measure_file_id
         - clinical_measure_files.file_name
         - clinical_measure_files.data_category
@@ -911,6 +922,8 @@ indices:
         - cell_lines.samples.sequencing_files.guid
         - cell_lines.samples.sequencing_files.crdc_id
       integer:
+        - study_period_start
+        - study_period_stop
         - clinical_measure_files.file_size
         - generic_files.file_size
         - study_statuses.number_of_participants
@@ -935,6 +948,27 @@ indices:
         RETURN stu.guid AS guid
       page_size: 100
     update_queries:
+      - name: "study_properties"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+          RETURN
+            stu.study_id AS study_id,
+            stu.dbgap_accession AS dbgap_accession,
+            stu.study_name AS study_name,
+            stu.study_acronym AS study_acronym,
+            stu.study_description AS study_description,
+            stu.external_url AS external_url,
+            stu.experimental_strategy_and_data_subtype AS experimental_strategy_and_data_subtype,
+            stu.study_phase AS study_phase,
+            stu.study_period_start AS study_period_start,
+            stu.study_period_stop AS study_period_stop,
+            stu.study_data_types AS study_data_types,
+            stu.promotion_status AS promotion_status,
+            stu.guid AS guid,
+            stu.crdc_id AS crdc_id
+        page_size: 100
       - name: "clinical_measure_files"
         query: |
           MATCH (stu:study)
@@ -1058,7 +1092,7 @@ indices:
             }] AS study_fundings
           RETURN stu.guid AS guid, study_fundings
         page_size: 100
-      - name: "study_personnels"
+      - name: "study_personnel"
         query: |
           MATCH (stu:study)
           WITH stu
