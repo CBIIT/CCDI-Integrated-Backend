@@ -1315,6 +1315,429 @@ indices:
           RETURN id, treatment_responses
         page_size: 5000
 
+  # Study-level cohort metadata excluding the participant path through consent_group.
+  - index_name: studies_for_cohorts
+    id_field: "guid"
+    mapping: # Properties follow their node order in ccdi-dcc-model.yml tag 1.0.0.
+      keyword:
+        - guid
+        - clinical_measure_files.clinical_measure_file_id
+        - clinical_measure_files.file_name
+        - clinical_measure_files.data_category
+        - clinical_measure_files.file_type
+        - clinical_measure_files.file_description
+        - clinical_measure_files.md5sum
+        - clinical_measure_files.file_mapping_level
+        - clinical_measure_files.file_access
+        - clinical_measure_files.acl
+        - clinical_measure_files.authz
+        - clinical_measure_files.file_url
+        - clinical_measure_files.dcf_indexd_guid
+        - clinical_measure_files.checksum_algorithm
+        - clinical_measure_files.checksum_value
+        - clinical_measure_files.participant_list
+        - clinical_measure_files.guid
+        - clinical_measure_files.crdc_id
+        - generic_files.generic_file_id
+        - generic_files.file_name
+        - generic_files.data_category
+        - generic_files.file_type
+        - generic_files.file_description
+        - generic_files.md5sum
+        - generic_files.file_mapping_level
+        - generic_files.file_access
+        - generic_files.acl
+        - generic_files.authz
+        - generic_files.file_url
+        - generic_files.dcf_indexd_guid
+        - generic_files.guid
+        - generic_files.crdc_id
+        - publications.publication_id
+        - publications.pubmed_id
+        - publications.guid
+        - study_admins.study_admin_id
+        - study_admins.organism_species
+        - study_admins.adult_or_childhood_study
+        - study_admins.file_types_and_format
+        - study_admins.guid
+        - study_arms.study_arm_id
+        - study_arms.study_arm_description
+        - study_arms.clinical_trial_identifier
+        - study_arms.clinical_trial_repository
+        - study_arms.guid
+        - study_fundings.study_funding_id
+        - study_fundings.funding_agency
+        - study_fundings.grant_id
+        - study_fundings.funding_source_program_name
+        - study_fundings.guid
+        - study_personnels.study_personnel_id
+        - study_personnels.personnel_name
+        - study_personnels.personnel_type
+        - study_personnels.email_address
+        - study_personnels.institution
+        - study_personnels.orcid
+        - study_personnels.guid
+        - study_personnels.crdc_id
+        - study_statuses.study_status_id
+        - study_statuses.repository_name
+        - study_statuses.version
+        - study_statuses.study_repository_start
+        - study_statuses.study_repository_released
+        - study_statuses.external_url
+        - study_statuses.release_status
+        - study_statuses.guid
+        - cell_lines.cell_line_id
+        - cell_lines.source
+        - cell_lines.guid
+        - cell_lines.samples.sample_id
+        - cell_lines.samples.anatomic_site
+        - cell_lines.samples.sample_tumor_status
+        - cell_lines.samples.tumor_spatial_extent
+        - cell_lines.samples.sample_description
+        - cell_lines.samples.laterality
+        - cell_lines.samples.guid
+        - cell_lines.samples.crdc_id
+        - cell_lines.samples.sequencing_files.sequencing_file_id
+        - cell_lines.samples.sequencing_files.file_name
+        - cell_lines.samples.sequencing_files.data_category
+        - cell_lines.samples.sequencing_files.file_type
+        - cell_lines.samples.sequencing_files.file_description
+        - cell_lines.samples.sequencing_files.md5sum
+        - cell_lines.samples.sequencing_files.file_mapping_level
+        - cell_lines.samples.sequencing_files.file_access
+        - cell_lines.samples.sequencing_files.acl
+        - cell_lines.samples.sequencing_files.authz
+        - cell_lines.samples.sequencing_files.file_url
+        - cell_lines.samples.sequencing_files.dcf_indexd_guid
+        - cell_lines.samples.sequencing_files.library_id
+        - cell_lines.samples.sequencing_files.library_selection
+        - cell_lines.samples.sequencing_files.library_strategy
+        - cell_lines.samples.sequencing_files.library_layout
+        - cell_lines.samples.sequencing_files.library_source_material
+        - cell_lines.samples.sequencing_files.library_source_molecule
+        - cell_lines.samples.sequencing_files.design_description
+        - cell_lines.samples.sequencing_files.platform
+        - cell_lines.samples.sequencing_files.instrument_model
+        - cell_lines.samples.sequencing_files.reference_genome_assembly
+        - cell_lines.samples.sequencing_files.checksum_algorithm
+        - cell_lines.samples.sequencing_files.checksum_value
+        - cell_lines.samples.sequencing_files.custom_assembly_fasta_file_for_alignment
+        - cell_lines.samples.sequencing_files.sequence_alignment_software
+        - cell_lines.samples.sequencing_files.cDNA_read
+        - cell_lines.samples.sequencing_files.cDNA_read_size
+        - cell_lines.samples.sequencing_files.cDNA_read_offset
+        - cell_lines.samples.sequencing_files.cell_barcode_offset
+        - cell_lines.samples.sequencing_files.cell_barcode_read
+        - cell_lines.samples.sequencing_files.cell_barcode_size
+        - cell_lines.samples.sequencing_files.single_cell_entity
+        - cell_lines.samples.sequencing_files.dissociation_method
+        - cell_lines.samples.sequencing_files.end_bias
+        - cell_lines.samples.sequencing_files.total_number_of_input_cells
+        - cell_lines.samples.sequencing_files.library_construction_method
+        - cell_lines.samples.sequencing_files.library_strand
+        - cell_lines.samples.sequencing_files.protocols_link
+        - cell_lines.samples.sequencing_files.reverse_transcription_primer
+        - cell_lines.samples.sequencing_files.spike_in
+        - cell_lines.samples.sequencing_files.UMI_barcode_offset
+        - cell_lines.samples.sequencing_files.UMI_barcode_read
+        - cell_lines.samples.sequencing_files.UMI_barcode_size
+        - cell_lines.samples.sequencing_files.guid
+        - cell_lines.samples.sequencing_files.crdc_id
+      integer:
+        - clinical_measure_files.file_size
+        - generic_files.file_size
+        - study_statuses.number_of_participants
+        - study_statuses.number_of_samples
+        - study_statuses.number_of_files
+        - study_statuses.total_size_of_data_files
+        - cell_lines.samples.sequencing_files.file_size
+        - cell_lines.samples.sequencing_files.number_of_bp
+        - cell_lines.samples.sequencing_files.number_of_reads
+      float:
+        - cell_lines.cell_line_passage_number
+        - cell_lines.samples.participant_age_at_collection
+        - cell_lines.samples.percent_tumor
+        - cell_lines.samples.percent_necrosis
+        - cell_lines.samples.sequencing_files.avg_read_length
+        - cell_lines.samples.sequencing_files.coverage
+    initial_query:
+      query: |
+        MATCH (stu:study)
+        WITH stu
+        SKIP $skip LIMIT $limit
+        RETURN stu.guid AS guid
+      page_size: 100
+    update_queries:
+      - name: "clinical_measure_files"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (file:clinical_measure_file)-[:of_clinical_measure_file]->(stu)
+          WITH
+            stu,
+            [item IN collect(DISTINCT file) WHERE item IS NOT NULL | {
+              clinical_measure_file_id: item.clinical_measure_file_id,
+              file_name: item.file_name,
+              data_category: item.data_category,
+              file_type: item.file_type,
+              file_description: item.file_description,
+              file_size: item.file_size,
+              md5sum: item.md5sum,
+              file_mapping_level: item.file_mapping_level,
+              file_access: item.file_access,
+              acl: item.acl,
+              authz: item.authz,
+              file_url: item.file_url,
+              dcf_indexd_guid: item.dcf_indexd_guid,
+              checksum_algorithm: item.checksum_algorithm,
+              checksum_value: item.checksum_value,
+              participant_list: item.participant_list,
+              guid: item.guid,
+              crdc_id: item.crdc_id
+            }] AS clinical_measure_files
+          RETURN stu.guid AS guid, clinical_measure_files
+        page_size: 100
+      - name: "generic_files"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (file:generic_file)-[:of_generic_file]->(stu)
+          WITH
+            stu,
+            [item IN collect(DISTINCT file) WHERE item IS NOT NULL | {
+              generic_file_id: item.generic_file_id,
+              file_name: item.file_name,
+              data_category: item.data_category,
+              file_type: item.file_type,
+              file_description: item.file_description,
+              file_size: item.file_size,
+              md5sum: item.md5sum,
+              file_mapping_level: item.file_mapping_level,
+              file_access: item.file_access,
+              acl: item.acl,
+              authz: item.authz,
+              file_url: item.file_url,
+              dcf_indexd_guid: item.dcf_indexd_guid,
+              guid: item.guid,
+              crdc_id: item.crdc_id
+            }] AS generic_files
+          RETURN stu.guid AS guid, generic_files
+        page_size: 100
+      - name: "publications"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (publication:publication)-[:of_publication]->(stu)
+          WITH
+            stu,
+            [item IN collect(DISTINCT publication) WHERE item IS NOT NULL | {
+              publication_id: item.publication_id,
+              pubmed_id: item.pubmed_id,
+              guid: item.guid
+            }] AS publications
+          RETURN stu.guid AS guid, publications
+        page_size: 100
+      - name: "study_admins"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (study_admin:study_admin)-[:of_study_admin]->(stu)
+          WITH
+            stu,
+            [item IN collect(DISTINCT study_admin) WHERE item IS NOT NULL | {
+              study_admin_id: item.study_admin_id,
+              organism_species: item.organism_species,
+              adult_or_childhood_study: item.adult_or_childhood_study,
+              file_types_and_format: item.file_types_and_format,
+              guid: item.guid
+            }] AS study_admins
+          RETURN stu.guid AS guid, study_admins
+        page_size: 100
+      - name: "study_arms"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (study_arm:study_arm)-[:of_study_arm]->(stu)
+          WITH
+            stu,
+            [item IN collect(DISTINCT study_arm) WHERE item IS NOT NULL | {
+              study_arm_id: item.study_arm_id,
+              study_arm_description: item.study_arm_description,
+              clinical_trial_identifier: item.clinical_trial_identifier,
+              clinical_trial_repository: item.clinical_trial_repository,
+              guid: item.guid
+            }] AS study_arms
+          RETURN stu.guid AS guid, study_arms
+        page_size: 100
+      - name: "study_fundings"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (study_funding:study_funding)-[:of_study_funding]->(stu)
+          WITH
+            stu,
+            [item IN collect(DISTINCT study_funding) WHERE item IS NOT NULL | {
+              study_funding_id: item.study_funding_id,
+              funding_agency: item.funding_agency,
+              grant_id: item.grant_id,
+              funding_source_program_name: item.funding_source_program_name,
+              guid: item.guid
+            }] AS study_fundings
+          RETURN stu.guid AS guid, study_fundings
+        page_size: 100
+      - name: "study_personnels"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (study_personnel:study_personnel)-[:of_study_personnel]->(stu)
+          WITH
+            stu,
+            [item IN collect(DISTINCT study_personnel) WHERE item IS NOT NULL | {
+              study_personnel_id: item.study_personnel_id,
+              personnel_name: item.personnel_name,
+              personnel_type: item.personnel_type,
+              email_address: item.email_address,
+              institution: item.institution,
+              orcid: item.orcid,
+              guid: item.guid,
+              crdc_id: item.crdc_id
+            }] AS study_personnels
+          RETURN stu.guid AS guid, study_personnels
+        page_size: 100
+      - name: "study_statuses"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (study_status:study_status)-[:of_study_status]->(stu)
+          WITH
+            stu,
+            [item IN collect(DISTINCT study_status) WHERE item IS NOT NULL | {
+              study_status_id: item.study_status_id,
+              repository_name: item.repository_name,
+              version: item.version,
+              study_repository_start: item.study_repository_start,
+              study_repository_released: item.study_repository_released,
+              external_url: item.external_url,
+              release_status: item.release_status,
+              number_of_participants: item.number_of_participants,
+              number_of_samples: item.number_of_samples,
+              number_of_files: item.number_of_files,
+              total_size_of_data_files: item.total_size_of_data_files,
+              guid: item.guid
+            }] AS study_statuses
+          RETURN stu.guid AS guid, study_statuses
+        page_size: 100
+      - name: "cell_lines"
+        query: |
+          MATCH (stu:study)
+          WITH stu
+          SKIP $skip LIMIT $limit
+
+          OPTIONAL MATCH (cell_line:cell_line)-[:of_cell_line]->(stu)
+          OPTIONAL MATCH (sample:sample)-[:of_sample]->(cell_line)
+          OPTIONAL MATCH (sequencing_file:sequencing_file)-[:of_sequencing_file]->(sample)
+
+          WITH
+            stu,
+            cell_line,
+            sample,
+            [item IN collect(DISTINCT sequencing_file) WHERE item IS NOT NULL | {
+              sequencing_file_id: item.sequencing_file_id,
+              file_name: item.file_name,
+              data_category: item.data_category,
+              file_type: item.file_type,
+              file_description: item.file_description,
+              file_size: item.file_size,
+              md5sum: item.md5sum,
+              file_mapping_level: item.file_mapping_level,
+              file_access: item.file_access,
+              acl: item.acl,
+              authz: item.authz,
+              file_url: item.file_url,
+              dcf_indexd_guid: item.dcf_indexd_guid,
+              library_id: item.library_id,
+              library_selection: item.library_selection,
+              library_strategy: item.library_strategy,
+              library_layout: item.library_layout,
+              library_source_material: item.library_source_material,
+              library_source_molecule: item.library_source_molecule,
+              number_of_bp: item.number_of_bp,
+              number_of_reads: item.number_of_reads,
+              design_description: item.design_description,
+              platform: item.platform,
+              instrument_model: item.instrument_model,
+              avg_read_length: item.avg_read_length,
+              coverage: item.coverage,
+              reference_genome_assembly: item.reference_genome_assembly,
+              checksum_algorithm: item.checksum_algorithm,
+              checksum_value: item.checksum_value,
+              custom_assembly_fasta_file_for_alignment: item.custom_assembly_fasta_file_for_alignment,
+              sequence_alignment_software: item.sequence_alignment_software,
+              cDNA_read: item.cDNA_read,
+              cDNA_read_size: item.cDNA_read_size,
+              cDNA_read_offset: item.cDNA_read_offset,
+              cell_barcode_offset: item.cell_barcode_offset,
+              cell_barcode_read: item.cell_barcode_read,
+              cell_barcode_size: item.cell_barcode_size,
+              single_cell_entity: item.single_cell_entity,
+              dissociation_method: item.dissociation_method,
+              end_bias: item.end_bias,
+              total_number_of_input_cells: item.total_number_of_input_cells,
+              library_construction_method: item.library_construction_method,
+              library_strand: item.library_strand,
+              protocols_link: item.protocols_link,
+              reverse_transcription_primer: item.reverse_transcription_primer,
+              spike_in: item.spike_in,
+              UMI_barcode_offset: item.UMI_barcode_offset,
+              UMI_barcode_read: item.UMI_barcode_read,
+              UMI_barcode_size: item.UMI_barcode_size,
+              guid: item.guid,
+              crdc_id: item.crdc_id
+            }] AS sequencing_files
+
+          WITH
+            stu,
+            cell_line,
+            [entry IN collect({sample: sample, sequencing_files: sequencing_files})
+              WHERE entry.sample IS NOT NULL | {
+                sample_id: entry.sample.sample_id,
+                anatomic_site: entry.sample.anatomic_site,
+                participant_age_at_collection: entry.sample.participant_age_at_collection,
+                sample_tumor_status: entry.sample.sample_tumor_status,
+                tumor_spatial_extent: entry.sample.tumor_spatial_extent,
+                sample_description: entry.sample.sample_description,
+                percent_tumor: entry.sample.percent_tumor,
+                percent_necrosis: entry.sample.percent_necrosis,
+                laterality: entry.sample.laterality,
+                guid: entry.sample.guid,
+                crdc_id: entry.sample.crdc_id,
+                sequencing_files: entry.sequencing_files
+              }
+            ] AS samples
+
+          WITH
+            stu,
+            [entry IN collect({cell_line: cell_line, samples: samples})
+              WHERE entry.cell_line IS NOT NULL | {
+                cell_line_id: entry.cell_line.cell_line_id,
+                source: entry.cell_line.source,
+                cell_line_passage_number: entry.cell_line.cell_line_passage_number,
+                guid: entry.cell_line.guid,
+                samples: entry.samples
+              }
+            ] AS cell_lines
+
+          RETURN stu.guid AS guid, cell_lines
+        page_size: 100
+
   # participant centric index for study and other facets
   - index_name: study_participants_faceted
     id_field: "id"
