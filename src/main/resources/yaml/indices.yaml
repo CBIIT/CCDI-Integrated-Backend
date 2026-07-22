@@ -6,11 +6,11 @@ indices:
     mapping: # Properties are listed in the same order as they appear in ccdi-dcc-model.yml
       keyword:
         - id
-        - guid # Identical to id in this index. Returned in cohort metadata JSON
         - participant_id
         - race
         - sex_at_birth
         - occupation
+        - guid # Identical to id in this index. Returned in cohort metadata JSON
         - crdc_id
         - consent_group_guid
         - study_guid
@@ -185,149 +185,7 @@ indices:
         - treatments_surgery.anatomic_site
         - treatments_surgery.resection_margin_status
         - treatments_surgery.guid
-        - cytogenomic_files.cytogenomic_file_id
-        - cytogenomic_files.file_name
-        - cytogenomic_files.data_category
-        - cytogenomic_files.file_type
-        - cytogenomic_files.file_description
-        - cytogenomic_files.md5sum
-        - cytogenomic_files.file_mapping_level
-        - cytogenomic_files.file_access
-        - cytogenomic_files.acl
-        - cytogenomic_files.authz
-        - cytogenomic_files.file_url
-        - cytogenomic_files.dcf_indexd_guid
-        - cytogenomic_files.cytogenomic_platform
-        - cytogenomic_files.guid
-        - cytogenomic_files.crdc_id
-        - methylation_array_files.methylation_array_file_id
-        - methylation_array_files.file_name
-        - methylation_array_files.data_category
-        - methylation_array_files.file_type
-        - methylation_array_files.file_description
-        - methylation_array_files.md5sum
-        - methylation_array_files.file_mapping_level
-        - methylation_array_files.file_access
-        - methylation_array_files.acl
-        - methylation_array_files.authz
-        - methylation_array_files.file_url
-        - methylation_array_files.dcf_indexd_guid
-        - methylation_array_files.methylation_platform
-        - methylation_array_files.reporter_label
-        - methylation_array_files.guid
-        - methylation_array_files.crdc_id
-        - pathology_files.pathology_file_id
-        - pathology_files.file_name
-        - pathology_files.data_category
-        - pathology_files.file_type
-        - pathology_files.file_description
-        - pathology_files.md5sum
-        - pathology_files.file_mapping_level
-        - pathology_files.file_access
-        - pathology_files.acl
-        - pathology_files.authz
-        - pathology_files.file_url
-        - pathology_files.dcf_indexd_guid
-        - pathology_files.image_modality
-        - pathology_files.license
-        - pathology_files.magnification
-        - pathology_files.fixation_embedding_method
-        - pathology_files.staining_method
-        - pathology_files.deidentification_method
-        - pathology_files.slim_url
-        - pathology_files.guid
-        - pathology_files.crdc_id
-        - generic_files.generic_file_id
-        - generic_files.file_name
-        - generic_files.data_category
-        - generic_files.file_type
-        - generic_files.file_description
-        - generic_files.md5sum
-        - generic_files.file_mapping_level
-        - generic_files.file_access
-        - generic_files.acl
-        - generic_files.authz
-        - generic_files.file_url
-        - generic_files.dcf_indexd_guid
-        - generic_files.guid
-        - generic_files.crdc_id
-        - sequencing_files.sequencing_file_id
-        - sequencing_files.file_name
-        - sequencing_files.data_category
-        - sequencing_files.file_type
-        - sequencing_files.file_description
-        - sequencing_files.md5sum
-        - sequencing_files.file_mapping_level
-        - sequencing_files.file_access
-        - sequencing_files.acl
-        - sequencing_files.authz
-        - sequencing_files.file_url
-        - sequencing_files.dcf_indexd_guid
-        - sequencing_files.library_id
-        - sequencing_files.library_selection
-        - sequencing_files.library_strategy
-        - sequencing_files.library_layout
-        - sequencing_files.library_source_material
-        - sequencing_files.library_source_molecule
-        - sequencing_files.design_description
-        - sequencing_files.platform
-        - sequencing_files.instrument_model
-        - sequencing_files.reference_genome_assembly
-        - sequencing_files.checksum_algorithm
-        - sequencing_files.checksum_value
-        - sequencing_files.custom_assembly_fasta_file_for_alignment
-        - sequencing_files.sequence_alignment_software
-        - sequencing_files.cDNA_read
-        - sequencing_files.cell_barcode_read
-        - sequencing_files.single_cell_entity
-        - sequencing_files.dissociation_method
-        - sequencing_files.end_bias
-        - sequencing_files.library_construction_method
-        - sequencing_files.library_strand
-        - sequencing_files.protocols_link
-        - sequencing_files.reverse_transcription_primer
-        - sequencing_files.spike_in
-        - sequencing_files.UMI_barcode_read
-        - sequencing_files.guid
-        - sequencing_files.crdc_id
-        - genetic_analyses.genetic_analysis_id
-        - genetic_analyses.alteration_category
-        - genetic_analyses.genomic_source_category
-        - genetic_analyses.reported_significance
-        - genetic_analyses.reported_significance_system
-        - genetic_analyses.test
-        - genetic_analyses.method
-        - genetic_analyses.result
-        - genetic_analyses.platform
-        - genetic_analyses.analysis_type
-        - genetic_analyses.analysis_method
-        - genetic_analyses.reference_genome
-        - genetic_analyses.chromosome
-        - genetic_analyses.cytoband
-        - genetic_analyses.exon
-        - genetic_analyses.gene_symbol
-        - genetic_analyses.fusion_partner_gene
-        - genetic_analyses.fusion_partner_transcript
-        - genetic_analyses.fusion_partner_exon
-        - genetic_analyses.translocation_partner_chromosome
-        - genetic_analyses.translocation_partner_cytoband
-        - genetic_analyses.alteration_region
-        - genetic_analyses.alteration_location_role
-        - genetic_analyses.transcript
-        - genetic_analyses.hgvs_coding
-        - genetic_analyses.hgvs_protein
-        - genetic_analyses.hgvs_genome
-        - genetic_analyses.alteration
-        - genetic_analyses.alteration_type
-        - genetic_analyses.alteration_effect
-        - genetic_analyses.iscn
-        - genetic_analyses.status
-        - genetic_analyses.zygosity
-        - genetic_analyses.external_references
-        - genetic_analyses.alteration_description
-        - genetic_analyses.guid
         - samples.sample_id
-        - samples.submitted_anatomic_site
         - samples.anatomic_site
         - samples.sample_tumor_status
         - samples.tumor_spatial_extent
@@ -335,30 +193,405 @@ indices:
         - samples.laterality
         - samples.guid
         - samples.crdc_id
+        - samples.diagnoses.diagnosis_id
+        - samples.diagnoses.submitted_diagnosis
+        - samples.diagnoses.diagnosis
+        - samples.diagnoses.diagnosis_category
+        - samples.diagnoses.diagnosis_classification_system
+        - samples.diagnoses.diagnosis_basis
+        - samples.diagnoses.diagnosis_comment
+        - samples.diagnoses.disease_phase
+        - samples.diagnoses.tumor_spatial_extent
+        - samples.diagnoses.submitted_anatomic_site
+        - samples.diagnoses.anatomic_site
+        - samples.diagnoses.toronto_childhood_cancer_staging
+        - samples.diagnoses.tumor_stage_clinical_t
+        - samples.diagnoses.tumor_stage_clinical_n
+        - samples.diagnoses.tumor_stage_clinical_m
+        - samples.diagnoses.tumor_stage_source
+        - samples.diagnoses.tumor_grade
+        - samples.diagnoses.tumor_grade_source
+        - samples.diagnoses.year_of_diagnosis
+        - samples.diagnoses.laterality
+        - samples.diagnoses.guid
+        - samples.generic_files.generic_file_id
+        - samples.generic_files.file_name
+        - samples.generic_files.data_category
+        - samples.generic_files.file_type
+        - samples.generic_files.file_description
+        - samples.generic_files.md5sum
+        - samples.generic_files.file_mapping_level
+        - samples.generic_files.file_access
+        - samples.generic_files.acl
+        - samples.generic_files.authz
+        - samples.generic_files.file_url
+        - samples.generic_files.dcf_indexd_guid
+        - samples.generic_files.guid
+        - samples.generic_files.crdc_id
+        - samples.genetic_analyses.genetic_analysis_id
+        - samples.genetic_analyses.genomic_source_category
+        - samples.genetic_analyses.reported_significance
+        - samples.genetic_analyses.reported_significance_system
+        - samples.genetic_analyses.test
+        - samples.genetic_analyses.method
+        - samples.genetic_analyses.result
+        - samples.genetic_analyses.reference_genome
+        - samples.genetic_analyses.chromosome
+        - samples.genetic_analyses.cytoband
+        - samples.genetic_analyses.gene_symbol
+        - samples.genetic_analyses.transcript
+        - samples.genetic_analyses.exon
+        - samples.genetic_analyses.hgvs_coding
+        - samples.genetic_analyses.hgvs_protein
+        - samples.genetic_analyses.hgvs_genome
+        - samples.genetic_analyses.alteration
+        - samples.genetic_analyses.alteration_type
+        - samples.genetic_analyses.alteration_effect
+        - samples.genetic_analyses.iscn
+        - samples.genetic_analyses.status
+        - samples.genetic_analyses.fusion_partner_gene
+        - samples.genetic_analyses.fusion_partner_transcript
+        - samples.genetic_analyses.fusion_partner_exon
+        - samples.genetic_analyses.translocation_partner_chromosome
+        - samples.genetic_analyses.translocation_partner_cytoband
+        - samples.genetic_analyses.guid
+        - samples.laboratory_tests.laboratory_test_id
+        - samples.laboratory_tests.laboratory_test_method
+        - samples.laboratory_tests.laboratory_test_name
+        - samples.laboratory_tests.specimen
+        - samples.laboratory_tests.test_result_text
+        - samples.laboratory_tests.test_result_modifier
+        - samples.laboratory_tests.test_result_numeric
+        - samples.laboratory_tests.test_result_unit
+        - samples.laboratory_tests.guid
+        - samples.methylation_array_files.methylation_array_file_id
+        - samples.methylation_array_files.file_name
+        - samples.methylation_array_files.data_category
+        - samples.methylation_array_files.file_type
+        - samples.methylation_array_files.file_description
+        - samples.methylation_array_files.md5sum
+        - samples.methylation_array_files.file_mapping_level
+        - samples.methylation_array_files.file_access
+        - samples.methylation_array_files.acl
+        - samples.methylation_array_files.authz
+        - samples.methylation_array_files.file_url
+        - samples.methylation_array_files.dcf_indexd_guid
+        - samples.methylation_array_files.methylation_platform
+        - samples.methylation_array_files.reporter_label
+        - samples.methylation_array_files.guid
+        - samples.methylation_array_files.crdc_id
+        - samples.pathology_files.pathology_file_id
+        - samples.pathology_files.file_name
+        - samples.pathology_files.data_category
+        - samples.pathology_files.file_type
+        - samples.pathology_files.file_description
+        - samples.pathology_files.md5sum
+        - samples.pathology_files.file_mapping_level
+        - samples.pathology_files.file_access
+        - samples.pathology_files.acl
+        - samples.pathology_files.authz
+        - samples.pathology_files.file_url
+        - samples.pathology_files.dcf_indexd_guid
+        - samples.pathology_files.image_modality
+        - samples.pathology_files.license
+        - samples.pathology_files.magnification
+        - samples.pathology_files.fixation_embedding_method
+        - samples.pathology_files.staining_method
+        - samples.pathology_files.deidentification_method
+        - samples.pathology_files.slim_url
+        - samples.pathology_files.guid
+        - samples.pathology_files.crdc_id
+        - samples.sequencing_files.sequencing_file_id
+        - samples.sequencing_files.file_name
+        - samples.sequencing_files.data_category
+        - samples.sequencing_files.file_type
+        - samples.sequencing_files.file_description
+        - samples.sequencing_files.md5sum
+        - samples.sequencing_files.file_mapping_level
+        - samples.sequencing_files.file_access
+        - samples.sequencing_files.acl
+        - samples.sequencing_files.authz
+        - samples.sequencing_files.file_url
+        - samples.sequencing_files.dcf_indexd_guid
+        - samples.sequencing_files.library_id
+        - samples.sequencing_files.library_selection
+        - samples.sequencing_files.library_strategy
+        - samples.sequencing_files.library_layout
+        - samples.sequencing_files.library_source_material
+        - samples.sequencing_files.library_source_molecule
+        - samples.sequencing_files.design_description
+        - samples.sequencing_files.platform
+        - samples.sequencing_files.instrument_model
+        - samples.sequencing_files.reference_genome_assembly
+        - samples.sequencing_files.checksum_algorithm
+        - samples.sequencing_files.checksum_value
+        - samples.sequencing_files.custom_assembly_fasta_file_for_alignment
+        - samples.sequencing_files.sequence_alignment_software
+        - samples.sequencing_files.cDNA_read
+        - samples.sequencing_files.cDNA_read_size
+        - samples.sequencing_files.cDNA_read_offset
+        - samples.sequencing_files.cell_barcode_offset
+        - samples.sequencing_files.cell_barcode_read
+        - samples.sequencing_files.cell_barcode_size
+        - samples.sequencing_files.single_cell_entity
+        - samples.sequencing_files.dissociation_method
+        - samples.sequencing_files.end_bias
+        - samples.sequencing_files.total_number_of_input_cells
+        - samples.sequencing_files.library_construction_method
+        - samples.sequencing_files.library_strand
+        - samples.sequencing_files.protocols_link
+        - samples.sequencing_files.reverse_transcription_primer
+        - samples.sequencing_files.spike_in
+        - samples.sequencing_files.UMI_barcode_offset
+        - samples.sequencing_files.UMI_barcode_read
+        - samples.sequencing_files.UMI_barcode_size
+        - samples.sequencing_files.guid
+        - samples.sequencing_files.crdc_id
+        - samples.synonyms.synonym_id
+        - samples.synonyms.repository_of_synonym_id
+        - samples.synonyms.associated_id
+        - samples.synonyms.domain_description
+        - samples.synonyms.domain_category
+        - samples.synonyms.data_location
+        - samples.synonyms.guid
+        - samples.cell_lines.cell_line_id
+        - samples.cell_lines.source
+        - samples.cell_lines.guid
+        - samples.cell_lines.samples.sample_id
+        - samples.cell_lines.samples.anatomic_site
+        - samples.cell_lines.samples.sample_tumor_status
+        - samples.cell_lines.samples.tumor_spatial_extent
+        - samples.cell_lines.samples.sample_description
+        - samples.cell_lines.samples.laterality
+        - samples.cell_lines.samples.guid
+        - samples.cell_lines.samples.crdc_id
+        - samples.cell_lines.samples.diagnoses.diagnosis_id
+        - samples.cell_lines.samples.diagnoses.submitted_diagnosis
+        - samples.cell_lines.samples.diagnoses.diagnosis
+        - samples.cell_lines.samples.diagnoses.diagnosis_category
+        - samples.cell_lines.samples.diagnoses.diagnosis_classification_system
+        - samples.cell_lines.samples.diagnoses.diagnosis_basis
+        - samples.cell_lines.samples.diagnoses.diagnosis_comment
+        - samples.cell_lines.samples.diagnoses.disease_phase
+        - samples.cell_lines.samples.diagnoses.tumor_spatial_extent
+        - samples.cell_lines.samples.diagnoses.submitted_anatomic_site
+        - samples.cell_lines.samples.diagnoses.anatomic_site
+        - samples.cell_lines.samples.diagnoses.toronto_childhood_cancer_staging
+        - samples.cell_lines.samples.diagnoses.tumor_stage_clinical_t
+        - samples.cell_lines.samples.diagnoses.tumor_stage_clinical_n
+        - samples.cell_lines.samples.diagnoses.tumor_stage_clinical_m
+        - samples.cell_lines.samples.diagnoses.tumor_stage_source
+        - samples.cell_lines.samples.diagnoses.tumor_grade
+        - samples.cell_lines.samples.diagnoses.tumor_grade_source
+        - samples.cell_lines.samples.diagnoses.year_of_diagnosis
+        - samples.cell_lines.samples.diagnoses.laterality
+        - samples.cell_lines.samples.diagnoses.guid
+        - samples.cell_lines.samples.sequencing_files.sequencing_file_id
+        - samples.cell_lines.samples.sequencing_files.file_name
+        - samples.cell_lines.samples.sequencing_files.data_category
+        - samples.cell_lines.samples.sequencing_files.file_type
+        - samples.cell_lines.samples.sequencing_files.file_description
+        - samples.cell_lines.samples.sequencing_files.md5sum
+        - samples.cell_lines.samples.sequencing_files.file_mapping_level
+        - samples.cell_lines.samples.sequencing_files.file_access
+        - samples.cell_lines.samples.sequencing_files.acl
+        - samples.cell_lines.samples.sequencing_files.authz
+        - samples.cell_lines.samples.sequencing_files.file_url
+        - samples.cell_lines.samples.sequencing_files.dcf_indexd_guid
+        - samples.cell_lines.samples.sequencing_files.library_id
+        - samples.cell_lines.samples.sequencing_files.library_selection
+        - samples.cell_lines.samples.sequencing_files.library_strategy
+        - samples.cell_lines.samples.sequencing_files.library_layout
+        - samples.cell_lines.samples.sequencing_files.library_source_material
+        - samples.cell_lines.samples.sequencing_files.library_source_molecule
+        - samples.cell_lines.samples.sequencing_files.design_description
+        - samples.cell_lines.samples.sequencing_files.platform
+        - samples.cell_lines.samples.sequencing_files.instrument_model
+        - samples.cell_lines.samples.sequencing_files.reference_genome_assembly
+        - samples.cell_lines.samples.sequencing_files.checksum_algorithm
+        - samples.cell_lines.samples.sequencing_files.checksum_value
+        - samples.cell_lines.samples.sequencing_files.custom_assembly_fasta_file_for_alignment
+        - samples.cell_lines.samples.sequencing_files.sequence_alignment_software
+        - samples.cell_lines.samples.sequencing_files.cDNA_read
+        - samples.cell_lines.samples.sequencing_files.cDNA_read_size
+        - samples.cell_lines.samples.sequencing_files.cDNA_read_offset
+        - samples.cell_lines.samples.sequencing_files.cell_barcode_offset
+        - samples.cell_lines.samples.sequencing_files.cell_barcode_read
+        - samples.cell_lines.samples.sequencing_files.cell_barcode_size
+        - samples.cell_lines.samples.sequencing_files.single_cell_entity
+        - samples.cell_lines.samples.sequencing_files.dissociation_method
+        - samples.cell_lines.samples.sequencing_files.end_bias
+        - samples.cell_lines.samples.sequencing_files.total_number_of_input_cells
+        - samples.cell_lines.samples.sequencing_files.library_construction_method
+        - samples.cell_lines.samples.sequencing_files.library_strand
+        - samples.cell_lines.samples.sequencing_files.protocols_link
+        - samples.cell_lines.samples.sequencing_files.reverse_transcription_primer
+        - samples.cell_lines.samples.sequencing_files.spike_in
+        - samples.cell_lines.samples.sequencing_files.UMI_barcode_offset
+        - samples.cell_lines.samples.sequencing_files.UMI_barcode_read
+        - samples.cell_lines.samples.sequencing_files.UMI_barcode_size
+        - samples.cell_lines.samples.sequencing_files.guid
+        - samples.cell_lines.samples.sequencing_files.crdc_id
+        - samples.pdxes.pdx_id
+        - samples.pdxes.model_id
+        - samples.pdxes.mouse_strain
+        - samples.pdxes.sample_type_for_implantation
+        - samples.pdxes.implantation_type
+        - samples.pdxes.implantation_site
+        - samples.pdxes.tumor_confirmed_not_to_be_mus_or_ebv_origin
+        - samples.pdxes.is_tumor_from_untreated_patient
+        - samples.pdxes.passage_number
+        - samples.pdxes.passages_tested
+        - samples.pdxes.validation_technique
+        - samples.pdxes.guid
+        - samples.pdxes.samples.sample_id
+        - samples.pdxes.samples.anatomic_site
+        - samples.pdxes.samples.sample_tumor_status
+        - samples.pdxes.samples.tumor_spatial_extent
+        - samples.pdxes.samples.sample_description
+        - samples.pdxes.samples.laterality
+        - samples.pdxes.samples.guid
+        - samples.pdxes.samples.crdc_id
+        - samples.pdxes.samples.cytogenomic_files.cytogenomic_file_id
+        - samples.pdxes.samples.cytogenomic_files.file_name
+        - samples.pdxes.samples.cytogenomic_files.data_category
+        - samples.pdxes.samples.cytogenomic_files.file_type
+        - samples.pdxes.samples.cytogenomic_files.file_description
+        - samples.pdxes.samples.cytogenomic_files.md5sum
+        - samples.pdxes.samples.cytogenomic_files.file_mapping_level
+        - samples.pdxes.samples.cytogenomic_files.file_access
+        - samples.pdxes.samples.cytogenomic_files.acl
+        - samples.pdxes.samples.cytogenomic_files.authz
+        - samples.pdxes.samples.cytogenomic_files.file_url
+        - samples.pdxes.samples.cytogenomic_files.dcf_indexd_guid
+        - samples.pdxes.samples.cytogenomic_files.cytogenomic_platform
+        - samples.pdxes.samples.cytogenomic_files.guid
+        - samples.pdxes.samples.cytogenomic_files.crdc_id
+        - samples.pdxes.samples.diagnoses.diagnosis_id
+        - samples.pdxes.samples.diagnoses.submitted_diagnosis
+        - samples.pdxes.samples.diagnoses.diagnosis
+        - samples.pdxes.samples.diagnoses.diagnosis_category
+        - samples.pdxes.samples.diagnoses.diagnosis_classification_system
+        - samples.pdxes.samples.diagnoses.diagnosis_basis
+        - samples.pdxes.samples.diagnoses.diagnosis_comment
+        - samples.pdxes.samples.diagnoses.disease_phase
+        - samples.pdxes.samples.diagnoses.tumor_spatial_extent
+        - samples.pdxes.samples.diagnoses.submitted_anatomic_site
+        - samples.pdxes.samples.diagnoses.anatomic_site
+        - samples.pdxes.samples.diagnoses.toronto_childhood_cancer_staging
+        - samples.pdxes.samples.diagnoses.tumor_stage_clinical_t
+        - samples.pdxes.samples.diagnoses.tumor_stage_clinical_n
+        - samples.pdxes.samples.diagnoses.tumor_stage_clinical_m
+        - samples.pdxes.samples.diagnoses.tumor_stage_source
+        - samples.pdxes.samples.diagnoses.tumor_grade
+        - samples.pdxes.samples.diagnoses.tumor_grade_source
+        - samples.pdxes.samples.diagnoses.year_of_diagnosis
+        - samples.pdxes.samples.diagnoses.laterality
+        - samples.pdxes.samples.diagnoses.guid
+        - samples.pdxes.samples.methylation_array_files.methylation_array_file_id
+        - samples.pdxes.samples.methylation_array_files.file_name
+        - samples.pdxes.samples.methylation_array_files.data_category
+        - samples.pdxes.samples.methylation_array_files.file_type
+        - samples.pdxes.samples.methylation_array_files.file_description
+        - samples.pdxes.samples.methylation_array_files.md5sum
+        - samples.pdxes.samples.methylation_array_files.file_mapping_level
+        - samples.pdxes.samples.methylation_array_files.file_access
+        - samples.pdxes.samples.methylation_array_files.acl
+        - samples.pdxes.samples.methylation_array_files.authz
+        - samples.pdxes.samples.methylation_array_files.file_url
+        - samples.pdxes.samples.methylation_array_files.dcf_indexd_guid
+        - samples.pdxes.samples.methylation_array_files.methylation_platform
+        - samples.pdxes.samples.methylation_array_files.reporter_label
+        - samples.pdxes.samples.methylation_array_files.guid
+        - samples.pdxes.samples.methylation_array_files.crdc_id
+        - samples.pdxes.samples.pathology_files.pathology_file_id
+        - samples.pdxes.samples.pathology_files.file_name
+        - samples.pdxes.samples.pathology_files.data_category
+        - samples.pdxes.samples.pathology_files.file_type
+        - samples.pdxes.samples.pathology_files.file_description
+        - samples.pdxes.samples.pathology_files.md5sum
+        - samples.pdxes.samples.pathology_files.file_mapping_level
+        - samples.pdxes.samples.pathology_files.file_access
+        - samples.pdxes.samples.pathology_files.acl
+        - samples.pdxes.samples.pathology_files.authz
+        - samples.pdxes.samples.pathology_files.file_url
+        - samples.pdxes.samples.pathology_files.dcf_indexd_guid
+        - samples.pdxes.samples.pathology_files.image_modality
+        - samples.pdxes.samples.pathology_files.license
+        - samples.pdxes.samples.pathology_files.magnification
+        - samples.pdxes.samples.pathology_files.fixation_embedding_method
+        - samples.pdxes.samples.pathology_files.staining_method
+        - samples.pdxes.samples.pathology_files.deidentification_method
+        - samples.pdxes.samples.pathology_files.slim_url
+        - samples.pdxes.samples.pathology_files.guid
+        - samples.pdxes.samples.pathology_files.crdc_id
+        - samples.pdxes.samples.sequencing_files.sequencing_file_id
+        - samples.pdxes.samples.sequencing_files.file_name
+        - samples.pdxes.samples.sequencing_files.data_category
+        - samples.pdxes.samples.sequencing_files.file_type
+        - samples.pdxes.samples.sequencing_files.file_description
+        - samples.pdxes.samples.sequencing_files.md5sum
+        - samples.pdxes.samples.sequencing_files.file_mapping_level
+        - samples.pdxes.samples.sequencing_files.file_access
+        - samples.pdxes.samples.sequencing_files.acl
+        - samples.pdxes.samples.sequencing_files.authz
+        - samples.pdxes.samples.sequencing_files.file_url
+        - samples.pdxes.samples.sequencing_files.dcf_indexd_guid
+        - samples.pdxes.samples.sequencing_files.library_id
+        - samples.pdxes.samples.sequencing_files.library_selection
+        - samples.pdxes.samples.sequencing_files.library_strategy
+        - samples.pdxes.samples.sequencing_files.library_layout
+        - samples.pdxes.samples.sequencing_files.library_source_material
+        - samples.pdxes.samples.sequencing_files.library_source_molecule
+        - samples.pdxes.samples.sequencing_files.design_description
+        - samples.pdxes.samples.sequencing_files.platform
+        - samples.pdxes.samples.sequencing_files.instrument_model
+        - samples.pdxes.samples.sequencing_files.reference_genome_assembly
+        - samples.pdxes.samples.sequencing_files.checksum_algorithm
+        - samples.pdxes.samples.sequencing_files.checksum_value
+        - samples.pdxes.samples.sequencing_files.custom_assembly_fasta_file_for_alignment
+        - samples.pdxes.samples.sequencing_files.sequence_alignment_software
+        - samples.pdxes.samples.sequencing_files.cDNA_read
+        - samples.pdxes.samples.sequencing_files.cDNA_read_size
+        - samples.pdxes.samples.sequencing_files.cDNA_read_offset
+        - samples.pdxes.samples.sequencing_files.cell_barcode_offset
+        - samples.pdxes.samples.sequencing_files.cell_barcode_read
+        - samples.pdxes.samples.sequencing_files.cell_barcode_size
+        - samples.pdxes.samples.sequencing_files.single_cell_entity
+        - samples.pdxes.samples.sequencing_files.dissociation_method
+        - samples.pdxes.samples.sequencing_files.end_bias
+        - samples.pdxes.samples.sequencing_files.total_number_of_input_cells
+        - samples.pdxes.samples.sequencing_files.library_construction_method
+        - samples.pdxes.samples.sequencing_files.library_strand
+        - samples.pdxes.samples.sequencing_files.protocols_link
+        - samples.pdxes.samples.sequencing_files.reverse_transcription_primer
+        - samples.pdxes.samples.sequencing_files.spike_in
+        - samples.pdxes.samples.sequencing_files.UMI_barcode_offset
+        - samples.pdxes.samples.sequencing_files.UMI_barcode_read
+        - samples.pdxes.samples.sequencing_files.UMI_barcode_size
+        - samples.pdxes.samples.sequencing_files.guid
+        - samples.pdxes.samples.sequencing_files.crdc_id
       integer:
         - clinical_measure_files.file_size
         - exposures.cigarettes_per_day
         - exposures.tobacco_smoking_onset_year
         - exposures.tobacco_smoking_quit_year
         - radiology_files.file_size
-        - cytogenomic_files.file_size
-        - methylation_array_files.file_size
-        - pathology_files.file_size
-        - generic_files.file_size
-        - sequencing_files.file_size
-        - sequencing_files.number_of_bp
-        - sequencing_files.number_of_reads
-        - sequencing_files.avg_read_length
-        - sequencing_files.cDNA_read_size
-        - sequencing_files.cDNA_read_offset
-        - sequencing_files.cell_barcode_offset
-        - sequencing_files.cell_barcode_size
-        - sequencing_files.total_number_of_input_cells
-        - sequencing_files.UMI_barcode_offset
-        - sequencing_files.UMI_barcode_size
-        - genetic_analyses.age_at_genetic_analysis
-        - genetic_analyses.alteration_region_number
-        - samples.participant_age_at_collection
+        - samples.generic_files.file_size
+        - samples.methylation_array_files.file_size
+        - samples.pathology_files.file_size
+        - samples.sequencing_files.file_size
+        - samples.sequencing_files.number_of_bp
+        - samples.sequencing_files.number_of_reads
+        - samples.cell_lines.samples.sequencing_files.file_size
+        - samples.cell_lines.samples.sequencing_files.number_of_bp
+        - samples.cell_lines.samples.sequencing_files.number_of_reads
+        - samples.pdxes.samples.cytogenomic_files.file_size
+        - samples.pdxes.samples.methylation_array_files.file_size
+        - samples.pdxes.samples.pathology_files.file_size
+        - samples.pdxes.samples.sequencing_files.file_size
+        - samples.pdxes.samples.sequencing_files.number_of_bp
+        - samples.pdxes.samples.sequencing_files.number_of_reads
       float:
         - diagnoses.age_at_diagnosis
         - exposures.age_at_exposure
@@ -380,12 +613,31 @@ indices:
         - treatment_responses.age_at_response
         - treatments_surgery.age_at_treatment_start
         - treatments_surgery.age_at_treatment_end
-        - sequencing_files.coverage
-        - genetic_analyses.allelic_ratio
-        - genetic_analyses.vaf_numeric
-        - genetic_analyses.dna_index_numeric
+        - samples.participant_age_at_collection
         - samples.percent_tumor
         - samples.percent_necrosis
+        - samples.diagnoses.age_at_diagnosis
+        - samples.genetic_analyses.age_at_genetic_analysis
+        - samples.genetic_analyses.allelic_ratio
+        - samples.genetic_analyses.vaf_numeric
+        - samples.genetic_analyses.dna_index_numeric
+        - samples.laboratory_tests.age_at_laboratory_test
+        - samples.laboratory_tests.sensitivity
+        - samples.sequencing_files.avg_read_length
+        - samples.sequencing_files.coverage
+        - samples.cell_lines.cell_line_passage_number
+        - samples.cell_lines.samples.participant_age_at_collection
+        - samples.cell_lines.samples.percent_tumor
+        - samples.cell_lines.samples.percent_necrosis
+        - samples.cell_lines.samples.diagnoses.age_at_diagnosis
+        - samples.cell_lines.samples.sequencing_files.avg_read_length
+        - samples.cell_lines.samples.sequencing_files.coverage
+        - samples.pdxes.samples.participant_age_at_collection
+        - samples.pdxes.samples.percent_tumor
+        - samples.pdxes.samples.percent_necrosis
+        - samples.pdxes.samples.diagnoses.age_at_diagnosis
+        - samples.pdxes.samples.sequencing_files.avg_read_length
+        - samples.pdxes.samples.sequencing_files.coverage
     initial_query:
       query: |
         MATCH
@@ -776,6 +1028,611 @@ indices:
               guid: item.guid
             }] AS treatments_surgery
           RETURN p.guid AS id, treatments_surgery
+        page_size: 5000
+      - name: "samples"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          CALL { // Collect samples owned by the participant and assemble their nested child data.
+            WITH p
+            OPTIONAL MATCH (p)<-[:of_sample]-(sample:sample)
+            CALL { // Collect diagnoses directly related to each participant sample.
+              WITH sample
+              OPTIONAL MATCH (sample)<-[:of_diagnosis]-(sample_diagnosis:diagnosis)
+              RETURN [item IN collect(DISTINCT sample_diagnosis) WHERE item IS NOT NULL | {
+                diagnosis_id: item.diagnosis_id,
+                submitted_diagnosis: item.submitted_diagnosis,
+                diagnosis: item.diagnosis,
+                diagnosis_category: item.diagnosis_category,
+                diagnosis_classification_system: item.diagnosis_classification_system,
+                diagnosis_basis: item.diagnosis_basis,
+                diagnosis_comment: item.diagnosis_comment,
+                disease_phase: item.disease_phase,
+                tumor_spatial_extent: item.tumor_spatial_extent,
+                submitted_anatomic_site: item.submitted_anatomic_site,
+                anatomic_site: item.anatomic_site,
+                age_at_diagnosis: item.age_at_diagnosis,
+                toronto_childhood_cancer_staging: item.toronto_childhood_cancer_staging,
+                tumor_stage_clinical_t: item.tumor_stage_clinical_t,
+                tumor_stage_clinical_n: item.tumor_stage_clinical_n,
+                tumor_stage_clinical_m: item.tumor_stage_clinical_m,
+                tumor_stage_source: item.tumor_stage_source,
+                tumor_grade: item.tumor_grade,
+                tumor_grade_source: item.tumor_grade_source,
+                year_of_diagnosis: item.year_of_diagnosis,
+                laterality: item.laterality,
+                guid: item.guid
+              }] AS diagnoses
+            }
+            CALL { // Collect generic files directly related to each participant sample.
+              WITH sample
+              OPTIONAL MATCH (sample)<-[:of_generic_file]-(sample_generic_file:generic_file)
+              RETURN [item IN collect(DISTINCT sample_generic_file) WHERE item IS NOT NULL | {
+                generic_file_id: item.generic_file_id,
+                file_name: item.file_name,
+                data_category: item.data_category,
+                file_type: item.file_type,
+                file_description: item.file_description,
+                file_size: item.file_size,
+                md5sum: item.md5sum,
+                file_mapping_level: item.file_mapping_level,
+                file_access: item.file_access,
+                acl: item.acl,
+                authz: item.authz,
+                file_url: item.file_url,
+                dcf_indexd_guid: item.dcf_indexd_guid,
+                guid: item.guid,
+                crdc_id: item.crdc_id
+              }] AS generic_files
+            }
+            CALL { // Collect genetic analyses directly related to each participant sample.
+              WITH sample
+              OPTIONAL MATCH (sample)<-[:of_genetic_analysis]-(sample_genetic_analysis:genetic_analysis)
+              RETURN [item IN collect(DISTINCT sample_genetic_analysis) WHERE item IS NOT NULL | {
+                genetic_analysis_id: item.genetic_analysis_id,
+                age_at_genetic_analysis: item.age_at_genetic_analysis,
+                genomic_source_category: item.genomic_source_category,
+                reported_significance: item.reported_significance,
+                reported_significance_system: item.reported_significance_system,
+                test: item.test,
+                method: item.method,
+                result: item.result,
+                reference_genome: item.reference_genome,
+                chromosome: item.chromosome,
+                cytoband: item.cytoband,
+                gene_symbol: item.gene_symbol,
+                transcript: item.transcript,
+                exon: item.exon,
+                hgvs_coding: item.hgvs_coding,
+                hgvs_protein: item.hgvs_protein,
+                hgvs_genome: item.hgvs_genome,
+                allelic_ratio: item.allelic_ratio,
+                vaf_numeric: item.vaf_numeric,
+                alteration: item.alteration,
+                alteration_type: item.alteration_type,
+                alteration_effect: item.alteration_effect,
+                dna_index_numeric: item.dna_index_numeric,
+                iscn: item.iscn,
+                status: item.status,
+                fusion_partner_gene: item.fusion_partner_gene,
+                fusion_partner_transcript: item.fusion_partner_transcript,
+                fusion_partner_exon: item.fusion_partner_exon,
+                translocation_partner_chromosome: item.translocation_partner_chromosome,
+                translocation_partner_cytoband: item.translocation_partner_cytoband,
+                guid: item.guid
+              }] AS genetic_analyses
+            }
+            CALL { // Collect laboratory tests directly related to each participant sample.
+              WITH sample
+              OPTIONAL MATCH (sample)<-[:of_laboratory_test]-(sample_laboratory_test:laboratory_test)
+              RETURN [item IN collect(DISTINCT sample_laboratory_test) WHERE item IS NOT NULL | {
+                laboratory_test_id: item.laboratory_test_id,
+                age_at_laboratory_test: item.age_at_laboratory_test,
+                laboratory_test_method: item.laboratory_test_method,
+                laboratory_test_name: item.laboratory_test_name,
+                specimen: item.specimen,
+                test_result_text: item.test_result_text,
+                test_result_modifier: item.test_result_modifier,
+                test_result_numeric: item.test_result_numeric,
+                test_result_unit: item.test_result_unit,
+                sensitivity: item.sensitivity,
+                guid: item.guid
+              }] AS laboratory_tests
+            }
+            CALL { // Collect methylation array files directly related to each participant sample.
+              WITH sample
+              OPTIONAL MATCH (sample)<-[:of_methylation_array_file]-(sample_methylation_array_file:methylation_array_file)
+              RETURN [item IN collect(DISTINCT sample_methylation_array_file) WHERE item IS NOT NULL | {
+                methylation_array_file_id: item.methylation_array_file_id,
+                file_name: item.file_name,
+                data_category: item.data_category,
+                file_type: item.file_type,
+                file_description: item.file_description,
+                file_size: item.file_size,
+                md5sum: item.md5sum,
+                file_mapping_level: item.file_mapping_level,
+                file_access: item.file_access,
+                acl: item.acl,
+                authz: item.authz,
+                file_url: item.file_url,
+                dcf_indexd_guid: item.dcf_indexd_guid,
+                methylation_platform: item.methylation_platform,
+                reporter_label: item.reporter_label,
+                guid: item.guid,
+                crdc_id: item.crdc_id
+              }] AS methylation_array_files
+            }
+            CALL { // Collect pathology files directly related to each participant sample.
+              WITH sample
+              OPTIONAL MATCH (sample)<-[:of_pathology_file]-(sample_pathology_file:pathology_file)
+              RETURN [item IN collect(DISTINCT sample_pathology_file) WHERE item IS NOT NULL | {
+                pathology_file_id: item.pathology_file_id,
+                file_name: item.file_name,
+                data_category: item.data_category,
+                file_type: item.file_type,
+                file_description: item.file_description,
+                file_size: item.file_size,
+                md5sum: item.md5sum,
+                file_mapping_level: item.file_mapping_level,
+                file_access: item.file_access,
+                acl: item.acl,
+                authz: item.authz,
+                file_url: item.file_url,
+                dcf_indexd_guid: item.dcf_indexd_guid,
+                image_modality: item.image_modality,
+                license: item.license,
+                magnification: item.magnification,
+                fixation_embedding_method: item.fixation_embedding_method,
+                staining_method: item.staining_method,
+                deidentification_method: item.deidentification_method,
+                slim_url: item.slim_url,
+                guid: item.guid,
+                crdc_id: item.crdc_id
+              }] AS pathology_files
+            }
+            CALL { // Collect sequencing files directly related to each participant sample.
+              WITH sample
+              OPTIONAL MATCH (sample)<-[:of_sequencing_file]-(sample_sequencing_file:sequencing_file)
+              RETURN [item IN collect(DISTINCT sample_sequencing_file) WHERE item IS NOT NULL | {
+                sequencing_file_id: item.sequencing_file_id,
+                file_name: item.file_name,
+                data_category: item.data_category,
+                file_type: item.file_type,
+                file_description: item.file_description,
+                file_size: item.file_size,
+                md5sum: item.md5sum,
+                file_mapping_level: item.file_mapping_level,
+                file_access: item.file_access,
+                acl: item.acl,
+                authz: item.authz,
+                file_url: item.file_url,
+                dcf_indexd_guid: item.dcf_indexd_guid,
+                library_id: item.library_id,
+                library_selection: item.library_selection,
+                library_strategy: item.library_strategy,
+                library_layout: item.library_layout,
+                library_source_material: item.library_source_material,
+                library_source_molecule: item.library_source_molecule,
+                number_of_bp: item.number_of_bp,
+                number_of_reads: item.number_of_reads,
+                design_description: item.design_description,
+                platform: item.platform,
+                instrument_model: item.instrument_model,
+                avg_read_length: item.avg_read_length,
+                coverage: item.coverage,
+                reference_genome_assembly: item.reference_genome_assembly,
+                checksum_algorithm: item.checksum_algorithm,
+                checksum_value: item.checksum_value,
+                custom_assembly_fasta_file_for_alignment: item.custom_assembly_fasta_file_for_alignment,
+                sequence_alignment_software: item.sequence_alignment_software,
+                cDNA_read: item.cDNA_read,
+                cDNA_read_size: item.cDNA_read_size,
+                cDNA_read_offset: item.cDNA_read_offset,
+                cell_barcode_offset: item.cell_barcode_offset,
+                cell_barcode_read: item.cell_barcode_read,
+                cell_barcode_size: item.cell_barcode_size,
+                single_cell_entity: item.single_cell_entity,
+                dissociation_method: item.dissociation_method,
+                end_bias: item.end_bias,
+                total_number_of_input_cells: item.total_number_of_input_cells,
+                library_construction_method: item.library_construction_method,
+                library_strand: item.library_strand,
+                protocols_link: item.protocols_link,
+                reverse_transcription_primer: item.reverse_transcription_primer,
+                spike_in: item.spike_in,
+                UMI_barcode_offset: item.UMI_barcode_offset,
+                UMI_barcode_read: item.UMI_barcode_read,
+                UMI_barcode_size: item.UMI_barcode_size,
+                guid: item.guid,
+                crdc_id: item.crdc_id
+              }] AS sequencing_files
+            }
+            CALL { // Collect synonyms directly related to each participant sample.
+              WITH sample
+              OPTIONAL MATCH (sample)<-[:of_synonym]-(sample_synonym:synonym)
+              RETURN [item IN collect(DISTINCT sample_synonym) WHERE item IS NOT NULL | {
+                synonym_id: item.synonym_id,
+                repository_of_synonym_id: item.repository_of_synonym_id,
+                associated_id: item.associated_id,
+                domain_description: item.domain_description,
+                domain_category: item.domain_category,
+                data_location: item.data_location,
+                guid: item.guid
+              }] AS synonyms
+            }
+            CALL { // Collect cell lines related to each participant sample.
+              WITH sample
+              OPTIONAL MATCH (sample)<-[:of_cell_line]-(cell_line:cell_line)
+              CALL { // Collect samples related to each cell line and assemble their child data.
+                WITH cell_line
+                OPTIONAL MATCH (cell_line)<-[:of_sample]-(cell_line_sample:sample)
+                CALL { // Collect diagnoses directly related to each cell-line sample.
+                  WITH cell_line_sample
+                  OPTIONAL MATCH (cell_line_sample)<-[:of_diagnosis]-(cell_line_sample_diagnosis:diagnosis)
+                  RETURN [item IN collect(DISTINCT cell_line_sample_diagnosis) WHERE item IS NOT NULL | {
+                    diagnosis_id: item.diagnosis_id,
+                    submitted_diagnosis: item.submitted_diagnosis,
+                    diagnosis: item.diagnosis,
+                    diagnosis_category: item.diagnosis_category,
+                    diagnosis_classification_system: item.diagnosis_classification_system,
+                    diagnosis_basis: item.diagnosis_basis,
+                    diagnosis_comment: item.diagnosis_comment,
+                    disease_phase: item.disease_phase,
+                    tumor_spatial_extent: item.tumor_spatial_extent,
+                    submitted_anatomic_site: item.submitted_anatomic_site,
+                    anatomic_site: item.anatomic_site,
+                    age_at_diagnosis: item.age_at_diagnosis,
+                    toronto_childhood_cancer_staging: item.toronto_childhood_cancer_staging,
+                    tumor_stage_clinical_t: item.tumor_stage_clinical_t,
+                    tumor_stage_clinical_n: item.tumor_stage_clinical_n,
+                    tumor_stage_clinical_m: item.tumor_stage_clinical_m,
+                    tumor_stage_source: item.tumor_stage_source,
+                    tumor_grade: item.tumor_grade,
+                    tumor_grade_source: item.tumor_grade_source,
+                    year_of_diagnosis: item.year_of_diagnosis,
+                    laterality: item.laterality,
+                    guid: item.guid
+                  }] AS diagnoses
+                }
+                CALL { // Collect sequencing files directly related to each cell-line sample.
+                  WITH cell_line_sample
+                  OPTIONAL MATCH (cell_line_sample)<-[:of_sequencing_file]-(cell_line_sample_sequencing_file:sequencing_file)
+                  RETURN [item IN collect(DISTINCT cell_line_sample_sequencing_file) WHERE item IS NOT NULL | {
+                    sequencing_file_id: item.sequencing_file_id,
+                    file_name: item.file_name,
+                    data_category: item.data_category,
+                    file_type: item.file_type,
+                    file_description: item.file_description,
+                    file_size: item.file_size,
+                    md5sum: item.md5sum,
+                    file_mapping_level: item.file_mapping_level,
+                    file_access: item.file_access,
+                    acl: item.acl,
+                    authz: item.authz,
+                    file_url: item.file_url,
+                    dcf_indexd_guid: item.dcf_indexd_guid,
+                    library_id: item.library_id,
+                    library_selection: item.library_selection,
+                    library_strategy: item.library_strategy,
+                    library_layout: item.library_layout,
+                    library_source_material: item.library_source_material,
+                    library_source_molecule: item.library_source_molecule,
+                    number_of_bp: item.number_of_bp,
+                    number_of_reads: item.number_of_reads,
+                    design_description: item.design_description,
+                    platform: item.platform,
+                    instrument_model: item.instrument_model,
+                    avg_read_length: item.avg_read_length,
+                    coverage: item.coverage,
+                    reference_genome_assembly: item.reference_genome_assembly,
+                    checksum_algorithm: item.checksum_algorithm,
+                    checksum_value: item.checksum_value,
+                    custom_assembly_fasta_file_for_alignment: item.custom_assembly_fasta_file_for_alignment,
+                    sequence_alignment_software: item.sequence_alignment_software,
+                    cDNA_read: item.cDNA_read,
+                    cDNA_read_size: item.cDNA_read_size,
+                    cDNA_read_offset: item.cDNA_read_offset,
+                    cell_barcode_offset: item.cell_barcode_offset,
+                    cell_barcode_read: item.cell_barcode_read,
+                    cell_barcode_size: item.cell_barcode_size,
+                    single_cell_entity: item.single_cell_entity,
+                    dissociation_method: item.dissociation_method,
+                    end_bias: item.end_bias,
+                    total_number_of_input_cells: item.total_number_of_input_cells,
+                    library_construction_method: item.library_construction_method,
+                    library_strand: item.library_strand,
+                    protocols_link: item.protocols_link,
+                    reverse_transcription_primer: item.reverse_transcription_primer,
+                    spike_in: item.spike_in,
+                    UMI_barcode_offset: item.UMI_barcode_offset,
+                    UMI_barcode_read: item.UMI_barcode_read,
+                    UMI_barcode_size: item.UMI_barcode_size,
+                    guid: item.guid,
+                    crdc_id: item.crdc_id
+                  }] AS sequencing_files
+                }
+                WITH cell_line_sample, diagnoses, sequencing_files
+                RETURN [entry IN collect({
+                  sample: cell_line_sample,
+                  diagnoses: diagnoses,
+                  sequencing_files: sequencing_files
+                }) WHERE entry.sample IS NOT NULL | {
+                  sample_id: entry.sample.sample_id,
+                  anatomic_site: entry.sample.anatomic_site,
+                  participant_age_at_collection: entry.sample.participant_age_at_collection,
+                  sample_tumor_status: entry.sample.sample_tumor_status,
+                  tumor_spatial_extent: entry.sample.tumor_spatial_extent,
+                  sample_description: entry.sample.sample_description,
+                  percent_tumor: entry.sample.percent_tumor,
+                  percent_necrosis: entry.sample.percent_necrosis,
+                  laterality: entry.sample.laterality,
+                  guid: entry.sample.guid,
+                  crdc_id: entry.sample.crdc_id,
+                  diagnoses: entry.diagnoses,
+                  sequencing_files: entry.sequencing_files
+                }] AS samples
+              }
+              WITH cell_line, samples
+              RETURN [entry IN collect({cell_line: cell_line, samples: samples})
+                WHERE entry.cell_line IS NOT NULL | {
+                  cell_line_id: entry.cell_line.cell_line_id,
+                  source: entry.cell_line.source,
+                  cell_line_passage_number: entry.cell_line.cell_line_passage_number,
+                  guid: entry.cell_line.guid,
+                  samples: entry.samples
+                }] AS cell_lines
+            }
+            CALL { // Collect PDX models related to each participant sample.
+              WITH sample
+              OPTIONAL MATCH (sample)<-[:of_pdx]-(pdx:pdx)
+              CALL { // Collect samples related to each PDX model and assemble their child data.
+                WITH pdx
+                OPTIONAL MATCH (pdx)<-[:of_sample]-(pdx_sample:sample)
+                CALL { // Collect cytogenomic files directly related to each PDX sample.
+                  WITH pdx_sample
+                  OPTIONAL MATCH (pdx_sample)<-[:of_cytogenomic_file]-(pdx_sample_cytogenomic_file:cytogenomic_file)
+                  RETURN [item IN collect(DISTINCT pdx_sample_cytogenomic_file) WHERE item IS NOT NULL | {
+                    cytogenomic_file_id: item.cytogenomic_file_id,
+                    file_name: item.file_name,
+                    data_category: item.data_category,
+                    file_type: item.file_type,
+                    file_description: item.file_description,
+                    file_size: item.file_size,
+                    md5sum: item.md5sum,
+                    file_mapping_level: item.file_mapping_level,
+                    file_access: item.file_access,
+                    acl: item.acl,
+                    authz: item.authz,
+                    file_url: item.file_url,
+                    dcf_indexd_guid: item.dcf_indexd_guid,
+                    cytogenomic_platform: item.cytogenomic_platform,
+                    guid: item.guid,
+                    crdc_id: item.crdc_id
+                  }] AS cytogenomic_files
+                }
+                CALL { // Collect diagnoses directly related to each PDX sample.
+                  WITH pdx_sample
+                  OPTIONAL MATCH (pdx_sample)<-[:of_diagnosis]-(pdx_sample_diagnosis:diagnosis)
+                  RETURN [item IN collect(DISTINCT pdx_sample_diagnosis) WHERE item IS NOT NULL | {
+                    diagnosis_id: item.diagnosis_id,
+                    submitted_diagnosis: item.submitted_diagnosis,
+                    diagnosis: item.diagnosis,
+                    diagnosis_category: item.diagnosis_category,
+                    diagnosis_classification_system: item.diagnosis_classification_system,
+                    diagnosis_basis: item.diagnosis_basis,
+                    diagnosis_comment: item.diagnosis_comment,
+                    disease_phase: item.disease_phase,
+                    tumor_spatial_extent: item.tumor_spatial_extent,
+                    submitted_anatomic_site: item.submitted_anatomic_site,
+                    anatomic_site: item.anatomic_site,
+                    age_at_diagnosis: item.age_at_diagnosis,
+                    toronto_childhood_cancer_staging: item.toronto_childhood_cancer_staging,
+                    tumor_stage_clinical_t: item.tumor_stage_clinical_t,
+                    tumor_stage_clinical_n: item.tumor_stage_clinical_n,
+                    tumor_stage_clinical_m: item.tumor_stage_clinical_m,
+                    tumor_stage_source: item.tumor_stage_source,
+                    tumor_grade: item.tumor_grade,
+                    tumor_grade_source: item.tumor_grade_source,
+                    year_of_diagnosis: item.year_of_diagnosis,
+                    laterality: item.laterality,
+                    guid: item.guid
+                  }] AS diagnoses
+                }
+                CALL { // Collect methylation array files directly related to each PDX sample.
+                  WITH pdx_sample
+                  OPTIONAL MATCH (pdx_sample)<-[:of_methylation_array_file]-(pdx_sample_methylation_array_file:methylation_array_file)
+                  RETURN [item IN collect(DISTINCT pdx_sample_methylation_array_file) WHERE item IS NOT NULL | {
+                    methylation_array_file_id: item.methylation_array_file_id,
+                    file_name: item.file_name,
+                    data_category: item.data_category,
+                    file_type: item.file_type,
+                    file_description: item.file_description,
+                    file_size: item.file_size,
+                    md5sum: item.md5sum,
+                    file_mapping_level: item.file_mapping_level,
+                    file_access: item.file_access,
+                    acl: item.acl,
+                    authz: item.authz,
+                    file_url: item.file_url,
+                    dcf_indexd_guid: item.dcf_indexd_guid,
+                    methylation_platform: item.methylation_platform,
+                    reporter_label: item.reporter_label,
+                    guid: item.guid,
+                    crdc_id: item.crdc_id
+                  }] AS methylation_array_files
+                }
+                CALL { // Collect pathology files directly related to each PDX sample.
+                  WITH pdx_sample
+                  OPTIONAL MATCH (pdx_sample)<-[:of_pathology_file]-(pdx_sample_pathology_file:pathology_file)
+                  RETURN [item IN collect(DISTINCT pdx_sample_pathology_file) WHERE item IS NOT NULL | {
+                    pathology_file_id: item.pathology_file_id,
+                    file_name: item.file_name,
+                    data_category: item.data_category,
+                    file_type: item.file_type,
+                    file_description: item.file_description,
+                    file_size: item.file_size,
+                    md5sum: item.md5sum,
+                    file_mapping_level: item.file_mapping_level,
+                    file_access: item.file_access,
+                    acl: item.acl,
+                    authz: item.authz,
+                    file_url: item.file_url,
+                    dcf_indexd_guid: item.dcf_indexd_guid,
+                    image_modality: item.image_modality,
+                    license: item.license,
+                    magnification: item.magnification,
+                    fixation_embedding_method: item.fixation_embedding_method,
+                    staining_method: item.staining_method,
+                    deidentification_method: item.deidentification_method,
+                    slim_url: item.slim_url,
+                    guid: item.guid,
+                    crdc_id: item.crdc_id
+                  }] AS pathology_files
+                }
+                CALL { // Collect sequencing files directly related to each PDX sample.
+                  WITH pdx_sample
+                  OPTIONAL MATCH (pdx_sample)<-[:of_sequencing_file]-(pdx_sample_sequencing_file:sequencing_file)
+                  RETURN [item IN collect(DISTINCT pdx_sample_sequencing_file) WHERE item IS NOT NULL | {
+                    sequencing_file_id: item.sequencing_file_id,
+                    file_name: item.file_name,
+                    data_category: item.data_category,
+                    file_type: item.file_type,
+                    file_description: item.file_description,
+                    file_size: item.file_size,
+                    md5sum: item.md5sum,
+                    file_mapping_level: item.file_mapping_level,
+                    file_access: item.file_access,
+                    acl: item.acl,
+                    authz: item.authz,
+                    file_url: item.file_url,
+                    dcf_indexd_guid: item.dcf_indexd_guid,
+                    library_id: item.library_id,
+                    library_selection: item.library_selection,
+                    library_strategy: item.library_strategy,
+                    library_layout: item.library_layout,
+                    library_source_material: item.library_source_material,
+                    library_source_molecule: item.library_source_molecule,
+                    number_of_bp: item.number_of_bp,
+                    number_of_reads: item.number_of_reads,
+                    design_description: item.design_description,
+                    platform: item.platform,
+                    instrument_model: item.instrument_model,
+                    avg_read_length: item.avg_read_length,
+                    coverage: item.coverage,
+                    reference_genome_assembly: item.reference_genome_assembly,
+                    checksum_algorithm: item.checksum_algorithm,
+                    checksum_value: item.checksum_value,
+                    custom_assembly_fasta_file_for_alignment: item.custom_assembly_fasta_file_for_alignment,
+                    sequence_alignment_software: item.sequence_alignment_software,
+                    cDNA_read: item.cDNA_read,
+                    cDNA_read_size: item.cDNA_read_size,
+                    cDNA_read_offset: item.cDNA_read_offset,
+                    cell_barcode_offset: item.cell_barcode_offset,
+                    cell_barcode_read: item.cell_barcode_read,
+                    cell_barcode_size: item.cell_barcode_size,
+                    single_cell_entity: item.single_cell_entity,
+                    dissociation_method: item.dissociation_method,
+                    end_bias: item.end_bias,
+                    total_number_of_input_cells: item.total_number_of_input_cells,
+                    library_construction_method: item.library_construction_method,
+                    library_strand: item.library_strand,
+                    protocols_link: item.protocols_link,
+                    reverse_transcription_primer: item.reverse_transcription_primer,
+                    spike_in: item.spike_in,
+                    UMI_barcode_offset: item.UMI_barcode_offset,
+                    UMI_barcode_read: item.UMI_barcode_read,
+                    UMI_barcode_size: item.UMI_barcode_size,
+                    guid: item.guid,
+                    crdc_id: item.crdc_id
+                  }] AS sequencing_files
+                }
+                WITH pdx_sample, cytogenomic_files, diagnoses, methylation_array_files,
+                  pathology_files, sequencing_files
+                RETURN [entry IN collect({
+                  sample: pdx_sample,
+                  cytogenomic_files: cytogenomic_files,
+                  diagnoses: diagnoses,
+                  methylation_array_files: methylation_array_files,
+                  pathology_files: pathology_files,
+                  sequencing_files: sequencing_files
+                }) WHERE entry.sample IS NOT NULL | {
+                  sample_id: entry.sample.sample_id,
+                  anatomic_site: entry.sample.anatomic_site,
+                  participant_age_at_collection: entry.sample.participant_age_at_collection,
+                  sample_tumor_status: entry.sample.sample_tumor_status,
+                  tumor_spatial_extent: entry.sample.tumor_spatial_extent,
+                  sample_description: entry.sample.sample_description,
+                  percent_tumor: entry.sample.percent_tumor,
+                  percent_necrosis: entry.sample.percent_necrosis,
+                  laterality: entry.sample.laterality,
+                  guid: entry.sample.guid,
+                  crdc_id: entry.sample.crdc_id,
+                  cytogenomic_files: entry.cytogenomic_files,
+                  diagnoses: entry.diagnoses,
+                  methylation_array_files: entry.methylation_array_files,
+                  pathology_files: entry.pathology_files,
+                  sequencing_files: entry.sequencing_files
+                }] AS samples
+              }
+              WITH pdx, samples
+              RETURN [entry IN collect({pdx: pdx, samples: samples})
+                WHERE entry.pdx IS NOT NULL | {
+                  pdx_id: entry.pdx.pdx_id,
+                  model_id: entry.pdx.model_id,
+                  mouse_strain: entry.pdx.mouse_strain,
+                  sample_type_for_implantation: entry.pdx.sample_type_for_implantation,
+                  implantation_type: entry.pdx.implantation_type,
+                  implantation_site: entry.pdx.implantation_site,
+                  tumor_confirmed_not_to_be_mus_or_ebv_origin: entry.pdx.tumor_confirmed_not_to_be_mus_or_ebv_origin,
+                  is_tumor_from_untreated_patient: entry.pdx.is_tumor_from_untreated_patient,
+                  passage_number: entry.pdx.passage_number,
+                  passages_tested: entry.pdx.passages_tested,
+                  validation_technique: entry.pdx.validation_technique,
+                  guid: entry.pdx.guid,
+                  samples: entry.samples
+                }] AS pdxes
+            }
+            WITH sample, diagnoses, generic_files, genetic_analyses, laboratory_tests,
+              methylation_array_files, pathology_files, sequencing_files, synonyms,
+              cell_lines, pdxes
+            RETURN [entry IN collect({
+              sample: sample,
+              diagnoses: diagnoses,
+              generic_files: generic_files,
+              genetic_analyses: genetic_analyses,
+              laboratory_tests: laboratory_tests,
+              methylation_array_files: methylation_array_files,
+              pathology_files: pathology_files,
+              sequencing_files: sequencing_files,
+              synonyms: synonyms,
+              cell_lines: cell_lines,
+              pdxes: pdxes
+            }) WHERE entry.sample IS NOT NULL | {
+              sample_id: entry.sample.sample_id,
+              anatomic_site: entry.sample.anatomic_site,
+              participant_age_at_collection: entry.sample.participant_age_at_collection,
+              sample_tumor_status: entry.sample.sample_tumor_status,
+              tumor_spatial_extent: entry.sample.tumor_spatial_extent,
+              sample_description: entry.sample.sample_description,
+              percent_tumor: entry.sample.percent_tumor,
+              percent_necrosis: entry.sample.percent_necrosis,
+              laterality: entry.sample.laterality,
+              guid: entry.sample.guid,
+              crdc_id: entry.sample.crdc_id,
+              diagnoses: entry.diagnoses,
+              generic_files: entry.generic_files,
+              genetic_analyses: entry.genetic_analyses,
+              laboratory_tests: entry.laboratory_tests,
+              methylation_array_files: entry.methylation_array_files,
+              pathology_files: entry.pathology_files,
+              sequencing_files: entry.sequencing_files,
+              synonyms: entry.synonyms,
+              cell_lines: entry.cell_lines,
+              pdxes: entry.pdxes
+            }] AS samples
+          }
+          RETURN p.guid AS id, samples
         page_size: 5000
 
   # Study-level cohort metadata excluding the participant path through consent_group.
