@@ -1,42 +1,27 @@
 # Build stage
-FROM maven:3.9.9-amazoncorretto-17-al2023 AS build
+FROM maven:3.9.11-eclipse-temurin-21 AS build
 
 WORKDIR /usr/src/app
 COPY . .
-RUN mvn package -DskipTests
+RUN mvn -DskipTests package \
+ && mkdir -p /usr/src/app/extracted \
+ && cd /usr/src/app/extracted \
+ && jar -xf /usr/src/app/target/Bento-0.0.1.war
 
-# Production stage - Amazon Linux 2023 with Corretto 17 and Tomcat 11
-FROM amazoncorretto:21-al2023 AS final
+# Runtime stage - minimal distroless Java 21, non-root
+FROM gcr.io/distroless/java21-debian13:nonroot AS final
 
-ENV CATALINA_HOME=/usr/local/tomcat
-ENV PATH=$CATALINA_HOME/bin:$PATH
-ENV TOMCAT_VERSION=11.0.12
-
-RUN dnf update -y && \
-    dnf install -y unzip tar gzip shadow-utils wget && \
-    dnf clean all && \
-    rm -rf /var/cache/dnf
-
-# Download and install Tomcat 11
-RUN curl -fsSL https://archive.apache.org/dist/tomcat/tomcat-11/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz -o /tmp/tomcat.tar.gz && \
-    mkdir -p ${CATALINA_HOME} && \
-    tar -xzf /tmp/tomcat.tar.gz -C ${CATALINA_HOME} --strip-components=1 && \
-    rm /tmp/tomcat.tar.gz
-
-RUN rm -rf ${CATALINA_HOME}/webapps.dist \
-           ${CATALINA_HOME}/webapps/ROOT \
-           ${CATALINA_HOME}/webapps/docs \
-           ${CATALINA_HOME}/webapps/examples \
-           ${CATALINA_HOME}/webapps/host-manager \
-           ${CATALINA_HOME}/webapps/manager
-
-# Security hardening - hide server info in error pages
-RUN sed -i 's|</Host>|  <Valve className="org.apache.catalina.valves.ErrorReportValve"\n               showReport="false"\n               showServerInfo="false" />\n\n      </Host>|' ${CATALINA_HOME}/conf/server.xml
-
-WORKDIR ${CATALINA_HOME}
+WORKDIR /app
 
 EXPOSE 8080
 
-COPY --from=build /usr/src/app/target/Bento-0.0.1.war ${CATALINA_HOME}/webapps/ROOT.war
+# Copy the exploded WAR (classes + lib jars) rather than running the packaged
+# WAR directly. Spring Boot's executable WAR uses a nested-jar classloader
+# (WarLauncher) under `java -jar`, which cannot resolve classpath resources
+# (e.g. the GraphQL schema files) back to real filesystem paths. Running from
+# an exploded directory with a plain classpath keeps those resources as
+# regular files without requiring any application code changes.
+COPY --from=build /usr/src/app/extracted/WEB-INF/classes /app/classes
+COPY --from=build /usr/src/app/extracted/WEB-INF/lib /app/lib
 
-CMD ["catalina.sh", "run"]
+ENTRYPOINT ["java", "-cp", "/app/classes:/app/lib/*", "gov.nih.nci.bento.BentoApplication"]
