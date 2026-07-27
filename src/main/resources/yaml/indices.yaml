@@ -572,25 +572,26 @@ indices:
         - samples.pdxes.samples.sequencing_files.guid
         - samples.pdxes.samples.sequencing_files.crdc_id
       integer:
-        - clinical_measure_files.file_size
         - exposures.cigarettes_per_day
         - exposures.tobacco_smoking_onset_year
         - exposures.tobacco_smoking_quit_year
+      long:
+        - clinical_measure_files.file_size
         - radiology_files.file_size
         - samples.generic_files.file_size
         - samples.methylation_array_files.file_size
         - samples.pathology_files.file_size
         - samples.sequencing_files.file_size
-        - samples.sequencing_files.number_of_bp
-        - samples.sequencing_files.number_of_reads
         - samples.cell_lines.samples.sequencing_files.file_size
-        - samples.cell_lines.samples.sequencing_files.number_of_bp
-        - samples.cell_lines.samples.sequencing_files.number_of_reads
         - samples.pdxes.samples.cytogenomic_files.file_size
         - samples.pdxes.samples.methylation_array_files.file_size
         - samples.pdxes.samples.pathology_files.file_size
         - samples.pdxes.samples.sequencing_files.file_size
+        - samples.sequencing_files.number_of_bp
+        - samples.cell_lines.samples.sequencing_files.number_of_bp
         - samples.pdxes.samples.sequencing_files.number_of_bp
+        - samples.sequencing_files.number_of_reads
+        - samples.cell_lines.samples.sequencing_files.number_of_reads
         - samples.pdxes.samples.sequencing_files.number_of_reads
       float:
         - diagnoses.age_at_diagnosis
@@ -1781,13 +1782,9 @@ indices:
       integer:
         - study_period_start
         - study_period_stop
-        - clinical_measure_files.file_size
-        - generic_files.file_size
         - study_statuses.number_of_participants
         - study_statuses.number_of_samples
         - study_statuses.number_of_files
-        - cell_lines.samples.sequencing_files.number_of_bp
-        - cell_lines.samples.sequencing_files.number_of_reads
       float:
         - cell_lines.cell_line_passage_number
         - cell_lines.samples.participant_age_at_collection
@@ -1797,7 +1794,11 @@ indices:
         - cell_lines.samples.sequencing_files.coverage
       long:
         - study_statuses.total_size_of_data_files
+        - clinical_measure_files.file_size
+        - generic_files.file_size
         - cell_lines.samples.sequencing_files.file_size
+        - cell_lines.samples.sequencing_files.number_of_bp
+        - cell_lines.samples.sequencing_files.number_of_reads
     initial_query:
       query: |
         MATCH (stu:study)
