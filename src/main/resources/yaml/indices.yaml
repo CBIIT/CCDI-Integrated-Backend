@@ -6266,17 +6266,6 @@ indices:
             st.study_description AS study_description,
             st.study_acronym AS study_acronym
         page_size: 1000
-      - name: "global_search_properties"
-        query: |
-          MATCH (st:study)
-          WITH st
-          SKIP $skip LIMIT $limit
-          RETURN
-            st.guid AS id,
-            st.study_id AS study_id_gs,
-            st.study_name AS study_name_gs,
-            st.study_phase AS study_status_gs
-        page_size: 1000
       - name: "study_funding"
         query: |
           MATCH (st:study)
@@ -6433,6 +6422,17 @@ indices:
             num_sample_files      AS num_of_sample_files
         page_size: 1
 
+      - name: "global_search_properties"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
+          RETURN
+            st.guid AS id,
+            st.study_id AS study_id_gs,
+            st.study_name AS study_name_gs,
+            st.study_phase AS study_status_gs
+        page_size: 1000
   - index_name: samples_table
     id_field: "id"
     mapping:
@@ -6617,216 +6617,6 @@ indices:
             st.study_acronym AS study_acronym,
             st.study_name AS study_name
         page_size: 1000
-      - name: "global_search_properties"
-        query: |
-          MATCH (sm:sample)
-          WITH sm
-          SKIP $skip LIMIT $limit
-
-          RETURN
-            sm.guid AS id,
-            sm.sample_id AS sample_id_gs,
-            reduce(
-              result = '',
-              value IN coalesce(sm.anatomic_site, []) |
-                CASE
-                  WHEN value IS NULL OR trim(toString(value)) = '' THEN result
-                  WHEN result = '' THEN trim(toString(value))
-                  ELSE result + ';' + trim(toString(value))
-                END
-            ) AS sample_anatomic_site_str_gs,
-            sm.sample_tumor_status AS sample_tumor_status_gs,
-            sm.tumor_spatial_extent AS tumor_classification_gs
-        page_size: 5000
-      - name: "global_search_participant_properties"
-        query: |
-          MATCH (sm:sample)
-          WITH sm
-          SKIP $skip LIMIT $limit
-
-          OPTIONAL MATCH
-            (sm)-[:of_sample]->(direct_p:participant)
-          WITH
-            sm,
-            collect(DISTINCT direct_p) AS direct_participants
-
-          OPTIONAL MATCH
-            (sm)-[:of_sample]->(model)
-              -[:of_cell_line|of_pdx]->(:sample)
-              -[:of_sample]->(model_p:participant)
-          WHERE model:cell_line OR model:pdx
-
-          WITH
-            sm,
-            direct_participants
-              + collect(DISTINCT model_p) AS raw_participants
-
-          UNWIND
-            CASE
-              WHEN size(raw_participants) = 0 THEN [null]
-              ELSE raw_participants
-            END AS p
-
-          WITH
-            sm,
-            [participant_id IN collect(DISTINCT p.participant_id)
-              WHERE participant_id IS NOT NULL
-                AND trim(toString(participant_id)) <> '' |
-              toString(participant_id)] AS participant_id_values
-
-          RETURN
-            sm.guid AS id,
-            reduce(
-              result = '',
-              value IN participant_id_values |
-                CASE
-                  WHEN result = '' THEN value
-                  ELSE result + ';' + value
-                END
-            ) AS participant_id_gs
-        page_size: 5000
-      - name: "global_search_study_properties"
-        query: |
-          MATCH (sm:sample)
-          WITH sm
-          SKIP $skip LIMIT $limit
-
-          // Include the direct sample and any upstream sample connected
-          // through the direct sample's PDX or cell-line model.
-          OPTIONAL MATCH
-            (sm)-[:of_sample]->(model)
-              -[:of_cell_line|of_pdx]->(model_sm:sample)
-          WHERE model:cell_line OR model:pdx
-
-          WITH
-            sm,
-            [sm] + collect(DISTINCT model_sm) AS participant_samples
-
-          UNWIND participant_samples AS participant_sm
-          OPTIONAL MATCH
-            (participant_sm)-[:of_sample]->(:participant)
-              -[:of_participant]->(:consent_group)
-              -[:of_consent_group]->(participant_st:study)
-
-          WITH
-            sm,
-            collect(DISTINCT participant_st) AS participant_studies
-
-          // A cell line can also belong directly to a study.
-          OPTIONAL MATCH
-            (sm)-[:of_sample]->(:cell_line)
-              -[:of_cell_line]->(cell_line_st:study)
-
-          WITH
-            sm,
-            participant_studies
-              + collect(DISTINCT cell_line_st) AS raw_studies
-
-          UNWIND
-            CASE
-              WHEN size(raw_studies) = 0 THEN [null]
-              ELSE raw_studies
-            END AS st
-
-          WITH
-            sm,
-            [study_id IN collect(DISTINCT st.study_id)
-              WHERE study_id IS NOT NULL
-                AND trim(toString(study_id)) <> '' |
-              toString(study_id)] AS study_id_values
-
-          RETURN
-            sm.guid AS id,
-            reduce(
-              result = '',
-              value IN study_id_values |
-                CASE
-                  WHEN result = '' THEN value
-                  ELSE result + ';' + value
-                END
-            ) AS study_id_gs
-        page_size: 5000
-      - name: "global_search_diagnosis_properties"
-        query: |
-          MATCH (sm:sample)
-          WITH sm
-          SKIP $skip LIMIT $limit
-
-          // Diagnoses attached directly to this sample.
-          OPTIONAL MATCH
-            (sm)<-[:of_diagnosis]-(direct_dg:diagnosis)
-          WITH
-            sm,
-            collect(DISTINCT direct_dg) AS direct_diagnoses
-
-          // Diagnoses attached to samples derived from this sample through
-          // a cell-line or PDX model.
-          OPTIONAL MATCH
-            (sm)<-[:of_cell_line|of_pdx]-(model)
-              <-[:of_sample]-(:sample)
-              <-[:of_diagnosis]-(model_sample_dg:diagnosis)
-          WHERE model:cell_line OR model:pdx
-
-          WITH
-            sm,
-            direct_diagnoses
-              + collect(DISTINCT model_sample_dg) AS related_diagnoses
-
-          UNWIND
-            CASE
-              WHEN size(related_diagnoses) = 0 THEN [null]
-              ELSE related_diagnoses
-            END AS dg
-          WITH sm, collect(DISTINCT dg) AS diagnoses
-
-          WITH
-            sm,
-            reduce(
-              values = [],
-              dg IN diagnoses |
-                CASE
-                  WHEN dg.diagnosis IS NULL
-                    OR trim(toString(dg.diagnosis)) = ''
-                    OR toString(dg.diagnosis) IN values
-                  THEN values
-                  ELSE values + toString(dg.diagnosis)
-                END
-            ) AS diagnosis_values,
-            reduce(
-              values = [],
-              dg IN diagnoses |
-                reduce(
-                  categories = values,
-                  category IN coalesce(dg.diagnosis_category, []) |
-                    CASE
-                      WHEN category IS NULL
-                        OR trim(toString(category)) = ''
-                        OR toString(category) IN categories
-                      THEN categories
-                      ELSE categories + toString(category)
-                    END
-                )
-            ) AS diagnosis_category_values
-
-          RETURN
-            sm.guid AS id,
-            reduce(
-              result = '',
-              value IN diagnosis_values |
-                CASE
-                  WHEN result = '' THEN value
-                  ELSE result + ';' + value
-                END
-            ) AS diagnosis_str_gs,
-            reduce(
-              result = '',
-              value IN diagnosis_category_values |
-                CASE
-                  WHEN result = '' THEN value
-                  ELSE result + ';' + value
-                END
-            ) AS diagnosis_category_str_gs
-        page_size: 5000
       - name: "diagnosis_filters"
         query: |
           MATCH (sm:sample)
@@ -7050,6 +6840,216 @@ indices:
           RETURN id, treatment_response_filters
         page_size: 1000
 
+      - name: "global_search_properties"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+
+          RETURN
+            sm.guid AS id,
+            sm.sample_id AS sample_id_gs,
+            reduce(
+              result = '',
+              value IN coalesce(sm.anatomic_site, []) |
+                CASE
+                  WHEN value IS NULL OR trim(toString(value)) = '' THEN result
+                  WHEN result = '' THEN trim(toString(value))
+                  ELSE result + ';' + trim(toString(value))
+                END
+            ) AS sample_anatomic_site_str_gs,
+            sm.sample_tumor_status AS sample_tumor_status_gs,
+            sm.tumor_spatial_extent AS tumor_classification_gs
+        page_size: 5000
+      - name: "global_search_participant_properties"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+
+          OPTIONAL MATCH
+            (sm)-[:of_sample]->(direct_p:participant)
+          WITH
+            sm,
+            collect(DISTINCT direct_p) AS direct_participants
+
+          OPTIONAL MATCH
+            (sm)-[:of_sample]->(model)
+              -[:of_cell_line|of_pdx]->(:sample)
+              -[:of_sample]->(model_p:participant)
+          WHERE model:cell_line OR model:pdx
+
+          WITH
+            sm,
+            direct_participants
+              + collect(DISTINCT model_p) AS raw_participants
+
+          UNWIND
+            CASE
+              WHEN size(raw_participants) = 0 THEN [null]
+              ELSE raw_participants
+            END AS p
+
+          WITH
+            sm,
+            [participant_id IN collect(DISTINCT p.participant_id)
+              WHERE participant_id IS NOT NULL
+                AND trim(toString(participant_id)) <> '' |
+              toString(participant_id)] AS participant_id_values
+
+          RETURN
+            sm.guid AS id,
+            reduce(
+              result = '',
+              value IN participant_id_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS participant_id_gs
+        page_size: 5000
+      - name: "global_search_study_properties"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+
+          // Include the direct sample and any upstream sample connected
+          // through the direct sample's PDX or cell-line model.
+          OPTIONAL MATCH
+            (sm)-[:of_sample]->(model)
+              -[:of_cell_line|of_pdx]->(model_sm:sample)
+          WHERE model:cell_line OR model:pdx
+
+          WITH
+            sm,
+            [sm] + collect(DISTINCT model_sm) AS participant_samples
+
+          UNWIND participant_samples AS participant_sm
+          OPTIONAL MATCH
+            (participant_sm)-[:of_sample]->(:participant)
+              -[:of_participant]->(:consent_group)
+              -[:of_consent_group]->(participant_st:study)
+
+          WITH
+            sm,
+            collect(DISTINCT participant_st) AS participant_studies
+
+          // A cell line can also belong directly to a study.
+          OPTIONAL MATCH
+            (sm)-[:of_sample]->(:cell_line)
+              -[:of_cell_line]->(cell_line_st:study)
+
+          WITH
+            sm,
+            participant_studies
+              + collect(DISTINCT cell_line_st) AS raw_studies
+
+          UNWIND
+            CASE
+              WHEN size(raw_studies) = 0 THEN [null]
+              ELSE raw_studies
+            END AS st
+
+          WITH
+            sm,
+            [study_id IN collect(DISTINCT st.study_id)
+              WHERE study_id IS NOT NULL
+                AND trim(toString(study_id)) <> '' |
+              toString(study_id)] AS study_id_values
+
+          RETURN
+            sm.guid AS id,
+            reduce(
+              result = '',
+              value IN study_id_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS study_id_gs
+        page_size: 5000
+      - name: "global_search_diagnosis_properties"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+
+          // Diagnoses attached directly to this sample.
+          OPTIONAL MATCH
+            (sm)<-[:of_diagnosis]-(direct_dg:diagnosis)
+          WITH
+            sm,
+            collect(DISTINCT direct_dg) AS direct_diagnoses
+
+          // Diagnoses attached to samples derived from this sample through
+          // a cell-line or PDX model.
+          OPTIONAL MATCH
+            (sm)<-[:of_cell_line|of_pdx]-(model)
+              <-[:of_sample]-(:sample)
+              <-[:of_diagnosis]-(model_sample_dg:diagnosis)
+          WHERE model:cell_line OR model:pdx
+
+          WITH
+            sm,
+            direct_diagnoses
+              + collect(DISTINCT model_sample_dg) AS related_diagnoses
+
+          UNWIND
+            CASE
+              WHEN size(related_diagnoses) = 0 THEN [null]
+              ELSE related_diagnoses
+            END AS dg
+          WITH sm, collect(DISTINCT dg) AS diagnoses
+
+          WITH
+            sm,
+            reduce(
+              values = [],
+              dg IN diagnoses |
+                CASE
+                  WHEN dg.diagnosis IS NULL
+                    OR trim(toString(dg.diagnosis)) = ''
+                    OR toString(dg.diagnosis) IN values
+                  THEN values
+                  ELSE values + toString(dg.diagnosis)
+                END
+            ) AS diagnosis_values,
+            reduce(
+              values = [],
+              dg IN diagnoses |
+                reduce(
+                  categories = values,
+                  category IN coalesce(dg.diagnosis_category, []) |
+                    CASE
+                      WHEN category IS NULL
+                        OR trim(toString(category)) = ''
+                        OR toString(category) IN categories
+                      THEN categories
+                      ELSE categories + toString(category)
+                    END
+                )
+            ) AS diagnosis_category_values
+
+          RETURN
+            sm.guid AS id,
+            reduce(
+              result = '',
+              value IN diagnosis_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS diagnosis_str_gs,
+            reduce(
+              result = '',
+              value IN diagnosis_category_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS diagnosis_category_str_gs
+        page_size: 5000
   - index_name: files_table
     id_field: "id"
     mapping:
@@ -7228,284 +7228,6 @@ indices:
             first_file.fixation_embedding_method AS fixation_embedding_method,
             first_file.staining_method AS staining_method,
             [id] as files
-        page_size: 5000
-      - name: "global_search_study_properties"
-        query: |
-          MATCH (f:
-            clinical_measure_file |
-            generic_file |
-            radiology_file |
-            cytogenomic_file |
-            sequencing_file |
-            pathology_file |
-            methylation_array_file
-          )
-          WHERE f.dcf_indexd_guid IS NOT NULL
-
-          WITH
-            f.dcf_indexd_guid AS id,
-            collect(DISTINCT f) AS file_nodes
-
-          SKIP $skip
-          LIMIT $limit
-
-          UNWIND file_nodes AS f
-
-          // All validated file-to-study paths are directed and no more than
-          // six relationships long. One bounded expansion is faster in
-          // Memgraph than evaluating the path shapes as separate branches.
-          OPTIONAL MATCH (f)-[
-            :of_clinical_measure_file |
-            of_generic_file |
-            of_radiology_file |
-            of_cytogenomic_file |
-            of_sequencing_file |
-            of_pathology_file |
-            of_methylation_array_file |
-            of_sample |
-            of_pdx |
-            of_cell_line |
-            of_participant |
-            of_consent_group
-            *..6
-          ]->(st:study)
-
-          WITH
-            id,
-            head(collect(DISTINCT st)) AS first_study
-
-          RETURN
-            id,
-            first_study.study_id AS study_id_gs
-        page_size: 5000
-      - name: "global_search_file_properties"
-        query: |
-          MATCH (f:
-            clinical_measure_file |
-            generic_file |
-            radiology_file |
-            cytogenomic_file |
-            sequencing_file |
-            pathology_file |
-            methylation_array_file
-          )
-          WITH
-            f.dcf_indexd_guid AS id,
-            head(collect(f)) AS first_file
-          SKIP $skip LIMIT $limit
-          RETURN
-            id,
-            first_file.file_description AS file_description_gs,
-            first_file.file_type AS file_type_gs,
-            first_file.file_name AS file_name_gs,
-            reduce(
-              result = '',
-              value IN coalesce(first_file.data_category, []) |
-                CASE
-                  WHEN value IS NULL OR trim(toString(value)) = '' THEN result
-                  WHEN result = '' THEN trim(toString(value))
-                  ELSE result + ';' + trim(toString(value))
-                END
-            ) AS data_category_gs
-        page_size: 5000
-      - name: "global_search_participant_properties"
-        query: |
-          MATCH (f:
-            clinical_measure_file |
-            generic_file |
-            radiology_file |
-            cytogenomic_file |
-            sequencing_file |
-            pathology_file |
-            methylation_array_file
-          )
-          WHERE f.dcf_indexd_guid IS NOT NULL
-
-          WITH
-            f.dcf_indexd_guid AS id,
-            collect(DISTINCT f) AS file_nodes
-
-          SKIP $skip
-          LIMIT $limit
-
-          // Resolve direct participant-level mappings only for this file page.
-          CALL {
-            WITH file_nodes
-
-            UNWIND file_nodes AS file_node
-            OPTIONAL MATCH (file_node)-[
-              :of_clinical_measure_file |
-              of_generic_file |
-              of_radiology_file
-            ]->(direct_p:participant)
-
-            RETURN collect(DISTINCT direct_p) AS direct_participants
-          }
-
-          // Resolve sample-level mappings only for this file page.
-          CALL {
-            WITH file_nodes
-
-            UNWIND file_nodes AS file_node
-            OPTIONAL MATCH (file_node)-[
-              :of_clinical_measure_file |
-              of_generic_file |
-              of_cytogenomic_file |
-              of_methylation_array_file |
-              of_pathology_file |
-              of_sequencing_file
-            ]->(sm:sample)
-
-            WITH collect(DISTINCT sm) AS direct_samples
-
-            // A file-related sample can belong directly to a participant or
-            // lead through one cell-line/PDX node to another participant sample.
-            UNWIND
-              CASE
-                WHEN size(direct_samples) = 0 THEN [null]
-                ELSE direct_samples
-              END AS direct_sm
-
-            OPTIONAL MATCH (direct_sm)-[:of_sample]->(model)
-            WHERE model:cell_line OR model:pdx
-
-            WITH
-              direct_samples,
-              collect(DISTINCT model) AS models
-
-            UNWIND
-              CASE
-                WHEN size(models) = 0 THEN [null]
-                ELSE models
-              END AS model
-
-            OPTIONAL MATCH
-              (model)-[:of_cell_line|of_pdx]->(model_sample:sample)
-
-            WITH
-              direct_samples
-                + collect(DISTINCT model_sample) AS raw_participant_samples
-
-            UNWIND
-              CASE
-                WHEN size(raw_participant_samples) = 0 THEN [null]
-                ELSE raw_participant_samples
-              END AS participant_sample
-
-            OPTIONAL MATCH
-              (participant_sample)-[:of_sample]->(sample_p:participant)
-
-            RETURN collect(DISTINCT sample_p) AS sample_participants
-          }
-
-          WITH
-            id,
-            direct_participants + sample_participants AS raw_participants
-
-          UNWIND
-            CASE
-              WHEN size(raw_participants) = 0 THEN [null]
-              ELSE raw_participants
-            END AS p
-
-          WITH
-            id,
-            collect(DISTINCT p.participant_id) AS participant_id_values
-
-          RETURN
-            id,
-            reduce(
-              result = '',
-              value IN participant_id_values |
-                CASE
-                  WHEN value IS NULL OR trim(toString(value)) = '' THEN result
-                  WHEN result = '' THEN trim(toString(value))
-                  ELSE result + ';' + trim(toString(value))
-                END
-            ) AS participant_id_gs
-        page_size: 5000
-      - name: "global_search_sample_properties"
-        query: |
-          MATCH (f:
-            cytogenomic_file |
-            generic_file |
-            methylation_array_file |
-            pathology_file |
-            sequencing_file
-          )
-          WHERE f.dcf_indexd_guid IS NOT NULL
-
-          WITH
-            f.dcf_indexd_guid AS file_guid,
-            collect(DISTINCT f) AS file_nodes
-
-          SKIP $skip
-          LIMIT $limit
-
-          // Traverse sample relationships only for the current file page.
-          UNWIND file_nodes AS file_node
-          OPTIONAL MATCH (file_node)-[
-            :of_cytogenomic_file |
-            of_generic_file |
-            of_methylation_array_file |
-            of_pathology_file |
-            of_sequencing_file
-          ]->(direct_sm:sample)
-
-          WITH
-            file_guid,
-            collect(DISTINCT direct_sm) AS direct_samples
-
-          // Include the direct file sample and any upstream sample connected
-          // through the direct sample's PDX or cell-line model.
-          CALL {
-            WITH direct_samples
-
-            UNWIND
-              CASE
-                WHEN size(direct_samples) = 0 THEN [null]
-                ELSE direct_samples
-              END AS seed_sm
-
-            OPTIONAL MATCH
-              (seed_sm)-[:of_sample]->(model)-[
-                :of_cell_line |
-                of_pdx
-              ]->(model_sm:sample)
-            WHERE model:cell_line OR model:pdx
-
-            WITH
-              direct_samples
-                + collect(DISTINCT model_sm) AS raw_samples
-
-            UNWIND raw_samples AS sm
-            WITH DISTINCT sm
-            WHERE sm IS NOT NULL
-
-            RETURN collect(sm) AS associated_samples
-          }
-
-          WITH
-            file_guid,
-            reduce(sample_id_values = [], sample_node IN associated_samples |
-              CASE
-                WHEN sample_node.sample_id IS NULL
-                  OR sample_node.sample_id IN sample_id_values
-                THEN sample_id_values
-                ELSE sample_id_values + [sample_node.sample_id]
-              END
-            ) AS sample_id_values
-
-          RETURN
-            file_guid AS id,
-            reduce(
-              result = '',
-              value IN sample_id_values |
-                CASE
-                  WHEN result = '' THEN value
-                  ELSE result + ';' + value
-                END
-            ) AS sample_id_gs
         page_size: 5000
       - name: "combined_filters_study_level"
         query: |
@@ -8492,6 +8214,284 @@ indices:
         page_size: 1000
 
   # Model nodes index
+      - name: "global_search_study_properties"
+        query: |
+          MATCH (f:
+            clinical_measure_file |
+            generic_file |
+            radiology_file |
+            cytogenomic_file |
+            sequencing_file |
+            pathology_file |
+            methylation_array_file
+          )
+          WHERE f.dcf_indexd_guid IS NOT NULL
+
+          WITH
+            f.dcf_indexd_guid AS id,
+            collect(DISTINCT f) AS file_nodes
+
+          SKIP $skip
+          LIMIT $limit
+
+          UNWIND file_nodes AS f
+
+          // All validated file-to-study paths are directed and no more than
+          // six relationships long. One bounded expansion is faster in
+          // Memgraph than evaluating the path shapes as separate branches.
+          OPTIONAL MATCH (f)-[
+            :of_clinical_measure_file |
+            of_generic_file |
+            of_radiology_file |
+            of_cytogenomic_file |
+            of_sequencing_file |
+            of_pathology_file |
+            of_methylation_array_file |
+            of_sample |
+            of_pdx |
+            of_cell_line |
+            of_participant |
+            of_consent_group
+            *..6
+          ]->(st:study)
+
+          WITH
+            id,
+            head(collect(DISTINCT st)) AS first_study
+
+          RETURN
+            id,
+            first_study.study_id AS study_id_gs
+        page_size: 5000
+      - name: "global_search_file_properties"
+        query: |
+          MATCH (f:
+            clinical_measure_file |
+            generic_file |
+            radiology_file |
+            cytogenomic_file |
+            sequencing_file |
+            pathology_file |
+            methylation_array_file
+          )
+          WITH
+            f.dcf_indexd_guid AS id,
+            head(collect(f)) AS first_file
+          SKIP $skip LIMIT $limit
+          RETURN
+            id,
+            first_file.file_description AS file_description_gs,
+            first_file.file_type AS file_type_gs,
+            first_file.file_name AS file_name_gs,
+            reduce(
+              result = '',
+              value IN coalesce(first_file.data_category, []) |
+                CASE
+                  WHEN value IS NULL OR trim(toString(value)) = '' THEN result
+                  WHEN result = '' THEN trim(toString(value))
+                  ELSE result + ';' + trim(toString(value))
+                END
+            ) AS data_category_gs
+        page_size: 5000
+      - name: "global_search_participant_properties"
+        query: |
+          MATCH (f:
+            clinical_measure_file |
+            generic_file |
+            radiology_file |
+            cytogenomic_file |
+            sequencing_file |
+            pathology_file |
+            methylation_array_file
+          )
+          WHERE f.dcf_indexd_guid IS NOT NULL
+
+          WITH
+            f.dcf_indexd_guid AS id,
+            collect(DISTINCT f) AS file_nodes
+
+          SKIP $skip
+          LIMIT $limit
+
+          // Resolve direct participant-level mappings only for this file page.
+          CALL {
+            WITH file_nodes
+
+            UNWIND file_nodes AS file_node
+            OPTIONAL MATCH (file_node)-[
+              :of_clinical_measure_file |
+              of_generic_file |
+              of_radiology_file
+            ]->(direct_p:participant)
+
+            RETURN collect(DISTINCT direct_p) AS direct_participants
+          }
+
+          // Resolve sample-level mappings only for this file page.
+          CALL {
+            WITH file_nodes
+
+            UNWIND file_nodes AS file_node
+            OPTIONAL MATCH (file_node)-[
+              :of_clinical_measure_file |
+              of_generic_file |
+              of_cytogenomic_file |
+              of_methylation_array_file |
+              of_pathology_file |
+              of_sequencing_file
+            ]->(sm:sample)
+
+            WITH collect(DISTINCT sm) AS direct_samples
+
+            // A file-related sample can belong directly to a participant or
+            // lead through one cell-line/PDX node to another participant sample.
+            UNWIND
+              CASE
+                WHEN size(direct_samples) = 0 THEN [null]
+                ELSE direct_samples
+              END AS direct_sm
+
+            OPTIONAL MATCH (direct_sm)-[:of_sample]->(model)
+            WHERE model:cell_line OR model:pdx
+
+            WITH
+              direct_samples,
+              collect(DISTINCT model) AS models
+
+            UNWIND
+              CASE
+                WHEN size(models) = 0 THEN [null]
+                ELSE models
+              END AS model
+
+            OPTIONAL MATCH
+              (model)-[:of_cell_line|of_pdx]->(model_sample:sample)
+
+            WITH
+              direct_samples
+                + collect(DISTINCT model_sample) AS raw_participant_samples
+
+            UNWIND
+              CASE
+                WHEN size(raw_participant_samples) = 0 THEN [null]
+                ELSE raw_participant_samples
+              END AS participant_sample
+
+            OPTIONAL MATCH
+              (participant_sample)-[:of_sample]->(sample_p:participant)
+
+            RETURN collect(DISTINCT sample_p) AS sample_participants
+          }
+
+          WITH
+            id,
+            direct_participants + sample_participants AS raw_participants
+
+          UNWIND
+            CASE
+              WHEN size(raw_participants) = 0 THEN [null]
+              ELSE raw_participants
+            END AS p
+
+          WITH
+            id,
+            collect(DISTINCT p.participant_id) AS participant_id_values
+
+          RETURN
+            id,
+            reduce(
+              result = '',
+              value IN participant_id_values |
+                CASE
+                  WHEN value IS NULL OR trim(toString(value)) = '' THEN result
+                  WHEN result = '' THEN trim(toString(value))
+                  ELSE result + ';' + trim(toString(value))
+                END
+            ) AS participant_id_gs
+        page_size: 5000
+      - name: "global_search_sample_properties"
+        query: |
+          MATCH (f:
+            cytogenomic_file |
+            generic_file |
+            methylation_array_file |
+            pathology_file |
+            sequencing_file
+          )
+          WHERE f.dcf_indexd_guid IS NOT NULL
+
+          WITH
+            f.dcf_indexd_guid AS file_guid,
+            collect(DISTINCT f) AS file_nodes
+
+          SKIP $skip
+          LIMIT $limit
+
+          // Traverse sample relationships only for the current file page.
+          UNWIND file_nodes AS file_node
+          OPTIONAL MATCH (file_node)-[
+            :of_cytogenomic_file |
+            of_generic_file |
+            of_methylation_array_file |
+            of_pathology_file |
+            of_sequencing_file
+          ]->(direct_sm:sample)
+
+          WITH
+            file_guid,
+            collect(DISTINCT direct_sm) AS direct_samples
+
+          // Include the direct file sample and any upstream sample connected
+          // through the direct sample's PDX or cell-line model.
+          CALL {
+            WITH direct_samples
+
+            UNWIND
+              CASE
+                WHEN size(direct_samples) = 0 THEN [null]
+                ELSE direct_samples
+              END AS seed_sm
+
+            OPTIONAL MATCH
+              (seed_sm)-[:of_sample]->(model)-[
+                :of_cell_line |
+                of_pdx
+              ]->(model_sm:sample)
+            WHERE model:cell_line OR model:pdx
+
+            WITH
+              direct_samples
+                + collect(DISTINCT model_sm) AS raw_samples
+
+            UNWIND raw_samples AS sm
+            WITH DISTINCT sm
+            WHERE sm IS NOT NULL
+
+            RETURN collect(sm) AS associated_samples
+          }
+
+          WITH
+            file_guid,
+            reduce(sample_id_values = [], sample_node IN associated_samples |
+              CASE
+                WHEN sample_node.sample_id IS NULL
+                  OR sample_node.sample_id IN sample_id_values
+                THEN sample_id_values
+                ELSE sample_id_values + [sample_node.sample_id]
+              END
+            ) AS sample_id_values
+
+          RETURN
+            file_guid AS id,
+            reduce(
+              result = '',
+              value IN sample_id_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS sample_id_gs
+        page_size: 5000
   - index_name: model_nodes
     type: model
     subtype: node
