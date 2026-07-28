@@ -3617,18 +3617,21 @@ indices:
                 END
             ) AS last_known_survival_status_str_gs
         page_size: 5000
-      - name: "global_search_properties_diagnoses"
+      - name: "global_search_diagnosis_properties"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
 
           // Diagnoses attached directly to the participant
-          OPTIONAL MATCH (p)<--(participant_dg:diagnosis)
+          OPTIONAL MATCH
+            (p)<-[:of_diagnosis]-(participant_dg:diagnosis)
           WITH p, collect(DISTINCT participant_dg) AS participant_diagnoses
 
           // Diagnoses attached to samples owned by the participant
-          OPTIONAL MATCH (p)<-[:of_sample]-(:sample)<--(sample_dg:diagnosis)
+          OPTIONAL MATCH
+            (p)<-[:of_sample]-(:sample)
+              <-[:of_diagnosis]-(sample_dg:diagnosis)
           WITH
             p,
             participant_diagnoses,
@@ -3636,7 +3639,10 @@ indices:
 
           // Diagnoses attached to samples derived through a cell line or PDX
           OPTIONAL MATCH
-            (p)<-[:of_sample]-(:sample)<--(model)<--(:sample)<--(model_sample_dg:diagnosis)
+            (p)<-[:of_sample]-(:sample)
+              <-[:of_cell_line|of_pdx]-(model)
+              <-[:of_sample]-(:sample)
+              <-[:of_diagnosis]-(model_sample_dg:diagnosis)
           WHERE model:cell_line OR model:pdx
           WITH
             p,
