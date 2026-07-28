@@ -7631,3 +7631,45 @@ indices:
             [file_guid] AS files,
             combined_filters AS combined_filters
         page_size: 1000
+
+  # Model nodes index
+  - index_name: model_nodes
+    type: model
+    subtype: node
+    # type mapping for each property of the index
+    mapping:
+      search_as_you_type:
+        - node
+      keyword:
+        - node_kw
+
+  # Model properties index
+  - index_name: model_properties
+    type: model
+    subtype: property
+    # type mapping for each property of the index
+    mapping:
+      search_as_you_type:
+        - node
+        - property
+        - property_description
+        - property_required
+        - property_type
+      keyword:
+        - property_kw
+
+  # Model values index
+  - index_name: model_values
+    type: model
+    subtype: value
+    # type mapping for each property of the index
+    mapping:
+      search_as_you_type:
+        - node
+        - property
+        - property_description
+        - property_required
+        - property_type
+        - value
+      keyword:
+        - value_kw
