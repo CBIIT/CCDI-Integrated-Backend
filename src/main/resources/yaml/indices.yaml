@@ -3394,7 +3394,7 @@ indices:
               library_strategy: library_strategy
             }) AS sample_diagnosis_genetic_analysis_file_filters
         page_size: 5000
-      - name: "participant_level_gs_properties"
+      - name: "global_search_properties"
         query: |
           MATCH (p:participant)
           WITH p
@@ -3617,7 +3617,7 @@ indices:
                 END
             ) AS last_known_survival_status_str_gs
         page_size: 5000
-      - name: "diagnosis_gs_properties"
+      - name: "global_search_properties_diagnoses"
         query: |
           MATCH (p:participant)
           WITH p
@@ -6217,6 +6217,9 @@ indices:
         - study_acronym
         - PIs
         - consent_codes
+        - study_id_gs
+        - study_name_gs
+        - study_status_gs
       integer:
         - num_of_diagnoses
         - num_of_participants
@@ -6256,6 +6259,17 @@ indices:
             st.study_name AS study_name,
             st.study_description AS study_description,
             st.study_acronym AS study_acronym
+        page_size: 1000
+      - name: "global_search_properties"
+        query: |
+          MATCH (st:study)
+          WITH st
+          SKIP $skip LIMIT $limit
+          RETURN
+            st.guid AS id,
+            st.study_id AS study_id_gs,
+            st.study_name AS study_name_gs,
+            st.study_phase AS study_status_gs
         page_size: 1000
       - name: "study_funding"
         query: |
