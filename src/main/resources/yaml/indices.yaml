@@ -7017,6 +7017,13 @@ indices:
         - combined_filters.sample_diagnosis_genetic_analysis_filters.fusion_partner_gene
         - combined_filters.sample_diagnosis_genetic_analysis_filters.alteration_type
         - combined_filters.sample_diagnosis_genetic_analysis_filters.status
+        - participant_id_gs
+        - sample_id_gs
+        - study_id_gs
+        - file_description_gs
+        - file_type_gs
+        - file_name_gs
+        - data_category_gs
       integer:
         - participant_age_at_collection
         - combined_filters.survival_filters.age_at_last_known_survival_status
@@ -7097,7 +7104,10 @@ indices:
             first_study.dbgap_accession AS dbgap_accession,
             first_study.study_phase AS study_phase,
             first_study.study_acronym AS study_acronym,
-            first_study.study_name AS study_name
+            first_study.study_name AS study_name,
+
+            // Global search properties
+            first_study.study_id AS study_id_gs
         page_size: 5000
       - name: "file_properties"
         query: |
@@ -7128,7 +7138,21 @@ indices:
             first_file.library_strategy AS library_strategy,
             first_file.fixation_embedding_method AS fixation_embedding_method,
             first_file.staining_method AS staining_method,
-            [id] as files
+            [id] as files,
+
+            // Global search properties
+            first_file.file_description AS file_description_gs,
+            first_file.file_type AS file_type_gs,
+            first_file.file_name AS file_name_gs,
+            reduce(
+              result = '',
+              value IN coalesce(first_file.data_category, []) |
+                CASE
+                  WHEN value IS NULL OR trim(toString(value)) = '' THEN result
+                  WHEN result = '' THEN trim(toString(value))
+                  ELSE result + ';' + trim(toString(value))
+                END
+            ) AS data_category_gs
         page_size: 5000
       - name: "combined_filters_study_level"
         query: |
@@ -7590,7 +7614,17 @@ indices:
             null AS percent_tumor,
             null AS percent_necrosis,
             [file_guid] AS files,
-            combined_filters AS combined_filters
+            combined_filters AS combined_filters,
+
+            // Global search properties
+            reduce(
+              result = '',
+              value IN participant_ids |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS participant_id_gs
         page_size: 1000
       - name: "combined_filters_sample_level"
         query: |
@@ -8048,19 +8082,23 @@ indices:
             associated_samples,
             participant_nodes,
             combined_filters,
-            consent_codes
-
-          RETURN
-            file_guid AS id,
-            file_guid AS file_id,
-            [p IN participant_nodes WHERE p IS NOT NULL AND p.guid IS NOT NULL | p.guid] AS pid,
-            [p IN participant_nodes WHERE p IS NOT NULL AND p.participant_id IS NOT NULL | p.participant_id] AS participant_id,
+            consent_codes,
+            [p IN participant_nodes
+              WHERE p IS NOT NULL AND p.participant_id IS NOT NULL |
+              p.participant_id] AS participant_ids,
             reduce(sample_ids = [], sample_node IN associated_samples |
               CASE
                 WHEN sample_node.sample_id IS NULL OR sample_node.sample_id IN sample_ids THEN sample_ids
                 ELSE sample_ids + [sample_node.sample_id]
               END
-            ) AS sample_id,
+            ) AS sample_ids
+
+          RETURN
+            file_guid AS id,
+            file_guid AS file_id,
+            [p IN participant_nodes WHERE p IS NOT NULL AND p.guid IS NOT NULL | p.guid] AS pid,
+            participant_ids AS participant_id,
+            sample_ids AS sample_id,
             consent_codes AS consent_codes,
             reduce(anatomic_sites = [], sample_node IN associated_samples |
               reduce(inner_sites = anatomic_sites, site IN coalesce(sample_node.anatomic_site, []) |
@@ -8107,7 +8145,25 @@ indices:
               END
             ) AS percent_necrosis,
             [file_guid] AS files,
-            combined_filters AS combined_filters
+            combined_filters AS combined_filters,
+
+            // Global search properties
+            reduce(
+              result = '',
+              value IN participant_ids |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS participant_id_gs,
+            reduce(
+              result = '',
+              value IN sample_ids |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS sample_id_gs
         page_size: 1000
 
   # Model nodes index
