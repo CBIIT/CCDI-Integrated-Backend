@@ -6479,6 +6479,14 @@ indices:
         - treatment_response_filters.response_category
         - treatment_response_filters.response_system
         - files
+        - sample_id_gs
+        - participant_id_gs
+        - study_id_gs
+        - sample_anatomic_site_str_gs
+        - sample_tumor_status_gs
+        - diagnosis_str_gs
+        - diagnosis_category_str_gs
+        - tumor_classification_gs
       integer:
         - participant_age_at_collection
         - diagnosis_filters.age_at_diagnosis
@@ -6602,6 +6610,130 @@ indices:
             st.study_phase AS study_phase,
             st.study_acronym AS study_acronym,
             st.study_name AS study_name
+        page_size: 1000
+      - name: "global_search_properties"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+
+          OPTIONAL MATCH (sm)-[*..3]->(p:participant)
+          WITH
+            sm,
+            [participant_id IN collect(DISTINCT p.participant_id)
+              WHERE participant_id IS NOT NULL
+                AND trim(toString(participant_id)) <> '' |
+              toString(participant_id)] AS participant_id_values
+
+          OPTIONAL MATCH (sm)-[*..5]->(st:study)
+          WITH
+            sm,
+            participant_id_values,
+            [study_id IN collect(DISTINCT st.study_id)
+              WHERE study_id IS NOT NULL AND trim(toString(study_id)) <> '' |
+              toString(study_id)] AS study_id_values
+
+          RETURN
+            sm.guid AS id,
+            sm.sample_id AS sample_id_gs,
+            reduce(
+              result = '',
+              value IN participant_id_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS participant_id_gs,
+            reduce(
+              result = '',
+              value IN study_id_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS study_id_gs,
+            reduce(
+              result = '',
+              value IN coalesce(sm.anatomic_site, []) |
+                CASE
+                  WHEN value IS NULL OR trim(toString(value)) = '' THEN result
+                  WHEN result = '' THEN trim(toString(value))
+                  ELSE result + ';' + trim(toString(value))
+                END
+            ) AS sample_anatomic_site_str_gs,
+            sm.sample_tumor_status AS sample_tumor_status_gs,
+            sm.tumor_spatial_extent AS tumor_classification_gs
+        page_size: 1000
+      - name: "global_search_diagnosis_properties"
+        query: |
+          MATCH (sm:sample)
+          WITH sm
+          SKIP $skip LIMIT $limit
+
+          // Participant-level diagnoses related to this sample
+          OPTIONAL MATCH (sm)-[*..3]->(:participant)<--(participant_dg:diagnosis)
+          WITH sm, collect(DISTINCT participant_dg) AS participant_diagnoses
+
+          // Diagnoses attached to this sample or its related model samples
+          OPTIONAL MATCH (sm)<-[*..3]-(sample_dg:diagnosis)
+          WITH
+            sm,
+            participant_diagnoses + collect(DISTINCT sample_dg) AS related_diagnoses
+
+          UNWIND
+            CASE
+              WHEN size(related_diagnoses) = 0 THEN [null]
+              ELSE related_diagnoses
+            END AS dg
+          WITH sm, collect(DISTINCT dg) AS diagnoses
+
+          WITH
+            sm,
+            reduce(
+              values = [],
+              dg IN diagnoses |
+                CASE
+                  WHEN dg.diagnosis IS NULL
+                    OR trim(toString(dg.diagnosis)) = ''
+                    OR toString(dg.diagnosis) IN values
+                  THEN values
+                  ELSE values + toString(dg.diagnosis)
+                END
+            ) AS diagnosis_values,
+            reduce(
+              values = [],
+              dg IN diagnoses |
+                reduce(
+                  categories = values,
+                  category IN coalesce(dg.diagnosis_category, []) |
+                    CASE
+                      WHEN category IS NULL
+                        OR trim(toString(category)) = ''
+                        OR toString(category) IN categories
+                      THEN categories
+                      ELSE categories + toString(category)
+                    END
+                )
+            ) AS diagnosis_category_values
+
+          RETURN
+            sm.guid AS id,
+            reduce(
+              result = '',
+              value IN diagnosis_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS diagnosis_str_gs,
+            reduce(
+              result = '',
+              value IN diagnosis_category_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS diagnosis_category_str_gs
         page_size: 1000
       - name: "diagnosis_filters"
         query: |
