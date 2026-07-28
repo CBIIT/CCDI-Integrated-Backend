@@ -1,10 +1,25 @@
 package gov.nih.nci.ccdi;
 
+import graphql.ExecutionResult;
+import graphql.GraphQL;
+import graphql.language.FieldDefinition;
+import graphql.language.ListType;
+import graphql.language.ObjectTypeDefinition;
+import graphql.language.TypeName;
+import graphql.schema.GraphQLSchema;
+import graphql.schema.idl.RuntimeWiring;
+import graphql.schema.idl.SchemaGenerator;
+import graphql.schema.idl.SchemaParser;
+import graphql.schema.idl.TypeDefinitionRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -31,6 +46,85 @@ class PortalGraphQLSchemaPresenceTest {
             String text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             assertTrue(text.contains("type QueryType"), "public ES schema should declare QueryType");
         }
+    }
+
+    @Test
+    void cohortMetadataSchemaUsesStudyConsentGroupParticipantHierarchy() throws Exception {
+        try (InputStream in = classLoader().getResourceAsStream("graphql/ccdi-portal-private-es.graphql")) {
+            assertNotNull(in, "graphql/ccdi-portal-private-es.graphql should be on the classpath");
+            String text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            TypeDefinitionRegistry registry = new SchemaParser().parse(text);
+
+            ObjectTypeDefinition study = objectType(registry, "CohortMetadataResult");
+            assertEquals(
+                "CohortMetadataStudyConsentGroup",
+                listTypeName(field(study, "consent_groups"))
+            );
+
+            ObjectTypeDefinition consentGroup = objectType(
+                registry,
+                "CohortMetadataStudyConsentGroup"
+            );
+            assertEquals(
+                "CohortMetadataParticipant",
+                listTypeName(field(consentGroup, "participants"))
+            );
+
+            ObjectTypeDefinition participant = objectType(registry, "CohortMetadataParticipant");
+            assertEquals(
+                "CohortMetadataParticipantDiagnosis",
+                listTypeName(field(participant, "diagnoses"))
+            );
+            assertEquals(
+                "CohortMetadataParticipantSample",
+                listTypeName(field(participant, "samples"))
+            );
+            assertFalse(
+                registry.getType("CohortMetadataReturnObject").isPresent(),
+                "the obsolete flat participant type should be removed"
+            );
+        }
+    }
+
+    @Test
+    void cohortMetadataQueryMatchesPrivateEsSchema() throws Exception {
+        String schemaText;
+        try (InputStream in = classLoader().getResourceAsStream("graphql/ccdi-portal-private-es.graphql")) {
+            assertNotNull(in, "graphql/ccdi-portal-private-es.graphql should be on the classpath");
+            schemaText = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        TypeDefinitionRegistry registry = new SchemaParser().parse(schemaText);
+        GraphQLSchema schema = new SchemaGenerator().makeExecutableSchema(
+            registry,
+            RuntimeWiring.newRuntimeWiring().build()
+        );
+        String query = Files.readString(
+            Path.of("doc/cohortMetadata.graphql"),
+            StandardCharsets.UTF_8
+        );
+
+        ExecutionResult result = GraphQL.newGraphQL(schema).build().execute(query);
+        assertTrue(result.getErrors().isEmpty(), result.getErrors().toString());
+    }
+
+    private static ObjectTypeDefinition objectType(
+        TypeDefinitionRegistry registry,
+        String typeName
+    ) {
+        return (ObjectTypeDefinition) registry.getType(typeName).orElseThrow();
+    }
+
+    private static FieldDefinition field(ObjectTypeDefinition type, String fieldName) {
+        return type.getFieldDefinitions().stream()
+            .filter(field -> fieldName.equals(field.getName()))
+            .findFirst()
+            .orElseThrow();
+    }
+
+    private static String listTypeName(FieldDefinition field) {
+        ListType listType = (ListType) field.getType();
+        return ((TypeName) listType.getType()).getName();
     }
 
     private static ClassLoader classLoader() {
