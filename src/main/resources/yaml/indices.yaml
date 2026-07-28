@@ -7159,6 +7159,9 @@ indices:
 
           UNWIND file_nodes AS f
 
+          // All validated file-to-study paths are directed and no more than
+          // six relationships long. One bounded expansion is faster in
+          // Memgraph than evaluating the path shapes as separate branches.
           OPTIONAL MATCH (f)-[
             :of_clinical_measure_file |
             of_generic_file |
@@ -7328,84 +7331,60 @@ indices:
                   ELSE result + ';' + trim(toString(value))
                 END
             ) AS participant_id_gs
-        page_size: 1000
+        page_size: 5000
       - name: "global_search_sample_properties"
         query: |
           MATCH (f:
-            clinical_measure_file |
-            generic_file |
             cytogenomic_file |
+            generic_file |
             methylation_array_file |
             pathology_file |
             sequencing_file
-          )-[
-            :of_clinical_measure_file |
-            of_generic_file |
-            of_cytogenomic_file |
-            of_methylation_array_file |
-            of_pathology_file |
-            of_sequencing_file
-          ]->(direct_sm:sample)
+          )
           WHERE f.dcf_indexd_guid IS NOT NULL
 
           WITH
             f.dcf_indexd_guid AS file_guid,
-            collect(DISTINCT direct_sm) AS direct_samples
+            collect(DISTINCT f) AS file_nodes
 
           SKIP $skip
           LIMIT $limit
 
-          // Reuse the sample/model traversal from combined_filters_sample_level.
+          // Traverse sample relationships only for the current file page.
+          UNWIND file_nodes AS file_node
+          OPTIONAL MATCH (file_node)-[
+            :of_cytogenomic_file |
+            of_generic_file |
+            of_methylation_array_file |
+            of_pathology_file |
+            of_sequencing_file
+          ]->(direct_sm:sample)
+
+          WITH
+            file_guid,
+            collect(DISTINCT direct_sm) AS direct_samples
+
+          // Include the direct file sample and any upstream sample connected
+          // through the direct sample's PDX or cell-line model.
           CALL {
             WITH direct_samples
 
-            UNWIND direct_samples AS seed_sm
-            OPTIONAL MATCH (seed_sm)-[:of_sample]->(out_cell:cell_line)
+            UNWIND
+              CASE
+                WHEN size(direct_samples) = 0 THEN [null]
+                ELSE direct_samples
+              END AS seed_sm
 
-            WITH
-              direct_samples,
-              seed_sm,
-              collect(DISTINCT out_cell) AS raw_models
-
-            OPTIONAL MATCH (seed_sm)-[:of_sample]->(out_pdx:pdx)
-
-            WITH
-              direct_samples,
-              seed_sm,
-              raw_models + collect(DISTINCT out_pdx) AS raw_models
-
-            OPTIONAL MATCH (seed_sm)<-[:of_cell_line]-(in_cell:cell_line)
-
-            WITH
-              direct_samples,
-              seed_sm,
-              raw_models + collect(DISTINCT in_cell) AS raw_models
-
-            OPTIONAL MATCH (seed_sm)<-[:of_pdx]-(in_pdx:pdx)
-
-            WITH
-              direct_samples,
-              raw_models + collect(DISTINCT in_pdx) AS raw_models
-
-            WITH
-              direct_samples,
-              [model IN raw_models WHERE model IS NOT NULL] AS models
-
-            UNWIND CASE WHEN size(models) = 0 THEN [null] ELSE models END AS model
-            OPTIONAL MATCH (model)<-[:of_sample]-(same_model_sm:sample)
-
-            WITH
-              direct_samples,
-              models,
-              collect(DISTINCT same_model_sm) AS same_model_samples
-
-            UNWIND CASE WHEN size(models) = 0 THEN [null] ELSE models END AS model
-            OPTIONAL MATCH (model)-[:of_cell_line|of_pdx]->(model_edge_sm:sample)
+            OPTIONAL MATCH
+              (seed_sm)-[:of_sample]->(model)-[
+                :of_cell_line |
+                of_pdx
+              ]->(model_sm:sample)
+            WHERE model:cell_line OR model:pdx
 
             WITH
               direct_samples
-                + same_model_samples
-                + collect(DISTINCT model_edge_sm) AS raw_samples
+                + collect(DISTINCT model_sm) AS raw_samples
 
             UNWIND raw_samples AS sm
             WITH DISTINCT sm
@@ -7435,7 +7414,7 @@ indices:
                   ELSE result + ';' + value
                 END
             ) AS sample_id_gs
-        page_size: 1000
+        page_size: 5000
       - name: "combined_filters_study_level"
         query: |
           MATCH (f:
