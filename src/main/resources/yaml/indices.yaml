@@ -7104,10 +7104,7 @@ indices:
             first_study.dbgap_accession AS dbgap_accession,
             first_study.study_phase AS study_phase,
             first_study.study_acronym AS study_acronym,
-            first_study.study_name AS study_name,
-
-            // Global search properties
-            first_study.study_id AS study_id_gs
+            first_study.study_name AS study_name
         page_size: 5000
       - name: "file_properties"
         query: |
@@ -7138,9 +7135,71 @@ indices:
             first_file.library_strategy AS library_strategy,
             first_file.fixation_embedding_method AS fixation_embedding_method,
             first_file.staining_method AS staining_method,
-            [id] as files,
+            [id] as files
+        page_size: 5000
+      - name: "global_search_study_properties"
+        query: |
+          MATCH (f:
+            clinical_measure_file |
+            generic_file |
+            radiology_file |
+            cytogenomic_file |
+            sequencing_file |
+            pathology_file |
+            methylation_array_file
+          )
+          WHERE f.dcf_indexd_guid IS NOT NULL
 
-            // Global search properties
+          WITH
+            f.dcf_indexd_guid AS id,
+            collect(DISTINCT f) AS file_nodes
+
+          SKIP $skip
+          LIMIT $limit
+
+          UNWIND file_nodes AS f
+
+          OPTIONAL MATCH (f)-[
+            :of_clinical_measure_file |
+            of_generic_file |
+            of_radiology_file |
+            of_cytogenomic_file |
+            of_sequencing_file |
+            of_pathology_file |
+            of_methylation_array_file |
+            of_sample |
+            of_pdx |
+            of_cell_line |
+            of_participant |
+            of_consent_group
+            *..6
+          ]->(st:study)
+
+          WITH
+            id,
+            head(collect(DISTINCT st)) AS first_study
+
+          RETURN
+            id,
+            first_study.study_id AS study_id_gs
+        page_size: 5000
+      - name: "global_search_file_properties"
+        query: |
+          MATCH (f:
+            clinical_measure_file |
+            generic_file |
+            radiology_file |
+            cytogenomic_file |
+            sequencing_file |
+            pathology_file |
+            methylation_array_file
+          )
+          WITH
+            f.dcf_indexd_guid AS id,
+            head(collect(f)) AS first_file
+          SKIP $skip LIMIT $limit
+          RETURN
+            id,
             first_file.file_description AS file_description_gs,
             first_file.file_type AS file_type_gs,
             first_file.file_name AS file_name_gs,
@@ -7154,6 +7213,224 @@ indices:
                 END
             ) AS data_category_gs
         page_size: 5000
+      - name: "global_search_participant_level_properties"
+        query: |
+          MATCH (f:
+            clinical_measure_file |
+            generic_file |
+            radiology_file
+          )-[
+            :of_clinical_measure_file |
+            of_generic_file |
+            of_radiology_file
+          ]->(p:participant)
+          WHERE f.dcf_indexd_guid IS NOT NULL
+
+          WITH
+            f.dcf_indexd_guid AS id,
+            collect(DISTINCT p.participant_id) AS participant_id_values
+
+          SKIP $skip
+          LIMIT $limit
+
+          RETURN
+            id,
+            reduce(
+              result = '',
+              value IN participant_id_values |
+                CASE
+                  WHEN value IS NULL OR trim(toString(value)) = '' THEN result
+                  WHEN result = '' THEN trim(toString(value))
+                  ELSE result + ';' + trim(toString(value))
+                END
+            ) AS participant_id_gs
+        page_size: 1000
+      - name: "global_search_sample_level_properties"
+        query: |
+          MATCH (f:
+            clinical_measure_file |
+            generic_file |
+            cytogenomic_file |
+            methylation_array_file |
+            pathology_file |
+            sequencing_file
+          )-[
+            :of_clinical_measure_file |
+            of_generic_file |
+            of_cytogenomic_file |
+            of_methylation_array_file |
+            of_pathology_file |
+            of_sequencing_file
+          ]->(direct_sm:sample)
+          WHERE f.dcf_indexd_guid IS NOT NULL
+
+          WITH
+            f.dcf_indexd_guid AS file_guid,
+            collect(DISTINCT direct_sm) AS direct_samples
+
+          SKIP $skip
+          LIMIT $limit
+
+          // Reuse the sample/model traversal from combined_filters_sample_level.
+          CALL {
+            WITH direct_samples
+
+            UNWIND direct_samples AS seed_sm
+            OPTIONAL MATCH (seed_sm)-[:of_sample]->(out_cell:cell_line)
+
+            WITH
+              direct_samples,
+              seed_sm,
+              collect(DISTINCT out_cell) AS raw_models
+
+            OPTIONAL MATCH (seed_sm)-[:of_sample]->(out_pdx:pdx)
+
+            WITH
+              direct_samples,
+              seed_sm,
+              raw_models + collect(DISTINCT out_pdx) AS raw_models
+
+            OPTIONAL MATCH (seed_sm)<-[:of_cell_line]-(in_cell:cell_line)
+
+            WITH
+              direct_samples,
+              seed_sm,
+              raw_models + collect(DISTINCT in_cell) AS raw_models
+
+            OPTIONAL MATCH (seed_sm)<-[:of_pdx]-(in_pdx:pdx)
+
+            WITH
+              direct_samples,
+              raw_models + collect(DISTINCT in_pdx) AS raw_models
+
+            WITH
+              direct_samples,
+              [model IN raw_models WHERE model IS NOT NULL] AS models
+
+            UNWIND CASE WHEN size(models) = 0 THEN [null] ELSE models END AS model
+            OPTIONAL MATCH (model)<-[:of_sample]-(same_model_sm:sample)
+
+            WITH
+              direct_samples,
+              models,
+              collect(DISTINCT same_model_sm) AS same_model_samples
+
+            UNWIND CASE WHEN size(models) = 0 THEN [null] ELSE models END AS model
+            OPTIONAL MATCH (model)-[:of_cell_line|of_pdx]->(model_edge_sm:sample)
+
+            WITH
+              direct_samples
+                + same_model_samples
+                + collect(DISTINCT model_edge_sm) AS raw_samples
+
+            UNWIND raw_samples AS sm
+            WITH DISTINCT sm
+            WHERE sm IS NOT NULL
+
+            RETURN collect(sm) AS associated_samples
+          }
+
+          UNWIND associated_samples AS sm
+
+          // Reuse the participant resolution from combined_filters_sample_level.
+          CALL {
+            WITH sm
+
+            OPTIONAL MATCH (sm)-[:of_sample]->(direct_p:participant)
+
+            WITH
+              sm,
+              collect(DISTINCT direct_p) AS direct_participants
+
+            OPTIONAL MATCH
+              (sm)<-[:of_diagnosis]-(:diagnosis)-[:of_diagnosis]->(diagnosis_p:participant)
+
+            WITH
+              sm,
+              direct_participants
+                + collect(DISTINCT diagnosis_p) AS sample_and_diagnosis_participants
+
+            OPTIONAL MATCH
+              (sm)-[:of_sample]->(:cell_line)-[:of_cell_line]->(cell_p:participant)
+
+            WITH
+              sm,
+              sample_and_diagnosis_participants,
+              collect(DISTINCT cell_p) AS model_participants
+
+            OPTIONAL MATCH
+              (sm)-[:of_sample]->(:pdx)-[:of_pdx]->(pdx_p:participant)
+
+            WITH
+              sm,
+              sample_and_diagnosis_participants,
+              model_participants
+                + collect(DISTINCT pdx_p) AS model_participants
+
+            OPTIONAL MATCH
+              (sm)<-[:of_cell_line]-(:cell_line)-[:of_cell_line]->(incoming_cell_p:participant)
+
+            WITH
+              sm,
+              sample_and_diagnosis_participants,
+              model_participants
+                + collect(DISTINCT incoming_cell_p) AS model_participants
+
+            OPTIONAL MATCH
+              (sm)<-[:of_pdx]-(:pdx)-[:of_pdx]->(incoming_pdx_p:participant)
+
+            WITH
+              sample_and_diagnosis_participants
+                + model_participants
+                + collect(DISTINCT incoming_pdx_p) AS raw_participants
+
+            RETURN [p IN raw_participants WHERE p IS NOT NULL] AS participants
+          }
+
+          UNWIND
+            CASE
+              WHEN size(participants) = 0 THEN [null]
+              ELSE participants
+            END AS p
+
+          WITH
+            file_guid,
+            associated_samples,
+            collect(DISTINCT p) AS participant_nodes
+
+          WITH
+            file_guid,
+            [p IN participant_nodes
+              WHERE p IS NOT NULL AND p.participant_id IS NOT NULL |
+              p.participant_id] AS participant_id_values,
+            reduce(sample_id_values = [], sample_node IN associated_samples |
+              CASE
+                WHEN sample_node.sample_id IS NULL
+                  OR sample_node.sample_id IN sample_id_values
+                THEN sample_id_values
+                ELSE sample_id_values + [sample_node.sample_id]
+              END
+            ) AS sample_id_values
+
+          RETURN
+            file_guid AS id,
+            reduce(
+              result = '',
+              value IN participant_id_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS participant_id_gs,
+            reduce(
+              result = '',
+              value IN sample_id_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS sample_id_gs
+        page_size: 1000
       - name: "combined_filters_study_level"
         query: |
           MATCH (f:
@@ -7614,17 +7891,7 @@ indices:
             null AS percent_tumor,
             null AS percent_necrosis,
             [file_guid] AS files,
-            combined_filters AS combined_filters,
-
-            // Global search properties
-            reduce(
-              result = '',
-              value IN participant_ids |
-                CASE
-                  WHEN result = '' THEN value
-                  ELSE result + ';' + value
-                END
-            ) AS participant_id_gs
+            combined_filters AS combined_filters
         page_size: 1000
       - name: "combined_filters_sample_level"
         query: |
@@ -8145,25 +8412,7 @@ indices:
               END
             ) AS percent_necrosis,
             [file_guid] AS files,
-            combined_filters AS combined_filters,
-
-            // Global search properties
-            reduce(
-              result = '',
-              value IN participant_ids |
-                CASE
-                  WHEN result = '' THEN value
-                  ELSE result + ';' + value
-                END
-            ) AS participant_id_gs,
-            reduce(
-              result = '',
-              value IN sample_ids |
-                CASE
-                  WHEN result = '' THEN value
-                  ELSE result + ';' + value
-                END
-            ) AS sample_id_gs
+            combined_filters AS combined_filters
         page_size: 1000
 
   # Model nodes index
