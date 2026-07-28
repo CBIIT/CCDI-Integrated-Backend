@@ -7213,25 +7213,109 @@ indices:
                 END
             ) AS data_category_gs
         page_size: 5000
-      - name: "global_search_participant_level_properties"
+      - name: "global_search_participant_properties"
         query: |
           MATCH (f:
             clinical_measure_file |
             generic_file |
-            radiology_file
-          )-[
-            :of_clinical_measure_file |
-            of_generic_file |
-            of_radiology_file
-          ]->(p:participant)
+            radiology_file |
+            cytogenomic_file |
+            sequencing_file |
+            pathology_file |
+            methylation_array_file
+          )
           WHERE f.dcf_indexd_guid IS NOT NULL
 
           WITH
             f.dcf_indexd_guid AS id,
-            collect(DISTINCT p.participant_id) AS participant_id_values
+            collect(DISTINCT f) AS file_nodes
 
           SKIP $skip
           LIMIT $limit
+
+          // Resolve direct participant-level mappings only for this file page.
+          CALL {
+            WITH file_nodes
+
+            UNWIND file_nodes AS file_node
+            OPTIONAL MATCH (file_node)-[
+              :of_clinical_measure_file |
+              of_generic_file |
+              of_radiology_file
+            ]->(direct_p:participant)
+
+            RETURN collect(DISTINCT direct_p) AS direct_participants
+          }
+
+          // Resolve sample-level mappings only for this file page.
+          CALL {
+            WITH file_nodes
+
+            UNWIND file_nodes AS file_node
+            OPTIONAL MATCH (file_node)-[
+              :of_clinical_measure_file |
+              of_generic_file |
+              of_cytogenomic_file |
+              of_methylation_array_file |
+              of_pathology_file |
+              of_sequencing_file
+            ]->(sm:sample)
+
+            WITH collect(DISTINCT sm) AS direct_samples
+
+            // A file-related sample can belong directly to a participant or
+            // lead through one cell-line/PDX node to another participant sample.
+            UNWIND
+              CASE
+                WHEN size(direct_samples) = 0 THEN [null]
+                ELSE direct_samples
+              END AS direct_sm
+
+            OPTIONAL MATCH (direct_sm)-[:of_sample]->(model)
+            WHERE model:cell_line OR model:pdx
+
+            WITH
+              direct_samples,
+              collect(DISTINCT model) AS models
+
+            UNWIND
+              CASE
+                WHEN size(models) = 0 THEN [null]
+                ELSE models
+              END AS model
+
+            OPTIONAL MATCH
+              (model)-[:of_cell_line|of_pdx]->(model_sample:sample)
+
+            WITH
+              direct_samples
+                + collect(DISTINCT model_sample) AS raw_participant_samples
+
+            UNWIND
+              CASE
+                WHEN size(raw_participant_samples) = 0 THEN [null]
+                ELSE raw_participant_samples
+              END AS participant_sample
+
+            OPTIONAL MATCH
+              (participant_sample)-[:of_sample]->(sample_p:participant)
+
+            RETURN collect(DISTINCT sample_p) AS sample_participants
+          }
+
+          WITH
+            id,
+            direct_participants + sample_participants AS raw_participants
+
+          UNWIND
+            CASE
+              WHEN size(raw_participants) = 0 THEN [null]
+              ELSE raw_participants
+            END AS p
+
+          WITH
+            id,
+            collect(DISTINCT p.participant_id) AS participant_id_values
 
           RETURN
             id,
@@ -7245,7 +7329,7 @@ indices:
                 END
             ) AS participant_id_gs
         page_size: 1000
-      - name: "global_search_sample_level_properties"
+      - name: "global_search_sample_properties"
         query: |
           MATCH (f:
             clinical_measure_file |
@@ -7330,79 +7414,8 @@ indices:
             RETURN collect(sm) AS associated_samples
           }
 
-          UNWIND associated_samples AS sm
-
-          // Reuse the participant resolution from combined_filters_sample_level.
-          CALL {
-            WITH sm
-
-            OPTIONAL MATCH (sm)-[:of_sample]->(direct_p:participant)
-
-            WITH
-              sm,
-              collect(DISTINCT direct_p) AS direct_participants
-
-            OPTIONAL MATCH
-              (sm)<-[:of_diagnosis]-(:diagnosis)-[:of_diagnosis]->(diagnosis_p:participant)
-
-            WITH
-              sm,
-              direct_participants
-                + collect(DISTINCT diagnosis_p) AS sample_and_diagnosis_participants
-
-            OPTIONAL MATCH
-              (sm)-[:of_sample]->(:cell_line)-[:of_cell_line]->(cell_p:participant)
-
-            WITH
-              sm,
-              sample_and_diagnosis_participants,
-              collect(DISTINCT cell_p) AS model_participants
-
-            OPTIONAL MATCH
-              (sm)-[:of_sample]->(:pdx)-[:of_pdx]->(pdx_p:participant)
-
-            WITH
-              sm,
-              sample_and_diagnosis_participants,
-              model_participants
-                + collect(DISTINCT pdx_p) AS model_participants
-
-            OPTIONAL MATCH
-              (sm)<-[:of_cell_line]-(:cell_line)-[:of_cell_line]->(incoming_cell_p:participant)
-
-            WITH
-              sm,
-              sample_and_diagnosis_participants,
-              model_participants
-                + collect(DISTINCT incoming_cell_p) AS model_participants
-
-            OPTIONAL MATCH
-              (sm)<-[:of_pdx]-(:pdx)-[:of_pdx]->(incoming_pdx_p:participant)
-
-            WITH
-              sample_and_diagnosis_participants
-                + model_participants
-                + collect(DISTINCT incoming_pdx_p) AS raw_participants
-
-            RETURN [p IN raw_participants WHERE p IS NOT NULL] AS participants
-          }
-
-          UNWIND
-            CASE
-              WHEN size(participants) = 0 THEN [null]
-              ELSE participants
-            END AS p
-
           WITH
             file_guid,
-            associated_samples,
-            collect(DISTINCT p) AS participant_nodes
-
-          WITH
-            file_guid,
-            [p IN participant_nodes
-              WHERE p IS NOT NULL AND p.participant_id IS NOT NULL |
-              p.participant_id] AS participant_id_values,
             reduce(sample_id_values = [], sample_node IN associated_samples |
               CASE
                 WHEN sample_node.sample_id IS NULL
@@ -7414,14 +7427,6 @@ indices:
 
           RETURN
             file_guid AS id,
-            reduce(
-              result = '',
-              value IN participant_id_values |
-                CASE
-                  WHEN result = '' THEN value
-                  ELSE result + ';' + value
-                END
-            ) AS participant_id_gs,
             reduce(
               result = '',
               value IN sample_id_values |
