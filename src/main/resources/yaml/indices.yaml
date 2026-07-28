@@ -2878,6 +2878,11 @@ indices:
         - sample_diagnosis_genetic_analysis_file_filters.library_source_material
         - sample_diagnosis_genetic_analysis_file_filters.library_source_molecule
         - sample_diagnosis_genetic_analysis_file_filters.library_strategy
+        - participant_id_gs
+        - study_id_gs
+        - sex_at_birth_gs
+        - race_str_gs
+        - treatment_type_str_gs
         - diagnosis_str_gs
         - diagnosis_category_str_gs
         - age_at_diagnosis_str_gs
@@ -3386,6 +3391,149 @@ indices:
               library_source_molecule: library_source_molecule,
               library_strategy: library_strategy
             }) AS sample_diagnosis_genetic_analysis_file_filters
+        page_size: 5000
+      - name: "participant_study_gs_properties"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+
+          // A participant normally belongs to one study; joining keeps the
+          // global-search field deterministic if multiple studies are related.
+          OPTIONAL MATCH (stu:study)<--(:consent_group)<--(p)
+          WITH
+            p,
+            [study_id IN collect(DISTINCT stu.study_id)
+              WHERE study_id IS NOT NULL AND trim(toString(study_id)) <> '' |
+              toString(study_id)] AS study_id_values
+
+          OPTIONAL MATCH
+            (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
+          WITH
+            p,
+            study_id_values,
+            collect(DISTINCT
+              CASE
+                WHEN tchemo IS NULL THEN []
+                WHEN tchemo.chemotherapy_type IS NULL
+                  OR size(tchemo.chemotherapy_type) = 0
+                THEN ['chemotherapy']
+                ELSE [value IN tchemo.chemotherapy_type
+                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
+                  trim(toString(value))]
+              END
+            ) AS chemotherapy_type_lists
+
+          OPTIONAL MATCH
+            (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
+          WITH
+            p,
+            study_id_values,
+            chemotherapy_type_lists,
+            collect(DISTINCT
+              CASE
+                WHEN trad IS NULL THEN []
+                WHEN trad.treatment_type IS NULL
+                  OR size(trad.treatment_type) = 0
+                THEN ['radiation']
+                ELSE [value IN trad.treatment_type
+                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
+                  trim(toString(value))]
+              END
+            ) AS radiation_type_lists
+
+          OPTIONAL MATCH
+            (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
+          WITH
+            p,
+            study_id_values,
+            chemotherapy_type_lists,
+            radiation_type_lists,
+            collect(DISTINCT
+              CASE
+                WHEN tsurg IS NULL THEN []
+                WHEN tsurg.treatment_type IS NULL
+                  OR size(tsurg.treatment_type) = 0
+                THEN ['surgery']
+                ELSE [value IN tsurg.treatment_type
+                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
+                  trim(toString(value))]
+              END
+            ) AS surgery_type_lists
+
+          OPTIONAL MATCH
+            (toth:treatment_other)-[:of_treatment_other]->(p)
+          WITH
+            p,
+            study_id_values,
+            chemotherapy_type_lists,
+            radiation_type_lists,
+            surgery_type_lists,
+            collect(DISTINCT
+              CASE
+                WHEN toth IS NULL THEN []
+                WHEN toth.treatment_type IS NULL
+                  OR size(toth.treatment_type) = 0
+                THEN ['other']
+                ELSE [value IN toth.treatment_type
+                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
+                  trim(toString(value))]
+              END
+            ) AS other_type_lists
+
+          WITH
+            p,
+            study_id_values,
+            reduce(
+              all_types = [],
+              type_list IN chemotherapy_type_lists
+                + radiation_type_lists
+                + surgery_type_lists
+                + other_type_lists |
+                all_types + type_list
+            ) AS raw_treatment_type_values
+
+          WITH
+            p,
+            study_id_values,
+            reduce(
+              values = [],
+              value IN raw_treatment_type_values |
+                CASE
+                  WHEN value IN values THEN values
+                  ELSE values + value
+                END
+            ) AS treatment_type_values
+
+          RETURN
+            p.guid AS id,
+            p.participant_id AS participant_id_gs,
+            reduce(
+              result = '',
+              value IN study_id_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS study_id_gs,
+            p.sex_at_birth AS sex_at_birth_gs,
+            reduce(
+              result = '',
+              value IN coalesce(p.race, []) |
+                CASE
+                  WHEN value IS NULL OR trim(toString(value)) = '' THEN result
+                  WHEN result = '' THEN trim(toString(value))
+                  ELSE result + ';' + trim(toString(value))
+                END
+            ) AS race_str_gs,
+            reduce(
+              result = '',
+              value IN treatment_type_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS treatment_type_str_gs
         page_size: 5000
       - name: "diagnosis_gs_properties"
         query: |
