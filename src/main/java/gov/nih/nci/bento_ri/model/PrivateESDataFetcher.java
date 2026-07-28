@@ -31,7 +31,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
-import static gov.nih.nci.bento_ri.util.ValueUtils.toStringList;
 
 @Component
 public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
@@ -73,6 +72,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String DIAGNOSIS_END_POINT = "/diagnoses_table/_search";
     final String GENETIC_ANALYSES_END_POINT = "/genetic_analyses_table/_search";
     final String STUDIES_END_POINT = "/studies_table/_search";
+    final String STUDIES_FOR_COHORTS_END_POINT = "/studies_for_cohorts/_search";
     final String SAMPLES_END_POINT = "/samples_table/_search";
     final String FILES_END_POINT = "/files_table/_search";
     final String GS_ABOUT_END_POINT = "/ccdi_hub_static_pages/_search";
@@ -1844,93 +1844,176 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
 
     private List<Map<String, Object>> cohortMetadata(Map<String, Object> params) throws IOException {
-        List<Map<String, Object>> participants;
-        Map<String, List<Map<String, Object>>> participantsByStudy = new HashMap<String, List<Map<String, Object>>>();
-        List<Map<String, Object>> listOfParticipantsByStudy = new ArrayList<Map<String, Object>>();
-
-        final String[][] PROPERTIES = new String[][]{
-            
+        final String[][] PARTICIPANT_PROPERTIES = new String[][]{
             new String[]{"id", "id"},
             new String[]{"participant_id", "participant_id"},
-            new String[]{"dbgap_accession", "dbgap_accession"},
             new String[]{"race", "race"},
             new String[]{"sex_at_birth", "sex_at_birth"},
-            
+            new String[]{"occupation", "occupation"},
+            new String[]{"guid", "guid"},
+            new String[]{"crdc_id", "crdc_id"},
+            new String[]{"consent_group_guid", "consent_group_guid"},
+            new String[]{"study_guid", "study_guid"},
+            new String[]{"clinical_measure_files", "clinical_measure_files"},
             new String[]{"diagnoses", "diagnoses"},
+            new String[]{"exposures", "exposures"},
+            new String[]{"family_relationships", "family_relationships"},
+            new String[]{"laboratory_tests", "laboratory_tests"},
+            new String[]{"medical_histories", "medical_histories"},
+            new String[]{"radiology_files", "radiology_files"},
             new String[]{"survivals", "survivals"},
-            new String[]{"treatments", "treatments"},
+            new String[]{"synonyms", "synonyms"},
+            new String[]{"treatments_chemotherapy", "treatments_chemotherapy"},
+            new String[]{"treatments_other", "treatments_other"},
+            new String[]{"treatments_radiation", "treatments_radiation"},
             new String[]{"treatment_responses", "treatment_responses"},
+            new String[]{"treatments_surgery", "treatments_surgery"},
             new String[]{"samples", "samples"},
-            new String[]{"files", "files"},
+        };
+
+        final String[][] STUDY_PROPERTIES = new String[][]{
+            new String[]{"guid", "guid"},
+            new String[]{"study_id", "study_id"},
+            new String[]{"dbgap_accession", "dbgap_accession"},
+            new String[]{"study_name", "study_name"},
+            new String[]{"study_acronym", "study_acronym"},
+            new String[]{"study_description", "study_description"},
+            new String[]{"external_url", "external_url"},
+            new String[]{"experimental_strategy_and_data_subtype", "experimental_strategy_and_data_subtype"},
+            new String[]{"study_phase", "study_phase"},
+            new String[]{"study_period_start", "study_period_start"},
+            new String[]{"study_period_stop", "study_period_stop"},
+            new String[]{"study_data_types", "study_data_types"},
+            new String[]{"promotion_status", "promotion_status"},
+            new String[]{"crdc_id", "crdc_id"},
+            new String[]{"clinical_measure_files", "clinical_measure_files"},
+            new String[]{"generic_files", "generic_files"},
+            new String[]{"publications", "publications"},
+            new String[]{"study_admins", "study_admins"},
+            new String[]{"study_arms", "study_arms"},
+            new String[]{"study_fundings", "study_fundings"},
+            new String[]{"study_personnels", "study_personnels"},
+            new String[]{"study_statuses", "study_statuses"},
+            new String[]{"consent_groups", "consent_groups"},
+            new String[]{"cell_lines", "cell_lines"},
         };
 
         String defaultSort = "participant_id"; // Default sort order
 
         Map<String, String> mapping = Map.ofEntries(
             Map.entry("participant_id", "participant_id"),
-            Map.entry("dbgap_accession", "dbgap_accession"),
             Map.entry("race", "race"),
             Map.entry("sex_at_birth", "sex_at_birth")
         );
 
-        participants = overview(COHORTS_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "cohorts");
-        
-        // Sort survivals array by age_at_last_known_survival_status for each participant
-        // and normalize treatment_agent / treatment_type to List<String>
+        List<Map<String, Object>> participants = overview(
+            COHORTS_END_POINT,
+            params,
+            PARTICIPANT_PROPERTIES,
+            defaultSort,
+            mapping,
+            Set.of(),
+            "nested_filters",
+            "cohorts"
+        );
+
+        Set<String> studyGuids = participants.stream()
+            .map(participant -> participant.get("study_guid"))
+            .filter(Objects::nonNull)
+            .map(Object::toString)
+            .filter(studyGuid -> !studyGuid.isBlank())
+            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+
+        if (studyGuids.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, List<Map<String, Object>>> participantsByConsentGroup = new LinkedHashMap<>();
+        participants.forEach(participant -> {
+            Object consentGroupGuid = participant.get("consent_group_guid");
+            if (consentGroupGuid != null) {
+                participantsByConsentGroup
+                    .computeIfAbsent(consentGroupGuid.toString(), ignored -> new ArrayList<>())
+                    .add(participant);
+            }
+        });
+
+        // Sort survivals by age for each participant before nesting them under consent groups.
         participants.forEach((Map<String, Object> participant) -> {
             Object survivalsObj = participant.get("survivals");
             if (survivalsObj instanceof List) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> survivals = (List<Map<String, Object>>) survivalsObj;
-                survivals.sort((a, b) -> {
-                    Object aAgeObj = a.get("age_at_last_known_survival_status");
-                    Object bAgeObj = b.get("age_at_last_known_survival_status");
-                    
-                    // Handle null values - put them at the end
-                    if (aAgeObj == null && bAgeObj == null) return 0;
-                    if (aAgeObj == null) return 1;
-                    if (bAgeObj == null) return -1;
-                    
-                    // Convert to double for comparison
-                    double aAge = aAgeObj instanceof Number ? ((Number) aAgeObj).doubleValue() : Double.parseDouble(aAgeObj.toString());
-                    double bAge = bAgeObj instanceof Number ? ((Number) bAgeObj).doubleValue() : Double.parseDouble(bAgeObj.toString());
-                    
-                    return Double.compare(aAge, bAge);
-                });
-            }
-
-            Object treatmentsObj = participant.get("treatments");
-            if (treatmentsObj instanceof List) {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> treatments = (List<Map<String, Object>>) treatmentsObj;
-                for (Map<String, Object> treatment : treatments) {
-                    treatment.put("treatment_agent", toStringList(treatment.get("treatment_agent")));
-                    treatment.put("treatment_type", toStringList(treatment.get("treatment_type")));
-                }
-            }
-        });
-        
-        // Restructure the data to a map, keyed by dbgap_accession
-        participants.forEach((Map<String, Object> participant) -> {
-            String dbgapAccession = (String) participant.get("dbgap_accession");
-
-            if (participantsByStudy.containsKey(dbgapAccession)) {
-                participantsByStudy.get(dbgapAccession).add(participant);
-            } else {
-                participantsByStudy.put(dbgapAccession, new ArrayList<Map<String, Object>>(
-                    List.of(participant)
+                survivals.sort((a, b) -> compareNullableNumbers(
+                    a.get("age_at_last_known_survival_status"),
+                    b.get("age_at_last_known_survival_status")
                 ));
             }
         });
 
-        // Restructure the map to a list
-        participantsByStudy.forEach((accession, people) -> {
-            listOfParticipantsByStudy.add(Map.ofEntries(
-                Map.entry("dbgap_accession", accession),
-                Map.entry("participants", people)
-            ));
+        Request studiesRequest = new Request("GET", STUDIES_FOR_COHORTS_END_POINT);
+        Map<String, Object> studiesQuery = new HashMap<>();
+        studiesQuery.put("query", Map.of("terms", Map.of("guid", studyGuids)));
+
+        List<Map<String, Object>> studies = inventoryESService.collectPage(
+            studiesRequest,
+            studiesQuery,
+            STUDY_PROPERTIES,
+            studyGuids.size(),
+            0
+        );
+
+        Map<String, Map<String, Object>> studiesByGuid = new HashMap<>();
+        studies.forEach(study -> {
+            Object studyGuid = study.get("guid");
+            if (studyGuid != null) {
+                studiesByGuid.put(studyGuid.toString(), study);
+            }
         });
-        return listOfParticipantsByStudy;
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (String studyGuid : studyGuids) {
+            Map<String, Object> study = studiesByGuid.get(studyGuid);
+            if (study == null) {
+                continue;
+            }
+
+            Object consentGroupsObj = study.get("consent_groups");
+            List<Map<String, Object>> selectedConsentGroups = new ArrayList<>();
+            if (consentGroupsObj instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> consentGroups =
+                    (List<Map<String, Object>>) consentGroupsObj;
+                for (Map<String, Object> consentGroup : consentGroups) {
+                    Object consentGroupGuid = consentGroup.get("guid");
+                    List<Map<String, Object>> consentGroupParticipants = consentGroupGuid == null
+                        ? null
+                        : participantsByConsentGroup.get(consentGroupGuid.toString());
+                    if (consentGroupParticipants != null && !consentGroupParticipants.isEmpty()) {
+                        consentGroup.put("participants", consentGroupParticipants);
+                        selectedConsentGroups.add(consentGroup);
+                    }
+                }
+            }
+
+            study.put("consent_groups", selectedConsentGroups);
+            result.add(study);
+        }
+        return result;
+    }
+
+    private int compareNullableNumbers(Object first, Object second) {
+        if (first == null && second == null) return 0;
+        if (first == null) return 1;
+        if (second == null) return -1;
+
+        double firstValue = first instanceof Number
+            ? ((Number) first).doubleValue()
+            : Double.parseDouble(first.toString());
+        double secondValue = second instanceof Number
+            ? ((Number) second).doubleValue()
+            : Double.parseDouble(second.toString());
+        return Double.compare(firstValue, secondValue);
     }
 
     /**
