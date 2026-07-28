@@ -2883,6 +2883,8 @@ indices:
         - sex_at_birth_gs
         - race_str_gs
         - treatment_type_str_gs
+        - treatment_agent_str_gs
+        - last_known_survival_status_str_gs
         - diagnosis_str_gs
         - diagnosis_category_str_gs
         - age_at_diagnosis_str_gs
@@ -3392,7 +3394,7 @@ indices:
               library_strategy: library_strategy
             }) AS sample_diagnosis_genetic_analysis_file_filters
         page_size: 5000
-      - name: "participant_study_gs_properties"
+      - name: "participant_level_gs_properties"
         query: |
           MATCH (p:participant)
           WITH p
@@ -3422,7 +3424,15 @@ indices:
                   WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
                   trim(toString(value))]
               END
-            ) AS chemotherapy_type_lists
+            ) AS chemotherapy_type_lists,
+            collect(DISTINCT
+              CASE
+                WHEN tchemo IS NULL THEN []
+                ELSE [value IN coalesce(tchemo.chemotherapy_agent, [])
+                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
+                  trim(toString(value))]
+              END
+            ) AS chemotherapy_agent_lists
 
           OPTIONAL MATCH
             (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
@@ -3430,6 +3440,7 @@ indices:
             p,
             study_id_values,
             chemotherapy_type_lists,
+            chemotherapy_agent_lists,
             collect(DISTINCT
               CASE
                 WHEN trad IS NULL THEN []
@@ -3440,7 +3451,15 @@ indices:
                   WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
                   trim(toString(value))]
               END
-            ) AS radiation_type_lists
+            ) AS radiation_type_lists,
+            collect(DISTINCT
+              CASE
+                WHEN trad IS NULL THEN []
+                ELSE [value IN coalesce(trad.radiation_therapy_type, [])
+                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
+                  trim(toString(value))]
+              END
+            ) AS radiation_agent_lists
 
           OPTIONAL MATCH
             (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
@@ -3448,7 +3467,9 @@ indices:
             p,
             study_id_values,
             chemotherapy_type_lists,
+            chemotherapy_agent_lists,
             radiation_type_lists,
+            radiation_agent_lists,
             collect(DISTINCT
               CASE
                 WHEN tsurg IS NULL THEN []
@@ -3459,7 +3480,15 @@ indices:
                   WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
                   trim(toString(value))]
               END
-            ) AS surgery_type_lists
+            ) AS surgery_type_lists,
+            collect(DISTINCT
+              CASE
+                WHEN tsurg IS NULL THEN []
+                ELSE [value IN coalesce(tsurg.surgery_type, [])
+                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
+                  trim(toString(value))]
+              END
+            ) AS surgery_agent_lists
 
           OPTIONAL MATCH
             (toth:treatment_other)-[:of_treatment_other]->(p)
@@ -3467,8 +3496,11 @@ indices:
             p,
             study_id_values,
             chemotherapy_type_lists,
+            chemotherapy_agent_lists,
             radiation_type_lists,
+            radiation_agent_lists,
             surgery_type_lists,
+            surgery_agent_lists,
             collect(DISTINCT
               CASE
                 WHEN toth IS NULL THEN []
@@ -3479,7 +3511,15 @@ indices:
                   WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
                   trim(toString(value))]
               END
-            ) AS other_type_lists
+            ) AS other_type_lists,
+            collect(DISTINCT
+              CASE
+                WHEN toth IS NULL THEN []
+                ELSE [value IN coalesce(toth.other_treatment_type, [])
+                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
+                  trim(toString(value))]
+              END
+            ) AS other_agent_lists
 
           WITH
             p,
@@ -3491,7 +3531,15 @@ indices:
                 + surgery_type_lists
                 + other_type_lists |
                 all_types + type_list
-            ) AS raw_treatment_type_values
+            ) AS raw_treatment_type_values,
+            reduce(
+              all_agents = [],
+              agent_list IN chemotherapy_agent_lists
+                + radiation_agent_lists
+                + surgery_agent_lists
+                + other_agent_lists |
+                all_agents + agent_list
+            ) AS raw_treatment_agent_values
 
           WITH
             p,
@@ -3503,7 +3551,25 @@ indices:
                   WHEN value IN values THEN values
                   ELSE values + value
                 END
-            ) AS treatment_type_values
+            ) AS treatment_type_values,
+            reduce(
+              values = [],
+              value IN raw_treatment_agent_values |
+                CASE
+                  WHEN value IN values THEN values
+                  ELSE values + value
+                END
+            ) AS treatment_agent_values
+
+          OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
+          WITH
+            p,
+            study_id_values,
+            treatment_type_values,
+            treatment_agent_values,
+            [status IN collect(DISTINCT sur.last_known_survival_status)
+              WHERE status IS NOT NULL AND trim(toString(status)) <> '' |
+              trim(toString(status))] AS last_known_survival_status_values
 
           RETURN
             p.guid AS id,
@@ -3533,7 +3599,23 @@ indices:
                   WHEN result = '' THEN value
                   ELSE result + ';' + value
                 END
-            ) AS treatment_type_str_gs
+            ) AS treatment_type_str_gs,
+            reduce(
+              result = '',
+              value IN treatment_agent_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS treatment_agent_str_gs,
+            reduce(
+              result = '',
+              value IN last_known_survival_status_values |
+                CASE
+                  WHEN result = '' THEN value
+                  ELSE result + ';' + value
+                END
+            ) AS last_known_survival_status_str_gs
         page_size: 5000
       - name: "diagnosis_gs_properties"
         query: |
