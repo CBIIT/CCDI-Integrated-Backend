@@ -831,7 +831,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
 
     private List<Map<String, Object>> subjectCountBy(String category, Map<String, Object> params, String endpoint, Map<String, Object> additionalParams, String cardinalityAggName, String indexType) throws IOException {
-        Map<String, Object> query = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(PAGE_SIZE), Set.of(), "nested_filters", indexType);
         List<String> only_includes;
         List<String> valueSet = INCLUDE_PARAMS.contains(category) ? (List<String>)params.get(category) : List.of();
         if (valueSet.size() > 0 && !(valueSet.size() == 1 && valueSet.get(0).equals(""))){
@@ -839,7 +838,14 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         } else {
             only_includes = List.of();
         }
-        return getGroupCount(category, query, endpoint, cardinalityAggName, only_includes);
+
+        // Exact unique participant counts via nested + reverse_nested on participants_table.
+        if (cardinalityAggName != null && !RANGE_PARAMS.contains(category)) {
+            return exactParticipantTermCounts(category, params, Set.of(PAGE_SIZE), indexType, only_includes);
+        }
+
+        Map<String, Object> query = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(PAGE_SIZE), Set.of(), "nested_filters", indexType);
+        return getGroupCount(category, query, endpoint, null, only_includes);
     }
 
     private List<Map<String, Object>> subjectCountByRange(String category, Map<String, Object> params, String endpoint, String cardinalityAggName, String indexType) throws IOException {
@@ -847,8 +853,20 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
 
     private List<Map<String, Object>> subjectCountByRange(String category, Map<String, Object> params, String endpoint, Map<String, Object> additionalParams, String cardinalityAggName, String indexType) throws IOException {
+        // Exact unique participant range-bin counts via nested + reverse_nested on participants_table.
+        if (cardinalityAggName != null) {
+            String nestedProperty = getParticipantsFacetNestedPath(indexType);
+            Map<String, Object> queryParticipants = inventoryESService.buildFacetFilterQuery(
+                    params, RANGE_PARAMS, Set.of(PAGE_SIZE), Set.of(), "nested_filters", "participants_table");
+            queryParticipants = inventoryESService.addCustomRangeAggregations(queryParticipants, "facetAgg", category, nestedProperty);
+            Request request = new Request("GET", PARTICIPANTS_END_POINT);
+            request.setJsonEntity(gson.toJson(queryParticipants));
+            JsonObject jsonObject = inventoryESService.send(request);
+            return collectCustomRangeBuckets(jsonObject, "facetAgg");
+        }
+
         Map<String, Object> query = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(PAGE_SIZE), Set.of(), "nested_filters", indexType);
-        return getGroupCountByRange(category, query, endpoint, cardinalityAggName);
+        return getGroupCountByRange(category, query, endpoint, null);
     }
 
     private List<Map<String, Object>> filterSubjectCountBy(String category, Map<String, Object> params, String endpoint, String cardinalityAggName, String indexType) throws IOException {
@@ -856,8 +874,104 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
 
     private List<Map<String, Object>> filterSubjectCountBy(String category, Map<String, Object> params, String endpoint, Map<String, Object> additionalParams, String cardinalityAggName, String indexType) throws IOException {
+        // Exact unique participant facet counts via nested + reverse_nested (no cardinality).
+        if (cardinalityAggName != null && !RANGE_PARAMS.contains(category)) {
+            return exactParticipantTermCounts(category, params, Set.of(PAGE_SIZE, category), indexType, List.of());
+        }
+
+        // File counts / root participant fields: plain terms doc_count is already exact.
         Map<String, Object> query = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(PAGE_SIZE, category), Set.of(), "nested_filters", indexType);
-        return getGroupCount(category, query, endpoint, cardinalityAggName, List.of());
+        return getGroupCount(category, query, endpoint, null, List.of());
+    }
+
+    private List<Map<String, Object>> exactParticipantTermCounts(
+            String category,
+            Map<String, Object> params,
+            Set<String> excludedParams,
+            String indexType,
+            List<String> only_includes) throws IOException {
+        String nestedProperty = getParticipantsFacetNestedPath(indexType);
+        Map<String, Object> queryParticipants = inventoryESService.buildFacetFilterQuery(
+                params, RANGE_PARAMS, excludedParams, Set.of(), "nested_filters", "participants_table");
+        queryParticipants = inventoryESService.addCustomAggregations(
+                queryParticipants, "facetAgg", category, nestedProperty, only_includes);
+        Request request = new Request("GET", PARTICIPANTS_END_POINT);
+        request.setJsonEntity(gson.toJson(queryParticipants));
+        JsonObject jsonObject = inventoryESService.send(request);
+        return collectCustomTermBuckets(jsonObject, "facetAgg");
+    }
+
+    private String getParticipantsFacetNestedPath(String indexType) {
+        // participants_table exact facets are stored under different nested paths depending on which "table" the facet belongs to.
+        if (indexType.equals("survivals_table")) {
+            return "survival_filters";
+        } else if (indexType.equals("treatments_table")) {
+            return "treatment_filters";
+        } else if (indexType.equals("treatment_responses_table")) {
+            return "treatment_response_filters";
+        } else if (indexType.equals("samples_table")
+                || indexType.equals("diagnoses_table")
+                || indexType.equals("genetic_analyses_table")
+                || indexType.equals("files_table")) {
+            return "sample_diagnosis_genetic_analysis_file_filters";
+        }
+        return "";
+    }
+
+    private List<Map<String, Object>> collectCustomTermBuckets(JsonObject jsonObject, String aggName) {
+        List<Map<String, Object>> data = new ArrayList<>();
+
+        JsonObject aggs = jsonObject.getAsJsonObject("aggregations").getAsJsonObject(aggName);
+        JsonArray buckets = aggs.getAsJsonObject("agg_buckets") != null ? aggs.getAsJsonObject("agg_buckets").getAsJsonArray("buckets") : aggs.getAsJsonArray("buckets");
+        for (JsonElement bucketEl : buckets) {
+            JsonObject bucketObj = bucketEl.getAsJsonObject();
+            if (!bucketObj.has("key") || bucketObj.get("key").isJsonNull()) {
+                continue;
+            }
+            String key = bucketObj.get("key").getAsString();
+            if (key == null || key.isEmpty()) {
+                continue;
+            }
+            int subjects;
+            if (bucketObj.has("top_reverse_nested")) {
+                subjects = bucketObj.getAsJsonObject("top_reverse_nested").get("doc_count").getAsInt();
+            } else {
+                subjects = bucketObj.get("doc_count").getAsInt();
+            }
+            data.add(Map.of("group", key, "subjects", subjects));
+        }
+
+        return data;
+    }
+
+    private List<Map<String, Object>> collectCustomRangeBuckets(JsonObject jsonObject, String aggName) {
+        List<Map<String, Object>> data = new ArrayList<>();
+
+        JsonObject aggs = jsonObject.getAsJsonObject("aggregations").getAsJsonObject(aggName);
+        JsonArray buckets = aggs.getAsJsonObject("agg_buckets") != null ? aggs.getAsJsonObject("agg_buckets").getAsJsonArray("buckets") : aggs.getAsJsonArray("buckets");
+        for (JsonElement bucketEl : buckets) {
+            JsonObject bucketObj = bucketEl.getAsJsonObject();
+            String key;
+            if (bucketObj.has("key") && !bucketObj.get("key").isJsonNull()) {
+                key = bucketObj.get("key").getAsString();
+            } else if (bucketObj.has("key_as_string") && !bucketObj.get("key_as_string").isJsonNull()) {
+                key = bucketObj.get("key_as_string").getAsString();
+            } else {
+                continue;
+            }
+
+            int subjects;
+            if (bucketObj.has("top_reverse_nested")) {
+                subjects = bucketObj.getAsJsonObject("top_reverse_nested").get("doc_count").getAsInt();
+            } else if (bucketObj.has("doc_count")) {
+                subjects = bucketObj.get("doc_count").getAsInt();
+            } else {
+                subjects = 0;
+            }
+            data.add(Map.of("group", key, "subjects", subjects));
+        }
+
+        return data;
     }
 
     private JsonArray getNodeCount(String category, Map<String, Object> query, String endpoint) throws IOException {
@@ -946,7 +1060,19 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             }
             String groupKey = g.get("key").getAsString();
             int subjects;
-            if (cardinalityAggName != null && g.has("cardinality_count") && !g.get("cardinality_count").isJsonNull()) {
+            if (cardinalityAggName != null && g.has("exact_count") && !g.get("exact_count").isJsonNull()) {
+                JsonObject exact = g.getAsJsonObject("exact_count");
+                if (exact.has("value") && !exact.get("value").isJsonNull()) {
+                    // scripted_metric exact distinct count
+                    subjects = exact.get("value").getAsInt();
+                } else if (exact.has("buckets")) {
+                    // legacy terms-subagg shape (avoided due to max_buckets)
+                    subjects = exact.getAsJsonArray("buckets").size();
+                } else {
+                    subjects = g.has("doc_count") ? g.get("doc_count").getAsInt() : 0;
+                }
+            } else if (cardinalityAggName != null && g.has("cardinality_count") && !g.get("cardinality_count").isJsonNull()) {
+                // Legacy fallback if an older aggregation shape is still returned.
                 int cardinality = g.getAsJsonObject("cardinality_count").get("value").getAsInt();
                 int docCount = g.has("doc_count") ? g.get("doc_count").getAsInt() : 0;
                 subjects = cardinality > 0 || docCount == 0 ? cardinality : docCount;
@@ -1237,151 +1363,86 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         data.put("numberOfFiles", numberOfFiles);
         data.put("participantsFileCount", participants_file_count);
 
-        // Iterate through facet filters to query their counts
+        // Facet filter/widget counts: run in parallel. Unique-participant facets use nested +
+        // reverse_nested (exact, no cardinality); file/root facets use plain terms doc_count.
+        List<Map<String, Object>> facetJobs = new ArrayList<>();
         for (Map.Entry<String, List<Map<String, Object>>> entry : facetFilters.entrySet()) {
             String index = entry.getKey();
-            List<Map<String, Object>> filters = entry.getValue();
             String endpoint = ENDPOINTS.get(index);
-
-            // Query this index for counts of each relevant facet filter
-            for (Map<String, Object> filter : filters) {
-                String cardinalityAggName = (String) filter.get(CARDINALITY_AGG_NAME);
-                String cardinalityIndexName = filter.containsKey(CARDINALITY_INDEX_NAME) ? (String) filter.get(CARDINALITY_INDEX_NAME) : null;
-                String field = (String) filter.get(AGG_NAME);
-                String filterCountQueryName = (String) filter.get(FILTER_COUNT_QUERY);
-                boolean isRangeParam = RANGE_PARAMS.contains(field);
-                Map<String, Integer> thresholds = (Map<String, Integer>) filter.get(ADDITIONAL_UPDATE);
-                List<String> values = null;
-                Object valuesRaw = params.get(field);
-                String widgetQueryName = (String) filter.get(WIDGET_QUERY);
-                List<Map<String, Object>> filterCounts = filterSubjectCountBy(field, params, endpoint, cardinalityAggName, index);
-                List<Map<String, Object>> widgetCounts = filterCounts;
-                List<Map<String, Object>> newFilterCounts;
-                List<Map<String, Object>> newWidgetCounts;
-
-                if (isRangeParam) {
-                    data.put(filterCountQueryName, filterCounts.get(0));
-                } else {
-                    data.put(filterCountQueryName, filterCounts);
-                }
-
-                // TODO use type checker
-                // Get the values we're filtering the field by
-                // if (TypeChecker.isOfType(valuesRaw, new TypeToken<List<String>>() {})) {
-                //     @SuppressWarnings("unchecked")
-                //     List<String> castedValues = (List<String>) valuesRaw;
-                //     values = castedValues;
-                // }
-                values = (List<String>) valuesRaw;
-
-                // Get widget counts
-                if (widgetQueryName != null) {
-                    // Fetch data for widgets
-                    if (isRangeParam) { // Numerical range widgets - these counts will be exact!
-                        String queryIndex = cardinalityIndexName != null ? cardinalityIndexName : index;
-                        String queryEndpoint = ENDPOINTS.get(queryIndex);
-                        if (queryEndpoint == null) {
-                            throw new IOException("No OpenSearch endpoint mapping found for index: " + queryIndex);
-                        }
-                        widgetCounts = subjectCountByRange(field, params, queryEndpoint, cardinalityAggName, queryIndex);
-                    } else if (params.containsKey(field) && values != null && values.size() > 0) { // Non-range widgets - these counts might be inaccurate!
-                        widgetCounts = subjectCountBy(field, params, endpoint, cardinalityAggName, index);
-                    }
-
-                    data.put(widgetQueryName, widgetCounts);
-                }
-
-                // Nothing left to do if counts don't need to be redone
-                if (thresholds == null) {
-                    continue;
-                }
-
-                // newFilterCounts = recalculateCounts(filterCounts, thresholds, params, index, field);
-
-                // // Replace old counts with new counts
-                // data.put(filterCountQueryName, newFilterCounts);
-
-                // // Replace widget counts if there is a widget
-                // if (widgetQueryName != null) {
-                //     newWidgetCounts = recalculateCounts(widgetCounts, thresholds, params, index, field);
-                //     data.put(widgetQueryName, newWidgetCounts);
-                // }
-                List<Map<String, Object>> filterCount_2_update = (List<Map<String, Object>>)data.get(filterCountQueryName);
-                List<Map<String, Object>> widgetCount_2_update = (List<Map<String, Object>>)data.get(widgetQueryName);
-                List<String> facetValues_need_update = new ArrayList<String>();
-                //check if the count for each of the group within the filterCount is smaller than the marked number
-                for (Map<String, Object> map : filterCount_2_update) {
-                    String group = (String)map.get("group");
-                    if (thresholds.containsKey(group)) {
-                        int count = (Integer)map.get("subjects");
-                        int marked = (Integer)thresholds.get(group);
-                        if (count > marked) {
-                            //need to perform query
-                            facetValues_need_update.add(group);
-                        }
-                    }
-                }
-                //if any facet value is above the number, perform the query
-                if (facetValues_need_update.size() > 0) {
-                    Map<String, Object> query_4_update = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(field), Set.of(), "nested_filters", "participants_table");
-                    String prop = field;
-                    String nestedProperty = "";
-                    if (index.equals("survivals_table")) {
-                        nestedProperty = "survival_filters";
-                    } else if (index.equals("treatments_table")) {
-                        nestedProperty = "treatment_filters";
-                    } else if (index.equals("treatment_responses_table")) {
-                        nestedProperty = "treatment_response_filters";
-                    } else if (index.equals("samples_table")) {
-                        nestedProperty = "sample_diagnosis_genetic_analysis_file_filters";
-                    } else if (index.equals("diagnoses_table")) {
-                        nestedProperty = "sample_diagnosis_genetic_analysis_file_filters";
-                    } else if (index.equals("genetic_analyses_table")) {
-                        nestedProperty = "sample_diagnosis_genetic_analysis_file_filters";
-                    } else if (index.equals("files_table")) {
-                        nestedProperty = "sample_diagnosis_genetic_analysis_file_filters";
-                    } else {
-                        nestedProperty = "";
-                    }
-                    query_4_update = inventoryESService.addCustomAggregations(query_4_update, "facetAgg", prop, nestedProperty);
-                    Request request = new Request("GET", PARTICIPANTS_END_POINT);
-                    request.setJsonEntity(gson.toJson(query_4_update));
-                    JsonObject jsonObject = inventoryESService.send(request);
-                    Map<String, Integer> updated_values = inventoryESService.collectCustomTerms(jsonObject, "facetAgg");
-                    //update the facet value one more time
-                    List<Map<String, Object>> filterCount_new = new ArrayList<Map<String, Object>>();
-                    for (Map<String, Object> map : filterCount_2_update) {
-                        String group = (String)map.get("group");
-                        int count = (Integer)map.get("subjects");
-                        // System.out.println(count);
-                        if (facetValues_need_update.indexOf(group) >= 0) {
-                            count = updated_values.get(group);
-                            // System.out.println("-->"+ count);
-                        }
-                        filterCount_new.add(Map.of("group", group, "subjects", count));
-                    }
-                    data.put(filterCountQueryName, filterCount_new);
-                    //update the widget facet value if widget exists
-                    if (widgetCount_2_update != null) {
-                        List<Map<String, Object>> widgetCount_new = new ArrayList<Map<String, Object>>();
-                        for (Map<String, Object> map : widgetCount_2_update) {
-                            String group = (String)map.get("group");
-                            int count = (Integer)map.get("subjects");
-                            if (facetValues_need_update.indexOf(group) >= 0) {
-                                count = updated_values.get(group);
-                            }
-                            widgetCount_new.add(Map.of("group", group, "subjects", count));
-                        }
-                        data.put(widgetQueryName, widgetCount_new);
-                    }
-                }
+            for (Map<String, Object> filter : entry.getValue()) {
+                Map<String, Object> job = new HashMap<>(filter);
+                job.put("_index", index);
+                job.put("_endpoint", endpoint);
+                facetJobs.add(job);
             }
+        }
+
+        ExecutorService facetExecutor = Executors.newFixedThreadPool(Math.min(THREAD_POOL_SIZE, Math.max(1, facetJobs.size())));
+        try {
+            List<Future<Map<String, Object>>> facetFutures = new ArrayList<>();
+            for (Map<String, Object> job : facetJobs) {
+                facetFutures.add(facetExecutor.submit(() -> computeFacetCounts(job, params)));
+            }
+            for (Future<Map<String, Object>> future : facetFutures) {
+                Map<String, Object> facetResult = future.get();
+                data.putAll(facetResult);
+            }
+        } catch (Exception e) {
+            throw new IOException("Failed while computing facet counts in parallel", e);
+        } finally {
+            facetExecutor.shutdown();
         }
 
         if (!cacheKey.equals("no_cache")) {
             caffeineCache.put(cacheKey, data);
         }
         return data;
+    }
+
+    /**
+     * Compute filter (+ optional widget) counts for one facet definition.
+     * Participant-unique facets (cardinality_agg_name set) use reverse_nested on participants_table.
+     */
+    private Map<String, Object> computeFacetCounts(Map<String, Object> filter, Map<String, Object> params) throws IOException {
+        Map<String, Object> result = new HashMap<>();
+        String index = (String) filter.get("_index");
+        String endpoint = (String) filter.get("_endpoint");
+        String cardinalityAggName = (String) filter.get(CARDINALITY_AGG_NAME);
+        String cardinalityIndexName = filter.containsKey(CARDINALITY_INDEX_NAME) ? (String) filter.get(CARDINALITY_INDEX_NAME) : null;
+        String field = (String) filter.get(AGG_NAME);
+        String filterCountQueryName = (String) filter.get(FILTER_COUNT_QUERY);
+        boolean isRangeParam = RANGE_PARAMS.contains(field);
+        String widgetQueryName = (String) filter.get(WIDGET_QUERY);
+
+        List<Map<String, Object>> filterCounts = filterSubjectCountBy(field, params, endpoint, cardinalityAggName, index);
+        List<Map<String, Object>> widgetCounts = filterCounts;
+
+        if (isRangeParam) {
+            result.put(filterCountQueryName, filterCounts.get(0));
+        } else {
+            result.put(filterCountQueryName, filterCounts);
+        }
+
+        @SuppressWarnings("unchecked")
+        List<String> values = (List<String>) params.get(field);
+
+        if (widgetQueryName != null) {
+            if (isRangeParam) {
+                String queryIndex = cardinalityIndexName != null ? cardinalityIndexName : index;
+                String queryEndpoint = ENDPOINTS.get(queryIndex);
+                if (queryEndpoint == null) {
+                    throw new IOException("No OpenSearch endpoint mapping found for index: " + queryIndex);
+                }
+                widgetCounts = subjectCountByRange(field, params, queryEndpoint, cardinalityAggName, queryIndex);
+            } else if (params.containsKey(field) && values != null && values.size() > 0) {
+                widgetCounts = subjectCountBy(field, params, endpoint, cardinalityAggName, index);
+            }
+            result.put(widgetQueryName, widgetCounts);
+        }
+
+        // additional_update was only needed to correct cardinality estimates.
+        // reverse_nested participant counts are already exact — skip those recounts.
+        return result;
     }
 
     private List<Map<String, Object>> participantOverview(Map<String, Object> params) throws IOException {
