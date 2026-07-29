@@ -3393,195 +3393,22 @@ indices:
               library_source_molecule: library_source_molecule,
               library_strategy: library_strategy
             }) AS sample_diagnosis_genetic_analysis_file_filters
-        page_size: 5000
+        page_size: 1000
       - name: "global_search_properties"
         query: |
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
 
-          // A participant normally belongs to one study; joining keeps the
-          // global-search field deterministic if multiple studies are related.
           OPTIONAL MATCH (stu:study)<--(:consent_group)<--(p)
           WITH
             p,
-            [study_id IN collect(DISTINCT stu.study_id)
-              WHERE study_id IS NOT NULL AND trim(toString(study_id)) <> '' |
-              toString(study_id)] AS study_id_values
-
-          OPTIONAL MATCH
-            (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
-          WITH
-            p,
-            study_id_values,
-            collect(DISTINCT
-              CASE
-                WHEN tchemo IS NULL THEN []
-                WHEN tchemo.chemotherapy_type IS NULL
-                  OR size(tchemo.chemotherapy_type) = 0
-                THEN ['chemotherapy']
-                ELSE [value IN tchemo.chemotherapy_type
-                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
-                  trim(toString(value))]
-              END
-            ) AS chemotherapy_type_lists,
-            collect(DISTINCT
-              CASE
-                WHEN tchemo IS NULL THEN []
-                ELSE [value IN coalesce(tchemo.chemotherapy_agent, [])
-                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
-                  trim(toString(value))]
-              END
-            ) AS chemotherapy_agent_lists
-
-          OPTIONAL MATCH
-            (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
-          WITH
-            p,
-            study_id_values,
-            chemotherapy_type_lists,
-            chemotherapy_agent_lists,
-            collect(DISTINCT
-              CASE
-                WHEN trad IS NULL THEN []
-                WHEN trad.treatment_type IS NULL
-                  OR size(trad.treatment_type) = 0
-                THEN ['radiation']
-                ELSE [value IN trad.treatment_type
-                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
-                  trim(toString(value))]
-              END
-            ) AS radiation_type_lists,
-            collect(DISTINCT
-              CASE
-                WHEN trad IS NULL THEN []
-                ELSE [value IN coalesce(trad.radiation_therapy_type, [])
-                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
-                  trim(toString(value))]
-              END
-            ) AS radiation_agent_lists
-
-          OPTIONAL MATCH
-            (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
-          WITH
-            p,
-            study_id_values,
-            chemotherapy_type_lists,
-            chemotherapy_agent_lists,
-            radiation_type_lists,
-            radiation_agent_lists,
-            collect(DISTINCT
-              CASE
-                WHEN tsurg IS NULL THEN []
-                WHEN tsurg.treatment_type IS NULL
-                  OR size(tsurg.treatment_type) = 0
-                THEN ['surgery']
-                ELSE [value IN tsurg.treatment_type
-                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
-                  trim(toString(value))]
-              END
-            ) AS surgery_type_lists,
-            collect(DISTINCT
-              CASE
-                WHEN tsurg IS NULL THEN []
-                ELSE [value IN coalesce(tsurg.surgery_type, [])
-                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
-                  trim(toString(value))]
-              END
-            ) AS surgery_agent_lists
-
-          OPTIONAL MATCH
-            (toth:treatment_other)-[:of_treatment_other]->(p)
-          WITH
-            p,
-            study_id_values,
-            chemotherapy_type_lists,
-            chemotherapy_agent_lists,
-            radiation_type_lists,
-            radiation_agent_lists,
-            surgery_type_lists,
-            surgery_agent_lists,
-            collect(DISTINCT
-              CASE
-                WHEN toth IS NULL THEN []
-                WHEN toth.treatment_type IS NULL
-                  OR size(toth.treatment_type) = 0
-                THEN ['other']
-                ELSE [value IN toth.treatment_type
-                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
-                  trim(toString(value))]
-              END
-            ) AS other_type_lists,
-            collect(DISTINCT
-              CASE
-                WHEN toth IS NULL THEN []
-                ELSE [value IN coalesce(toth.other_treatment_type, [])
-                  WHERE value IS NOT NULL AND trim(toString(value)) <> '' |
-                  trim(toString(value))]
-              END
-            ) AS other_agent_lists
-
-          WITH
-            p,
-            study_id_values,
-            reduce(
-              all_types = [],
-              type_list IN chemotherapy_type_lists
-                + radiation_type_lists
-                + surgery_type_lists
-                + other_type_lists |
-                all_types + type_list
-            ) AS raw_treatment_type_values,
-            reduce(
-              all_agents = [],
-              agent_list IN chemotherapy_agent_lists
-                + radiation_agent_lists
-                + surgery_agent_lists
-                + other_agent_lists |
-                all_agents + agent_list
-            ) AS raw_treatment_agent_values
-
-          WITH
-            p,
-            study_id_values,
-            reduce(
-              values = [],
-              value IN raw_treatment_type_values |
-                CASE
-                  WHEN value IN values THEN values
-                  ELSE values + value
-                END
-            ) AS treatment_type_values,
-            reduce(
-              values = [],
-              value IN raw_treatment_agent_values |
-                CASE
-                  WHEN value IN values THEN values
-                  ELSE values + value
-                END
-            ) AS treatment_agent_values
-
-          OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
-          WITH
-            p,
-            study_id_values,
-            treatment_type_values,
-            treatment_agent_values,
-            [status IN collect(DISTINCT sur.last_known_survival_status)
-              WHERE status IS NOT NULL AND trim(toString(status)) <> '' |
-              trim(toString(status))] AS last_known_survival_status_values
+            stu.study_id AS study_id_gs
 
           RETURN
             p.guid AS id,
             p.participant_id AS participant_id_gs,
-            reduce(
-              result = '',
-              value IN study_id_values |
-                CASE
-                  WHEN result = '' THEN value
-                  ELSE result + ';' + value
-                END
-            ) AS study_id_gs,
+            study_id_gs,
             p.sex_at_birth AS sex_at_birth_gs,
             reduce(
               result = '',
@@ -3591,7 +3418,161 @@ indices:
                   WHEN result = '' THEN trim(toString(value))
                   ELSE result + ';' + trim(toString(value))
                 END
-            ) AS race_str_gs,
+            ) AS race_str_gs
+        page_size: 5000
+      - name: "global_search_treatment_properties"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+
+          // Build treatment lists in isolated branches, matching the
+          // treatment_filters query's traversal strategy.
+          CALL {
+            // treatment_chemotherapy
+            WITH p
+            OPTIONAL MATCH
+              (tchemo:treatment_chemotherapy)
+                -[:of_treatment_chemotherapy]->(p)
+            WITH
+              count(tchemo) AS treatment_count,
+              collect(DISTINCT {
+                treatment_type: CASE
+                  WHEN tchemo.chemotherapy_type IS NULL
+                    OR size(tchemo.chemotherapy_type) = 0
+                  THEN ['chemotherapy']
+                  ELSE tchemo.chemotherapy_type
+                END,
+                treatment_agent: tchemo.chemotherapy_agent
+              }) AS treatment_filters
+            RETURN
+              CASE
+                WHEN treatment_count > 0 THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+
+            UNION
+
+            // treatment_radiation
+            WITH p
+            OPTIONAL MATCH
+              (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
+            WITH
+              count(trad) AS treatment_count,
+              collect(DISTINCT {
+                treatment_type: CASE
+                  WHEN trad.treatment_type IS NULL
+                    OR size(trad.treatment_type) = 0
+                  THEN ['radiation']
+                  ELSE trad.treatment_type
+                END,
+                treatment_agent: trad.radiation_therapy_type
+              }) AS treatment_filters
+            RETURN
+              CASE
+                WHEN treatment_count > 0 THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+
+            UNION
+
+            // treatment_surgery
+            WITH p
+            OPTIONAL MATCH
+              (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
+            WITH
+              count(tsurg) AS treatment_count,
+              collect(DISTINCT {
+                treatment_type: CASE
+                  WHEN tsurg.treatment_type IS NULL
+                    OR size(tsurg.treatment_type) = 0
+                  THEN ['surgery']
+                  ELSE tsurg.treatment_type
+                END,
+                treatment_agent: tsurg.surgery_type
+              }) AS treatment_filters
+            RETURN
+              CASE
+                WHEN treatment_count > 0 THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+
+            UNION
+
+            // treatment_other
+            WITH p
+            OPTIONAL MATCH
+              (toth:treatment_other)-[:of_treatment_other]->(p)
+            WITH
+              count(toth) AS treatment_count,
+              collect(DISTINCT {
+                treatment_type: CASE
+                  WHEN toth.treatment_type IS NULL
+                    OR size(toth.treatment_type) = 0
+                  THEN ['other']
+                  ELSE toth.treatment_type
+                END,
+                treatment_agent: toth.other_treatment_type
+              }) AS treatment_filters
+            RETURN
+              CASE
+                WHEN treatment_count > 0 THEN treatment_filters
+                ELSE []
+              END AS treatment_filters
+          }
+
+          WITH
+            p,
+            collect(treatment_filters) AS treatment_filters_superlist
+
+          WITH
+            p,
+            reduce(
+              all_filters = [],
+              filters IN treatment_filters_superlist |
+                all_filters + filters
+            ) AS treatment_filters
+
+          WITH
+            p,
+            reduce(
+              all_types = [],
+              treatment IN treatment_filters |
+                all_types + coalesce(treatment.treatment_type, [])
+            ) AS raw_treatment_type_values,
+            reduce(
+              all_agents = [],
+              treatment IN treatment_filters |
+                all_agents + coalesce(treatment.treatment_agent, [])
+            ) AS raw_treatment_agent_values
+
+          WITH
+            p,
+            reduce(
+              values = [],
+              value IN raw_treatment_type_values |
+                CASE
+                  WHEN value IS NULL
+                    OR trim(toString(value)) = ''
+                    OR trim(toString(value)) IN values
+                  THEN values
+                  ELSE values + trim(toString(value))
+                END
+            ) AS treatment_type_values,
+            reduce(
+              values = [],
+              value IN raw_treatment_agent_values |
+                CASE
+                  WHEN value IS NULL
+                    OR trim(toString(value)) = ''
+                    OR trim(toString(value)) IN values
+                  THEN values
+                  ELSE values + trim(toString(value))
+                END
+            ) AS treatment_agent_values
+
+          RETURN
+            p.guid AS id,
             reduce(
               result = '',
               value IN treatment_type_values |
@@ -3607,7 +3588,25 @@ indices:
                   WHEN result = '' THEN value
                   ELSE result + ';' + value
                 END
-            ) AS treatment_agent_str_gs,
+            ) AS treatment_agent_str_gs
+        page_size: 5000
+      - name: "global_search_survival_properties"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+
+          OPTIONAL MATCH
+            (sur:survival)-[:of_survival]->(p)
+          WITH
+            p,
+            [status IN collect(DISTINCT sur.last_known_survival_status)
+              WHERE status IS NOT NULL
+                AND trim(toString(status)) <> '' |
+              trim(toString(status))] AS last_known_survival_status_values
+
+          RETURN
+            p.guid AS id,
             reduce(
               result = '',
               value IN last_known_survival_status_values |
@@ -6421,7 +6420,6 @@ indices:
             num_participant_files AS num_of_participant_files,
             num_sample_files      AS num_of_sample_files
         page_size: 1
-
       - name: "global_search_properties"
         query: |
           MATCH (st:study)
@@ -6433,6 +6431,7 @@ indices:
             st.study_name AS study_name_gs,
             st.study_phase AS study_status_gs
         page_size: 1000
+
   - index_name: samples_table
     id_field: "id"
     mapping:
@@ -6839,7 +6838,6 @@ indices:
             CASE WHEN tresp_count > 0 THEN treatment_response_filters ELSE [] END AS treatment_response_filters
           RETURN id, treatment_response_filters
         page_size: 1000
-
       - name: "global_search_properties"
         query: |
           MATCH (sm:sample)
@@ -7050,6 +7048,7 @@ indices:
                 END
             ) AS diagnosis_category_str_gs
         page_size: 5000
+
   - index_name: files_table
     id_field: "id"
     mapping:
@@ -8212,8 +8211,6 @@ indices:
             [file_guid] AS files,
             combined_filters AS combined_filters
         page_size: 1000
-
-  # Model nodes index
       - name: "global_search_study_properties"
         query: |
           MATCH (f:
@@ -8492,6 +8489,8 @@ indices:
                 END
             ) AS sample_id_gs
         page_size: 5000
+
+  # Model nodes index
   - index_name: model_nodes
     type: model
     subtype: node
