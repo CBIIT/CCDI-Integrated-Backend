@@ -890,6 +890,13 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             Set<String> excludedParams,
             String indexType,
             List<String> only_includes) throws IOException {
+        // Genetic facets: gene keys come from genetic_analyses_table (keyword arrays → individual
+        // genes). Participant counts come from participants_table reverse_nested so they match
+        // searchParticipants totals (not unique pids on genetic_analyses_table, which over-count).
+        if ("genetic_analyses_table".equals(indexType)) {
+            return exactGeneticFacetParticipantCounts(category, params, excludedParams, only_includes);
+        }
+
         String nestedProperty = getParticipantsFacetNestedPath(indexType);
         Map<String, Object> queryParticipants = inventoryESService.buildFacetFilterQuery(
                 params, RANGE_PARAMS, excludedParams, Set.of(), "nested_filters", "participants_table");
@@ -899,6 +906,81 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         request.setJsonEntity(gson.toJson(queryParticipants));
         JsonObject jsonObject = inventoryESService.send(request);
         return collectCustomTermBuckets(jsonObject, "facetAgg");
+    }
+
+    /**
+     * Gene Symbol / genetic facets: individual gene labels from genetic_analyses_table,
+     * exact participant counts from participants_table nested + reverse_nested.
+     */
+    private List<Map<String, Object>> exactGeneticFacetParticipantCounts(
+            String category,
+            Map<String, Object> params,
+            Set<String> excludedParams,
+            List<String> only_includes) throws IOException {
+        // 1) Individual gene keys (genetic_analyses_table expands keyword arrays).
+        Map<String, Object> geneKeyQuery = inventoryESService.buildFacetFilterQuery(
+                params, RANGE_PARAMS, excludedParams, Set.of(), "nested_filters", "genetic_analyses_table");
+        geneKeyQuery = inventoryESService.addCustomAggregations(
+                geneKeyQuery, "facetAgg", category, "", only_includes);
+        Request geneKeyRequest = new Request("GET", GENETIC_ANALYSES_END_POINT);
+        geneKeyRequest.setJsonEntity(gson.toJson(geneKeyQuery));
+        JsonObject geneKeyResponse = inventoryESService.send(geneKeyRequest);
+        Set<String> geneKeys = new LinkedHashSet<>();
+        JsonObject geneKeyAggs = geneKeyResponse.getAsJsonObject("aggregations").getAsJsonObject("facetAgg");
+        JsonArray geneKeyBuckets = geneKeyAggs.getAsJsonArray("buckets");
+        for (JsonElement bucketEl : geneKeyBuckets) {
+            JsonObject bucketObj = bucketEl.getAsJsonObject();
+            if (!bucketObj.has("key") || bucketObj.get("key").isJsonNull()) {
+                continue;
+            }
+            String key = bucketObj.get("key").getAsString();
+            if (key == null || key.isEmpty() || isStringifiedListValue(key)) {
+                continue;
+            }
+            geneKeys.add(key);
+        }
+        if (only_includes != null && !only_includes.isEmpty()) {
+            geneKeys.retainAll(only_includes);
+        }
+
+        // 2) Exact participant counts aligned with searchParticipants (nested + reverse_nested).
+        String nestedProperty = "sample_diagnosis_genetic_analysis_file_filters";
+        Map<String, Object> participantQuery = inventoryESService.buildFacetFilterQuery(
+                params, RANGE_PARAMS, excludedParams, Set.of(), "nested_filters", "participants_table");
+        participantQuery = inventoryESService.addCustomAggregations(
+                participantQuery, "facetAgg", category, nestedProperty, List.of());
+        Request participantRequest = new Request("GET", PARTICIPANTS_END_POINT);
+        participantRequest.setJsonEntity(gson.toJson(participantQuery));
+        JsonObject participantResponse = inventoryESService.send(participantRequest);
+
+        Map<String, Integer> participantCounts = new HashMap<>();
+        for (Map<String, Object> bucket : collectCustomTermBuckets(participantResponse, "facetAgg")) {
+            String key = (String) bucket.get("group");
+            if (isStringifiedListValue(key)) {
+                continue;
+            }
+            participantCounts.put(key, (Integer) bucket.get("subjects"));
+        }
+
+        // 3) Emit one row per individual gene with the participants_table count (0 if not present).
+        List<Map<String, Object>> data = new ArrayList<>();
+        for (String gene : geneKeys) {
+            int subjects = participantCounts.getOrDefault(gene, 0);
+            if (subjects > 0) {
+                data.add(Map.of("group", gene, "subjects", subjects));
+            }
+        }
+        // Sort by count desc so UI default ordering stays sensible.
+        data.sort((a, b) -> Integer.compare((Integer) b.get("subjects"), (Integer) a.get("subjects")));
+        return data;
+    }
+
+    private boolean isStringifiedListValue(String key) {
+        if (key == null) {
+            return false;
+        }
+        String trimmed = key.trim();
+        return trimmed.startsWith("[") || trimmed.startsWith("{");
     }
 
     private String getParticipantsFacetNestedPath(String indexType) {
