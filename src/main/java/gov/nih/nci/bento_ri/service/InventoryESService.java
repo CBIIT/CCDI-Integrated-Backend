@@ -1224,9 +1224,8 @@ public class InventoryESService extends ESService {
         subField_ranges.put("ranges", rangesList);
                 
         subField.put("range", subField_ranges);
-        if (! (cardinalityAggName == null)) {
-            subField.put("aggs", Map.of("cardinality_count", Map.of("cardinality", Map.of("field", cardinalityAggName, "precision_threshold", 40000))));
-        }
+        // Do not use cardinality here. Unique participant range counts are computed via
+        // nested + reverse_nested on participants_table (addCustomRangeAggregations).
         fields.put(rangeAggName, subField);
         newQuery.put("aggs", fields);
         
@@ -1275,32 +1274,39 @@ public class InventoryESService extends ESService {
             if (only_includes.size() > 0) {
                 subField.put("include", only_includes);
             }
-            if (! (subCardinalityAggName == null)) {
-                fields.put(field, Map.of("terms", subField, "aggs", addCardinalityHelper(subCardinalityAggName)));
-            } else {
-                fields.put(field, Map.of("terms", subField));
-            }
+            // No cardinality: unique participant facet counts use nested + reverse_nested instead.
+            fields.put(field, Map.of("terms", subField));
         }
         newQuery.put("aggs", fields);
         return newQuery;
     }
 
     public Map<String, Object> addCustomAggregations(Map<String, Object> query, String aggName, String field, String nestedProperty) {
+        return addCustomAggregations(query, aggName, field, nestedProperty, List.of());
+    }
+
+    public Map<String, Object> addCustomAggregations(Map<String, Object> query, String aggName, String field, String nestedProperty, List<String> only_includes) {
         // When nestedProperty is empty: root-level terms aggregation (no nested path).
-        // When nestedProperty is set: nested aggregation with reverse_nested for doc_count at root.
+        // When nestedProperty is set: nested aggregation with reverse_nested for exact parent participant counts.
         Map<String, Object> newQuery = new HashMap<>(query);
         newQuery.put("size", 0);
         Map<String, Object> aggSection = new HashMap<String, Object>();
+        int termsSize = 10000;
+
+        Map<String, Object> terms = new HashMap<>();
+        terms.put("field", (nestedProperty == null || nestedProperty.isEmpty()) ? field : nestedProperty + "." + field);
+        terms.put("size", termsSize);
+        if (only_includes != null && !only_includes.isEmpty()) {
+            terms.put("include", only_includes);
+        }
 
         if (nestedProperty == null || nestedProperty.isEmpty()) {
-            // Root-level aggregation: terms on field only, no nested/reverse_nested
-            Map<String, Object> aggSubSection = new HashMap<String, Object>();
-            aggSubSection.put("terms", Map.of("field", field, "size", 1000));
-            aggSection.put(aggName, aggSubSection);
+            aggSection.put(aggName, Map.of("terms", terms));
         } else {
-            // Nested aggregation: nested path + terms on nestedProperty.field + reverse_nested
             Map<String, Object> aggSubSection = new HashMap<String, Object>();
-            aggSubSection.put("agg_buckets", Map.of("terms", Map.of("field", nestedProperty + "." + field, "size", 1000), "aggs", Map.of("top_reverse_nested", Map.of("reverse_nested", Map.of()))));
+            aggSubSection.put("agg_buckets", Map.of(
+                    "terms", terms,
+                    "aggs", Map.of("top_reverse_nested", Map.of("reverse_nested", Map.of()))));
             aggSection.put(aggName, Map.of("nested", Map.of("path", nestedProperty), "aggs", aggSubSection));
         }
 
@@ -1308,7 +1314,50 @@ public class InventoryESService extends ESService {
         return newQuery;
     }
 
+    public Map<String, Object> addCustomRangeAggregations(Map<String, Object> query, String aggName, String field, String nestedProperty) {
+        // Exact range counts for participant facets.
+        // - When nestedProperty is set: nested(range) + reverse_nested to count parent participant docs exactly.
+        // - When nestedProperty is empty: root range aggregation (doc_count is exact at the index's root level).
+        Map<String, Object> newQuery = new HashMap<>(query);
+        newQuery.put("size", 0);
+
+        Map<String, Object> aggSection = new HashMap<String, Object>();
+
+        List<Map<String, Object>> rangesList = new ArrayList<>();
+        // Age-at-* bins: half-open [from,to) in days (365 days per year band).
+        rangesList.add(Map.of("key", "0 - 4", "from", 0, "to", 5 * 365));
+        rangesList.add(Map.of("key", "5 - 9", "from", 5 * 365, "to", 10 * 365));
+        rangesList.add(Map.of("key", "10 - 14", "from", 10 * 365, "to", 15 * 365));
+        rangesList.add(Map.of("key", "15 - 19", "from", 15 * 365, "to", 20 * 365));
+        rangesList.add(Map.of("key", "20 - 29", "from", 20 * 365, "to", 30 * 365));
+        rangesList.add(Map.of("key", "> 29", "from", 30 * 365));
+
+        if (nestedProperty == null || nestedProperty.isEmpty()) {
+            Map<String, Object> rangeAgg = new HashMap<>();
+            rangeAgg.put("field", field);
+            rangeAgg.put("ranges", rangesList);
+            aggSection.put(aggName, Map.of("range", rangeAgg));
+        } else {
+            Map<String, Object> rangeAgg = new HashMap<>();
+            rangeAgg.put("field", nestedProperty + "." + field);
+            rangeAgg.put("ranges", rangesList);
+
+            Map<String, Object> rangeAggSubSection = new HashMap<>();
+            rangeAggSubSection.put("range", rangeAgg);
+            rangeAggSubSection.put("aggs", Map.of("top_reverse_nested", Map.of("reverse_nested", Map.of())));
+
+            Map<String, Object> innerAggs = new HashMap<>();
+            innerAggs.put("agg_buckets", rangeAggSubSection);
+
+            aggSection.put(aggName, Map.of("nested", Map.of("path", nestedProperty), "aggs", innerAggs));
+        }
+
+        newQuery.put("aggs", aggSection);
+        return newQuery;
+    }
+
     public Map<String, Object> addCardinalityHelper(String cardinalityAggName) {
+        // Deprecated for facet participant counts — use nested + reverse_nested instead.
         return Map.of("cardinality_count", Map.of("cardinality", Map.of("field", cardinalityAggName, "precision_threshold", 40000)));
     }
 

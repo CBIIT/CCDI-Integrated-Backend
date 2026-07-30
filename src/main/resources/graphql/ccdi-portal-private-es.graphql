@@ -147,20 +147,981 @@ type RiskTableReturnObject {
     survivalData: [SearchParticipantsReturnObject]
 }
 
-type CohortMetadataReturnObject {
+type CohortMetadataParticipant {
     id: String
     participant_id: String
-    dbgap_accession: String
-    race: String
+    race: [String]
     sex_at_birth: String
-    study_id: String
+    occupation: String
+    guid: String
+    crdc_id: String
+    consent_group_guid: String
+    study_guid: String
+    clinical_measure_files: [CohortMetadataParticipantClinicalMeasureFile]
+    diagnoses: [CohortMetadataParticipantDiagnosis]
+    exposures: [CohortMetadataParticipantExposure]
+    family_relationships: [CohortMetadataParticipantFamilyRelationship]
+    laboratory_tests: [CohortMetadataParticipantLaboratoryTest]
+    medical_histories: [CohortMetadataParticipantMedicalHistory]
+    radiology_files: [CohortMetadataParticipantRadiologyFile]
+    survivals: [CohortMetadataParticipantSurvival]
+    synonyms: [CohortMetadataParticipantSynonym]
+    treatments_chemotherapy: [CohortMetadataParticipantChemotherapyTreatment]
+    treatments_other: [CohortMetadataParticipantOtherTreatment]
+    treatments_radiation: [CohortMetadataParticipantRadiationTreatment]
+    treatment_responses: [CohortMetadataParticipantTreatmentResponse]
+    treatments_surgery: [CohortMetadataParticipantSurgeryTreatment]
+    samples: [CohortMetadataParticipantSample]
+}
 
-    diagnoses: [DiagnosisOverViewResult]
-    survivals: [SurvivalOverViewResult]
-    treatments: [TreatmentOverViewResult]
-    treatment_responses: [TreatmentResponseOverViewResult]
-    samples: [SampleOverViewResult]
-    files: [FileOverViewResult]
+type CohortMetadataParticipantSample {
+    sample_id: String
+    anatomic_site: [String]
+    sample_tumor_status: String
+    tumor_spatial_extent: String
+    sample_description: String
+    laterality: String
+    guid: String
+    crdc_id: String
+    participant_age_at_collection: Float
+    percent_tumor: Float
+    percent_necrosis: Float
+    diagnoses: [CohortMetadataParticipantSampleDiagnosis]
+    generic_files: [CohortMetadataParticipantSampleGenericFile]
+    genetic_analyses: [CohortMetadataParticipantSampleGeneticAnalysis]
+    laboratory_tests: [CohortMetadataParticipantSampleLaboratoryTest]
+    methylation_array_files: [CohortMetadataParticipantSampleMethylationArrayFile]
+    pathology_files: [CohortMetadataParticipantSamplePathologyFile]
+    sequencing_files: [CohortMetadataParticipantSampleSequencingFile]
+    synonyms: [CohortMetadataParticipantSampleSynonym]
+    cell_lines: [CohortMetadataParticipantSampleCellLine]
+    pdxes: [CohortMetadataParticipantSamplePdx]
+}
+
+type CohortMetadataParticipantSamplePdx {
+    pdx_id: String
+    model_id: String
+    mouse_strain: String
+    sample_type_for_implantation: String
+    implantation_type: String
+    implantation_site: String
+    tumor_confirmed_not_to_be_mus_or_ebv_origin: String
+    is_tumor_from_untreated_patient: String
+    passage_number: String
+    passages_tested: String
+    validation_technique: String
+    guid: String
+    samples: [CohortMetadataParticipantSamplePdxSample]
+}
+
+type CohortMetadataParticipantSamplePdxSample {
+    sample_id: String
+    anatomic_site: [String]
+    sample_tumor_status: String
+    tumor_spatial_extent: String
+    sample_description: String
+    laterality: String
+    guid: String
+    crdc_id: String
+    participant_age_at_collection: Float
+    percent_tumor: Float
+    percent_necrosis: Float
+    cytogenomic_files: [CohortMetadataParticipantSamplePdxSampleCytogenomicFile]
+    diagnoses: [CohortMetadataParticipantSamplePdxSampleDiagnosis]
+    methylation_array_files: [CohortMetadataParticipantSamplePdxSampleMethylationArrayFile]
+    pathology_files: [CohortMetadataParticipantSamplePdxSamplePathologyFile]
+    sequencing_files: [CohortMetadataParticipantSamplePdxSampleSequencingFile]
+}
+
+type CohortMetadataParticipantSamplePdxSampleSequencingFile {
+    sequencing_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    library_id: String
+    library_selection: String
+    library_strategy: String
+    library_layout: String
+    library_source_material: String
+    library_source_molecule: String
+    design_description: String
+    platform: String
+    instrument_model: String
+    reference_genome_assembly: String
+    checksum_algorithm: String
+    checksum_value: String
+    custom_assembly_fasta_file_for_alignment: String
+    sequence_alignment_software: String
+    cDNA_read: String
+    cDNA_read_size: String
+    cDNA_read_offset: String
+    cell_barcode_offset: String
+    cell_barcode_read: String
+    cell_barcode_size: String
+    single_cell_entity: String
+    dissociation_method: String
+    end_bias: String
+    total_number_of_input_cells: String
+    library_construction_method: String
+    library_strand: String
+    protocols_link: String
+    reverse_transcription_primer: String
+    spike_in: String
+    UMI_barcode_offset: String
+    UMI_barcode_read: String
+    UMI_barcode_size: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+    number_of_bp: Float
+    number_of_reads: Float
+    avg_read_length: Float
+    coverage: Float
+}
+
+type CohortMetadataParticipantSamplePdxSamplePathologyFile {
+    pathology_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    image_modality: String
+    license: String
+    magnification: String
+    fixation_embedding_method: String
+    staining_method: String
+    deidentification_method: String
+    slim_url: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+}
+
+type CohortMetadataParticipantSamplePdxSampleMethylationArrayFile {
+    methylation_array_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    methylation_platform: String
+    reporter_label: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+}
+
+type CohortMetadataParticipantSamplePdxSampleDiagnosis {
+    diagnosis_id: String
+    submitted_diagnosis: String
+    diagnosis: String
+    diagnosis_category: [String]
+    diagnosis_classification_system: [String]
+    diagnosis_basis: [String]
+    diagnosis_comment: String
+    disease_phase: String
+    tumor_spatial_extent: String
+    submitted_anatomic_site: [String]
+    anatomic_site: [String]
+    toronto_childhood_cancer_staging: String
+    tumor_stage_clinical_t: String
+    tumor_stage_clinical_n: String
+    tumor_stage_clinical_m: String
+    tumor_stage_source: String
+    tumor_grade: String
+    tumor_grade_source: String
+    year_of_diagnosis: String
+    laterality: String
+    guid: String
+    age_at_diagnosis: Float
+}
+
+type CohortMetadataParticipantSamplePdxSampleCytogenomicFile {
+    cytogenomic_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    cytogenomic_platform: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+}
+
+type CohortMetadataParticipantSampleCellLine {
+    cell_line_id: String
+    source: String
+    guid: String
+    cell_line_passage_number: Float
+    samples: [CohortMetadataParticipantSampleCellLineSample]
+}
+
+type CohortMetadataParticipantSampleCellLineSample {
+    sample_id: String
+    anatomic_site: [String]
+    sample_tumor_status: String
+    tumor_spatial_extent: String
+    sample_description: String
+    laterality: String
+    guid: String
+    crdc_id: String
+    participant_age_at_collection: Float
+    percent_tumor: Float
+    percent_necrosis: Float
+    diagnoses: [CohortMetadataParticipantSampleCellLineSampleDiagnosis]
+    sequencing_files: [CohortMetadataParticipantSampleCellLineSampleSequencingFile]
+}
+
+type CohortMetadataParticipantSampleCellLineSampleSequencingFile {
+    sequencing_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    library_id: String
+    library_selection: String
+    library_strategy: String
+    library_layout: String
+    library_source_material: String
+    library_source_molecule: String
+    design_description: String
+    platform: String
+    instrument_model: String
+    reference_genome_assembly: String
+    checksum_algorithm: String
+    checksum_value: String
+    custom_assembly_fasta_file_for_alignment: String
+    sequence_alignment_software: String
+    cDNA_read: String
+    cDNA_read_size: String
+    cDNA_read_offset: String
+    cell_barcode_offset: String
+    cell_barcode_read: String
+    cell_barcode_size: String
+    single_cell_entity: String
+    dissociation_method: String
+    end_bias: String
+    total_number_of_input_cells: String
+    library_construction_method: String
+    library_strand: String
+    protocols_link: String
+    reverse_transcription_primer: String
+    spike_in: String
+    UMI_barcode_offset: String
+    UMI_barcode_read: String
+    UMI_barcode_size: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+    number_of_bp: Float
+    number_of_reads: Float
+    avg_read_length: Float
+    coverage: Float
+}
+
+type CohortMetadataParticipantSampleCellLineSampleDiagnosis {
+    diagnosis_id: String
+    submitted_diagnosis: String
+    diagnosis: String
+    diagnosis_category: [String]
+    diagnosis_classification_system: [String]
+    diagnosis_basis: [String]
+    diagnosis_comment: String
+    disease_phase: String
+    tumor_spatial_extent: String
+    submitted_anatomic_site: [String]
+    anatomic_site: [String]
+    toronto_childhood_cancer_staging: String
+    tumor_stage_clinical_t: String
+    tumor_stage_clinical_n: String
+    tumor_stage_clinical_m: String
+    tumor_stage_source: String
+    tumor_grade: String
+    tumor_grade_source: String
+    year_of_diagnosis: String
+    laterality: String
+    guid: String
+    age_at_diagnosis: Float
+}
+
+type CohortMetadataParticipantSampleSynonym {
+    synonym_id: String
+    repository_of_synonym_id: String
+    associated_id: String
+    domain_description: String
+    domain_category: [String]
+    data_location: String
+    guid: String
+}
+
+type CohortMetadataParticipantSampleSequencingFile {
+    sequencing_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    library_id: String
+    library_selection: String
+    library_strategy: String
+    library_layout: String
+    library_source_material: String
+    library_source_molecule: String
+    design_description: String
+    platform: String
+    instrument_model: String
+    reference_genome_assembly: String
+    checksum_algorithm: String
+    checksum_value: String
+    custom_assembly_fasta_file_for_alignment: String
+    sequence_alignment_software: String
+    cDNA_read: String
+    cDNA_read_size: String
+    cDNA_read_offset: String
+    cell_barcode_offset: String
+    cell_barcode_read: String
+    cell_barcode_size: String
+    single_cell_entity: String
+    dissociation_method: String
+    end_bias: String
+    total_number_of_input_cells: String
+    library_construction_method: String
+    library_strand: String
+    protocols_link: String
+    reverse_transcription_primer: String
+    spike_in: String
+    UMI_barcode_offset: String
+    UMI_barcode_read: String
+    UMI_barcode_size: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+    number_of_bp: Float
+    number_of_reads: Float
+    avg_read_length: Float
+    coverage: Float
+}
+
+type CohortMetadataParticipantSamplePathologyFile {
+    pathology_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    image_modality: String
+    license: String
+    magnification: String
+    fixation_embedding_method: String
+    staining_method: String
+    deidentification_method: String
+    slim_url: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+}
+
+type CohortMetadataParticipantSampleMethylationArrayFile {
+    methylation_array_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    methylation_platform: String
+    reporter_label: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+}
+
+type CohortMetadataParticipantSampleLaboratoryTest {
+    laboratory_test_id: String
+    laboratory_test_method: String
+    laboratory_test_name: String
+    specimen: String
+    test_result_text: String
+    test_result_modifier: String
+    test_result_numeric: String
+    test_result_unit: String
+    guid: String
+    age_at_laboratory_test: Float
+    sensitivity: Float
+}
+
+type CohortMetadataParticipantSampleGeneticAnalysis {
+    genetic_analysis_id: String
+    genomic_source_category: String
+    reported_significance: String
+    reported_significance_system: String
+    test: String
+    method: String
+    result: String
+    reference_genome: String
+    chromosome: String
+    cytoband: String
+    gene_symbol: String
+    transcript: String
+    exon: String
+    hgvs_coding: String
+    hgvs_protein: String
+    hgvs_genome: String
+    alteration: String
+    alteration_type: String
+    alteration_effect: String
+    iscn: String
+    status: String
+    fusion_partner_gene: String
+    fusion_partner_transcript: String
+    fusion_partner_exon: String
+    translocation_partner_chromosome: String
+    translocation_partner_cytoband: String
+    guid: String
+    age_at_genetic_analysis: Float
+    allelic_ratio: Float
+    vaf_numeric: Float
+    dna_index_numeric: Float
+}
+
+type CohortMetadataParticipantSampleGenericFile {
+    generic_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+}
+
+type CohortMetadataParticipantSampleDiagnosis {
+    diagnosis_id: String
+    submitted_diagnosis: String
+    diagnosis: String
+    diagnosis_category: [String]
+    diagnosis_classification_system: [String]
+    diagnosis_basis: [String]
+    diagnosis_comment: String
+    disease_phase: String
+    tumor_spatial_extent: String
+    submitted_anatomic_site: [String]
+    anatomic_site: [String]
+    toronto_childhood_cancer_staging: String
+    tumor_stage_clinical_t: String
+    tumor_stage_clinical_n: String
+    tumor_stage_clinical_m: String
+    tumor_stage_source: String
+    tumor_grade: String
+    tumor_grade_source: String
+    year_of_diagnosis: String
+    laterality: String
+    guid: String
+    age_at_diagnosis: Float
+}
+
+type CohortMetadataParticipantSurgeryTreatment {
+    treatment_surgery_id: String
+    treatment_type: [String]
+    surgery_type: [String]
+    anatomic_site: [String]
+    resection_margin_status: [String]
+    guid: String
+    age_at_treatment_start: Float
+    age_at_treatment_end: Float
+}
+
+type CohortMetadataParticipantTreatmentResponse {
+    treatment_response_id: String
+    response: [String]
+    response_category: [String]
+    response_system: [String]
+    guid: String
+    age_at_response: Float
+}
+
+type CohortMetadataParticipantRadiationTreatment {
+    treatment_radiation_id: String
+    treatment_type: [String]
+    radiation_therapy_type: [String]
+    beam_radiation_type: [String]
+    total_radiation_dose: String
+    total_radiation_dose_unit: String
+    anatomic_site: [String]
+    laterality_of_radiation_field: String
+    radiation_therapy_fraction: String
+    fraction_radiation_dose: String
+    fraction_radiation_dose_unit: String
+    guid: String
+    age_at_treatment_start: Float
+    age_at_treatment_end: Float
+}
+
+type CohortMetadataParticipantOtherTreatment {
+    treatment_other_id: String
+    treatment_type: [String]
+    other_treatment_type: [String]
+    guid: String
+    age_at_treatment_start: Float
+    age_at_treatment_end: Float
+}
+
+type CohortMetadataParticipantChemotherapyTreatment {
+    treatment_chemotherapy_id: String
+    treatment_type: [String]
+    chemotherapy_type: [String]
+    chemotherapy_agent: [String]
+    chemotherapy_class: String
+    chemotherapy_subclass: String
+    dose: String
+    dose_unit: String
+    dose_route: String
+    dose_frequency: String
+    protocol: String
+    guid: String
+    age_at_treatment_start: Float
+    age_at_treatment_end: Float
+}
+
+type CohortMetadataParticipantSynonym {
+    synonym_id: String
+    repository_of_synonym_id: String
+    associated_id: String
+    domain_description: String
+    domain_category: [String]
+    data_location: String
+    guid: String
+}
+
+type CohortMetadataParticipantSurvival {
+    survival_id: String
+    last_known_survival_status: String
+    first_event: String
+    event_free_survival_status: String
+    follow_up_category: String
+    follow_up_other: String
+    adverse_event: [String]
+    comorbidity: [String]
+    comorbidity_method_of_diagnosis: [String]
+    risk_factor: [String]
+    cause_of_death: String
+    guid: String
+    age_at_last_known_survival_status: Float
+    age_at_event_free_survival_status: Float
+}
+
+type CohortMetadataParticipantRadiologyFile {
+    radiology_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    anatomic_site: [String]
+    image_modality: String
+    deidentification_method: String
+    magnetic_field_strength: String
+    scanner_manufacturer: String
+    scanner_model: String
+    imaging_frequency: String
+    repetition_time: String
+    echo_time: String
+    inversion_time: String
+    flip_angle: String
+    pixel_spacing: String
+    slice_thickness: String
+    echoPulseSequenceCategoryCode: String
+    diffusionBValue: String
+    diffusionDirectionalityCode: String
+    resonantNucleusCode: String
+    acquisitionContrastCode: String
+    inversionRecoveryIndicator: String
+    pulseSequenceName: String
+    multipleSpinEchoIndicator: String
+    phaseContrastIndicator: String
+    timeOfFlightContrastIndicator: String
+    arterialSpinLabelingContrastCode: String
+    steadyStatePulseSequenceCode: String
+    echoPlanarPulseSequenceIndicator: String
+    saturationRecoveryIndicator: String
+    spectrallySelectedSuppressionCode: String
+    mrImageReconstructionProtocolElement: String
+    complexImageComponentCode: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+    participant_age_at_imaging: Float
+}
+
+type CohortMetadataParticipantMedicalHistory {
+    medical_history_id: String
+    medical_history_category: String
+    medical_history_condition: [String]
+    guid: String
+}
+
+type CohortMetadataParticipantLaboratoryTest {
+    laboratory_test_id: String
+    laboratory_test_method: String
+    laboratory_test_name: String
+    specimen: String
+    test_result_text: String
+    test_result_modifier: String
+    test_result_numeric: String
+    test_result_unit: String
+    guid: String
+    age_at_laboratory_test: Float
+    sensitivity: Float
+}
+
+type CohortMetadataParticipantFamilyRelationship {
+    family_relationship_id: String
+    relationship: String
+    family_id: String
+    guid: String
+}
+
+type CohortMetadataParticipantExposure {
+    exposure_id: String
+    alcohol_history: String
+    alcohol_intensity: String
+    asbestos_exposure: String
+    coal_dust_exposure: String
+    environmental_tobacco_smoke_exposure: String
+    radon_exposure: String
+    respirable_crystalline_silica_exposure: String
+    smoking_frequency: String
+    time_between_waking_and_first_smoke: String
+    tobacco_smoking_status: String
+    type_of_smoke_exposure: [String]
+    type_of_tobacco_used: [String]
+    guid: String
+    cigarettes_per_day: Int
+    tobacco_smoking_onset_year: Int
+    tobacco_smoking_quit_year: Int
+    age_at_exposure: Float
+    pack_years_smoked: Float
+    years_smoked: Float
+    alcohol_days_per_week: Float
+    alcohol_drinks_per_day: Float
+}
+
+type CohortMetadataParticipantDiagnosis {
+    diagnosis_id: String
+    submitted_diagnosis: String
+    diagnosis: String
+    diagnosis_category: [String]
+    diagnosis_classification_system: [String]
+    diagnosis_basis: [String]
+    diagnosis_comment: String
+    disease_phase: String
+    tumor_spatial_extent: String
+    submitted_anatomic_site: [String]
+    anatomic_site: [String]
+    toronto_childhood_cancer_staging: String
+    tumor_stage_clinical_t: String
+    tumor_stage_clinical_n: String
+    tumor_stage_clinical_m: String
+    tumor_stage_source: String
+    tumor_grade: String
+    tumor_grade_source: String
+    year_of_diagnosis: String
+    laterality: String
+    guid: String
+    age_at_diagnosis: Float
+}
+
+type CohortMetadataParticipantClinicalMeasureFile {
+    clinical_measure_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    checksum_algorithm: String
+    checksum_value: String
+    participant_list: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+}
+
+type CohortMetadataResult {
+    guid: String
+    study_id: String
+    dbgap_accession: String
+    study_name: String
+    study_acronym: String
+    study_description: String
+    external_url: String
+    experimental_strategy_and_data_subtype: [String]
+    study_phase: String
+    study_data_types: [String]
+    promotion_status: [String]
+    crdc_id: String
+    study_period_start: Int
+    study_period_stop: Int
+    clinical_measure_files: [CohortMetadataStudyClinicalMeasureFile]
+    generic_files: [CohortMetadataStudyGenericFile]
+    publications: [CohortMetadataStudyPublication]
+    study_admins: [CohortMetadataStudyStudyAdmin]
+    study_arms: [CohortMetadataStudyStudyArm]
+    study_fundings: [CohortMetadataStudyStudyFunding]
+    study_personnels: [CohortMetadataStudyStudyPersonnel]
+    study_statuses: [CohortMetadataStudyStudyStatus]
+    consent_groups: [CohortMetadataStudyConsentGroup]
+    cell_lines: [CohortMetadataStudyCellLine]
+}
+
+type CohortMetadataStudyCellLine {
+    cell_line_id: String
+    source: String
+    guid: String
+    cell_line_passage_number: Float
+    samples: [CohortMetadataStudyCellLineSample]
+}
+
+type CohortMetadataStudyCellLineSample {
+    sample_id: String
+    anatomic_site: [String]
+    sample_tumor_status: String
+    tumor_spatial_extent: String
+    sample_description: String
+    laterality: String
+    guid: String
+    crdc_id: String
+    participant_age_at_collection: Float
+    percent_tumor: Float
+    percent_necrosis: Float
+    sequencing_files: [CohortMetadataStudyCellLineSampleSequencingFile]
+}
+
+type CohortMetadataStudyCellLineSampleSequencingFile {
+    sequencing_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    library_id: String
+    library_selection: String
+    library_strategy: String
+    library_layout: String
+    library_source_material: String
+    library_source_molecule: String
+    design_description: String
+    platform: String
+    instrument_model: String
+    reference_genome_assembly: String
+    checksum_algorithm: String
+    checksum_value: String
+    custom_assembly_fasta_file_for_alignment: String
+    sequence_alignment_software: String
+    cDNA_read: String
+    cDNA_read_size: String
+    cDNA_read_offset: String
+    cell_barcode_offset: String
+    cell_barcode_read: String
+    cell_barcode_size: String
+    single_cell_entity: String
+    dissociation_method: String
+    end_bias: String
+    total_number_of_input_cells: String
+    library_construction_method: String
+    library_strand: String
+    protocols_link: String
+    reverse_transcription_primer: String
+    spike_in: String
+    UMI_barcode_offset: String
+    UMI_barcode_read: String
+    UMI_barcode_size: String
+    guid: String
+    crdc_id: String
+    avg_read_length: Float
+    coverage: Float
+    file_size: Float
+    number_of_bp: Float
+    number_of_reads: Float
+}
+
+type CohortMetadataStudyConsentGroup {
+    consent_group_id: String
+    consent_group_name: String
+    consent_group_suffix: String
+    guid: String
+    participants: [CohortMetadataParticipant]
+}
+
+type CohortMetadataStudyStudyStatus {
+    study_status_id: String
+    repository_name: String
+    version: String
+    study_repository_start: String
+    study_repository_released: String
+    external_url: String
+    release_status: [String]
+    guid: String
+    number_of_participants: Int
+    number_of_samples: Int
+    number_of_files: Int
+    total_size_of_data_files: Float
+}
+
+type CohortMetadataStudyStudyPersonnel {
+    study_personnel_id: String
+    personnel_name: String
+    personnel_type: String
+    email_address: String
+    institution: String
+    orcid: String
+    guid: String
+    crdc_id: String
+}
+
+type CohortMetadataStudyStudyFunding {
+    study_funding_id: String
+    funding_agency: String
+    grant_id: String
+    funding_source_program_name: String
+    guid: String
+}
+
+type CohortMetadataStudyStudyArm {
+    study_arm_id: String
+    study_arm_description: String
+    clinical_trial_identifier: String
+    clinical_trial_repository: String
+    guid: String
+}
+
+type CohortMetadataStudyStudyAdmin {
+    study_admin_id: String
+    organism_species: String
+    adult_or_childhood_study: String
+    file_types_and_format: String
+    guid: String
+}
+
+type CohortMetadataStudyPublication {
+    publication_id: String
+    pubmed_id: String
+    guid: String
+}
+
+type CohortMetadataStudyGenericFile {
+    generic_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    guid: String
+    crdc_id: String
+    file_size: Float
+}
+
+type CohortMetadataStudyClinicalMeasureFile {
+    clinical_measure_file_id: String
+    file_name: String
+    data_category: [String]
+    file_type: String
+    file_description: String
+    md5sum: String
+    file_mapping_level: String
+    file_access: String
+    acl: String
+    authz: String
+    file_url: String
+    dcf_indexd_guid: String
+    checksum_algorithm: String
+    checksum_value: String
+    participant_list: String
+    guid: String
+    crdc_id: String
+    file_size: Float
 }
 
 type RangeCount {
@@ -393,7 +1354,7 @@ type TreatmentOverViewResult {
     age_at_treatment_end: Int
     age_at_treatment_start: Int
     treatment_agent: [String]
-    treatment_type: String
+    treatment_type: [String]
 }
 
 type TreatmentResponseOverViewResult {
@@ -466,10 +1427,6 @@ type FileDetail {
     md5sum: String
 }
 
-type CohortMetadataResult {
-    dbgap_accession: String
-    participants: [CohortMetadataReturnObject]
-}
 
 type FileManifestDetail {
     guid: String
