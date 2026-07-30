@@ -2576,10 +2576,23 @@ indices:
 
             UNWIND CASE WHEN size(gas) = 0 THEN [null] ELSE gas END AS ga
 
+            // Expand stringified gene lists ("[ABL1, BRD3, ...]") into individual gene symbols
+            // so nested filters/aggs bucket and match one gene at a time.
+            WITH ga,
+              CASE
+                WHEN ga IS NULL OR ga.gene_symbol IS NULL THEN [null]
+                WHEN ga.gene_symbol STARTS WITH '[' AND ga.gene_symbol ENDS WITH ']' THEN
+                  [x IN split(replace(substring(ga.gene_symbol, 1, size(ga.gene_symbol)-2), "'", ""), ",") |
+                    CASE WHEN trim(x) = '' THEN 'Not Reported' ELSE trim(x) END]
+                WHEN trim(toString(ga.gene_symbol)) = '' THEN ['Not Reported']
+                ELSE [trim(toString(ga.gene_symbol))]
+              END AS gene_symbol_arr
+            UNWIND gene_symbol_arr AS gene_symbol
+
             WITH DISTINCT
               ga.reported_significance AS reported_significance,
               ga.reported_significance_system AS reported_significance_system,
-              ga.gene_symbol AS gene_symbol,
+              gene_symbol,
               ga.alteration AS alteration,
               ga.fusion_partner_gene AS fusion_partner_gene,
               ga.alteration_type AS alteration_type,
@@ -3304,10 +3317,23 @@ indices:
 
             UNWIND CASE WHEN size(gas) = 0 THEN [null] ELSE gas END AS ga
 
+            // Expand stringified gene lists ("[ABL1, BRD3, ...]") into individual gene symbols
+            // so nested filters/aggs bucket and match one gene at a time.
+            WITH ga,
+              CASE
+                WHEN ga IS NULL OR ga.gene_symbol IS NULL THEN [null]
+                WHEN ga.gene_symbol STARTS WITH '[' AND ga.gene_symbol ENDS WITH ']' THEN
+                  [x IN split(replace(substring(ga.gene_symbol, 1, size(ga.gene_symbol)-2), "'", ""), ",") |
+                    CASE WHEN trim(x) = '' THEN 'Not Reported' ELSE trim(x) END]
+                WHEN trim(toString(ga.gene_symbol)) = '' THEN ['Not Reported']
+                ELSE [trim(toString(ga.gene_symbol))]
+              END AS gene_symbol_arr
+            UNWIND gene_symbol_arr AS gene_symbol
+
             WITH DISTINCT
               ga.reported_significance AS reported_significance,
               ga.reported_significance_system AS reported_significance_system,
-              ga.gene_symbol AS gene_symbol,
+              gene_symbol,
               ga.alteration AS alteration,
               ga.fusion_partner_gene AS fusion_partner_gene,
               ga.alteration_type AS alteration_type,
