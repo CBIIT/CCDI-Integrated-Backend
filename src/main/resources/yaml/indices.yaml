@@ -8557,3 +8557,16 @@ indices:
         - value
       keyword:
         - value_kw
+
+  # Requires about_file to be configured in config.yaml
+  # Mapping is optional - defaults will be used if not specified
+  - index_name: "about_page"
+    type: "about_file"
+    mapping:
+      search_as_you_type:
+        - page
+        - title
+      text:
+        - primaryContentImage
+      object:
+        - content  # Objects are implicit, but can be explicitly declared
