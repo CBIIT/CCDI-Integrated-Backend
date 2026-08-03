@@ -8559,7 +8559,8 @@ indices:
         - value_kw
 
   # Requires about_file to be configured in config.yaml
-  # Mapping is optional - defaults will be used if not specified
+  # content.paragraph must be explicitly typed as text: with dynamic:false,
+  # a bare "object: content" stores paragraphs in _source but does not index them.
   - index_name: "about_page"
     type: "about_file"
     mapping:
@@ -8568,5 +8569,4 @@ indices:
         - title
       text:
         - primaryContentImage
-      object:
-        - content  # Objects are implicit, but can be explicitly declared
+        - content.paragraph

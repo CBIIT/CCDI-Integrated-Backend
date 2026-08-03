@@ -22,7 +22,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.Gson;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.*;
@@ -75,7 +74,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String STUDIES_FOR_COHORTS_END_POINT = "/studies_for_cohorts/_search";
     final String SAMPLES_END_POINT = "/samples_table/_search";
     final String FILES_END_POINT = "/files_table/_search";
-    final String GS_ABOUT_END_POINT = "/ccdi_hub_static_pages/_search";
+    // Matches indices.yaml index_name for type: about_file (searchablePagesContent.yaml)
+    final String GS_ABOUT_END_POINT = "/about_page/_search";
     final String NODES_END_POINT = "/model_nodes/_search";
     final String PROPERTIES_END_POINT = "/model_properties/_search";
     final String VALUES_END_POINT = "/model_values/_search";
@@ -293,8 +293,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         List<String> searchFields = (List<String>)category.get(GS_SEARCH_FIELD);
         List<Object> searchClauses = new ArrayList<>();
         String normalizedInput = input == null ? "" : input.trim();
-        // Integrated indexes use keyword fields (no *_gs search_as_you_type fields like WebService).
-        // Use case-insensitive prefix + contains wildcards so typing still returns matches.
+        // Prefer denormalized *_gs keyword fields when listed in GS_SEARCH_FIELD.
+        // Case-insensitive prefix + contains wildcards keep typing responsive on keyword fields.
         String wildcardValue = "*" + escapeWildcard(normalizedInput) + "*";
         for (String searchFieldName: searchFields) {
             if (normalizedInput.isEmpty()) {
@@ -365,10 +365,20 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> searchAboutPage(String input) throws IOException {
         final String ABOUT_CONTENT = "content.paragraph";
+        // Search indexed paragraph text and page titles from searchablePagesContent.yaml.
         Map<String, Object> query = Map.of(
-                "query", Map.of("match", Map.of(ABOUT_CONTENT, input)),
+                "query", Map.of(
+                        "multi_match", Map.of(
+                                "query", input == null ? "" : input,
+                                "fields", List.of(ABOUT_CONTENT, "title", "page"),
+                                "type", "best_fields"
+                        )
+                ),
                 "highlight", Map.of(
-                        "fields", Map.of(ABOUT_CONTENT, Map.of()),
+                        "fields", Map.of(
+                                ABOUT_CONTENT, Map.of(),
+                                "title", Map.of()
+                        ),
                         "pre_tags", GS_HIGHLIGHT_DELIMITER,
                         "post_tags", GS_HIGHLIGHT_DELIMITER
                 ),
@@ -380,7 +390,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         try {
             jsonObject = esService.send(request);
         } catch (IOException e) {
-            // About-page index (ccdi_hub_static_pages) may not be present in all environments.
+            // About-page index (about_page) may not be present in all environments.
             logger.warn("About-page global search skipped: " + e.getMessage());
             return new ArrayList<>();
         }
@@ -388,19 +398,46 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (JsonElement hit: jsonObject.get("hits").getAsJsonObject().get("hits").getAsJsonArray()) {
-            String page = hit.getAsJsonObject().get("_source").getAsJsonObject().get("page").getAsString();
-            String title = hit.getAsJsonObject().get("_source").getAsJsonObject().get("title").getAsString();
-            JsonArray arr = hit.getAsJsonObject().get("highlight").getAsJsonObject().get(ABOUT_CONTENT).getAsJsonArray();
-            List<String> list = new ArrayList<String>();
-            for (var element: arr) {
-                list.add(element.getAsString());
+            JsonObject source = hit.getAsJsonObject().get("_source").getAsJsonObject();
+            String page = source.has("page") && !source.get("page").isJsonNull()
+                    ? source.get("page").getAsString() : "";
+            String title = source.has("title") && !source.get("title").isJsonNull()
+                    ? source.get("title").getAsString() : "";
+            List<String> list = new ArrayList<>();
+            JsonObject highlight = hit.getAsJsonObject().has("highlight")
+                    ? hit.getAsJsonObject().get("highlight").getAsJsonObject() : null;
+            if (highlight != null && highlight.has(ABOUT_CONTENT)) {
+                JsonArray arr = highlight.get(ABOUT_CONTENT).getAsJsonArray();
+                for (var element: arr) {
+                    list.add(element.getAsString());
+                }
             }
-            result.add(Map.of(
-                    GS_CATEGORY_TYPE, GS_ABOUT,
-                    "page", page,
-                    "title", title,
-                    "text", list
-            ));
+            // If highlight misses (e.g. title-only hit), fall back to matching paragraphs from _source.
+            if (list.isEmpty() && source.has("content") && source.get("content").isJsonArray()) {
+                String needle = input == null ? "" : input.trim().toLowerCase();
+                for (JsonElement contentEl : source.get("content").getAsJsonArray()) {
+                    if (!contentEl.isJsonObject() || !contentEl.getAsJsonObject().has("paragraph")) {
+                        continue;
+                    }
+                    String paragraph = contentEl.getAsJsonObject().get("paragraph").getAsString();
+                    if (needle.isEmpty() || paragraph.toLowerCase().contains(needle)) {
+                        list.add(paragraph);
+                    }
+                }
+                if (list.isEmpty() && source.get("content").getAsJsonArray().size() > 0) {
+                    JsonObject first = source.get("content").getAsJsonArray().get(0).getAsJsonObject();
+                    if (first.has("paragraph")) {
+                        list.add(first.get("paragraph").getAsString());
+                    }
+                }
+            }
+            Map<String, Object> aboutHit = new HashMap<>();
+            aboutHit.put(GS_CATEGORY_TYPE, GS_ABOUT);
+            aboutHit.put("type", "about_page");
+            aboutHit.put("page", page);
+            aboutHit.put("title", title);
+            aboutHit.put("text", list);
+            result.add(aboutHit);
         }
 
         return result;
@@ -417,9 +454,13 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, PARTICIPANTS_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "participant_count",
                 GS_RESULT_FIELD, "participants",
-                // Integrated properties (keyword) — WebService used parallel *_gs search_as_you_type fields.
+                // Search denormalized *_gs keyword fields (indices.yaml global_search_* queries).
+                // Keep existing collect + nested-filter enrichment for card display / CPI unchanged.
                 GS_SEARCH_FIELD, List.of(
-                        "participant_id", "study_id", "race_str", "sex_at_birth",
+                        "participant_id_gs", "study_id_gs", "sex_at_birth_gs", "race_str_gs",
+                        "treatment_type_str_gs", "treatment_agent_str_gs",
+                        "diagnosis_str_gs", "diagnosis_category_str_gs", "age_at_diagnosis_str_gs",
+                        "last_known_survival_status_str_gs",
                         "study_name", "study_acronym", "study_phase", "dbgap_accession"
                 ),
                 GS_SORT_FIELD, "participant_id",
@@ -448,7 +489,9 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, STUDIES_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "study_count",
                 GS_RESULT_FIELD, "studies",
+                // study_status_gs is populated from study_phase in indices.yaml
                 GS_SEARCH_FIELD, List.of(
+                        "study_id_gs", "study_name_gs", "study_status_gs",
                         "study_id", "study_name", "study_phase", "study_acronym",
                         "study_description", "dbgap_accession"
                 ),
@@ -469,7 +512,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_ENDPOINT, SAMPLES_COUNT_END_POINT,
                 GS_COUNT_RESULT_FIELD, "sample_count",
                 GS_RESULT_FIELD, "samples",
+                // Include *_gs diagnosis fields so sample clinical text is searchable.
                 GS_SEARCH_FIELD, List.of(
+                        "sample_id_gs", "participant_id_gs", "study_id_gs",
+                        "sample_anatomic_site_str_gs", "sample_tumor_status_gs",
+                        "diagnosis_str_gs", "diagnosis_category_str_gs", "tumor_classification_gs",
                         "sample_id", "participant_id", "study_id", "sample_anatomic_site_str",
                         "sample_tumor_status", "tumor_spatial_extent", "study_name", "sample_description"
                 ),
@@ -493,6 +540,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 GS_COUNT_RESULT_FIELD, "file_count",
                 GS_RESULT_FIELD, "files",
                 GS_SEARCH_FIELD, List.of(
+                        "participant_id_gs", "sample_id_gs", "study_id_gs",
+                        "file_description_gs", "file_type_gs", "file_name_gs", "data_category_gs",
                         "participant_id", "sample_id", "study_id", "file_description",
                         "file_type", "file_name", "data_category"
                 ),
