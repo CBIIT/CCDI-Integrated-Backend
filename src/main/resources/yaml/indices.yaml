@@ -5789,6 +5789,101 @@ indices:
             ] AS sample_genetic_analysis_file_filters
         page_size: 500
 
+  # This index is for the Cohort Manifest CSV
+  # One document for each unique combination of Participant.participant_id,
+  #   Study.study_id, and Diagnosis.diagnosis
+  # If a participant can have multiple Diagnosis records with the same value
+  #   of Diagnosis.diagnosis, then only one of those Diagnosis records' GUIDs
+  #   is indexed
+  # The following paths are used to find the Participant records associated
+  #   with a given Diagnosis record:
+  # (:diagnosis)-[:of_diagnosis]->(:participant)
+  # (:diagnosis)-[:of_diagnosis]->(:sample)-[:of_sample]->(:participant)
+  # (:diagnosis)-[:of_diagnosis]->(:sample)-[:of_sample]->(:cell_line)
+  #   -[:of_cell_line]->(:sample)-[:of_sample]->(:participant)
+  # (:diagnosis)-[:of_diagnosis]->(:sample)-[:of_sample]->(:pdx)
+  #   -[:of_pdx]->(:sample)-[:of_sample]->(:participant)
+  - index_name: diagnoses_cohort_manifest
+    id_field: "guid"
+    mapping:
+      keyword:
+        - guid # This is a Diagnosis guid
+        - id # This is the Participant guid
+        - participant_id
+        - study_id
+        - race_str
+        - sex_at_birth
+        - diagnosis
+    # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
+    initial_query:
+      query: |
+        CALL {
+          MATCH (d:diagnosis)-[:of_diagnosis]->(p:participant)
+          RETURN d, p
+
+          UNION ALL
+
+          MATCH (d:diagnosis)-[:of_diagnosis]->(:sample)
+                -[:of_sample]->(p:participant)
+          RETURN d, p
+
+          UNION ALL
+
+          MATCH (d:diagnosis)-[:of_diagnosis]->(:sample)
+                -[:of_sample]->(:cell_line)
+                -[:of_cell_line]->(:sample)
+                -[:of_sample]->(p:participant)
+          RETURN d, p
+
+          UNION ALL
+
+          MATCH (d:diagnosis)-[:of_diagnosis]->(:sample)
+                -[:of_sample]->(:pdx)
+                -[:of_pdx]->(:sample)
+                -[:of_sample]->(p:participant)
+          RETURN d, p
+        }
+
+        WITH DISTINCT d, p
+
+        MATCH (p)-[:of_participant]->(:consent_group)
+                -[:of_consent_group]->(stu:study)
+
+        WITH
+          d.diagnosis AS diagnosis,
+          p.participant_id AS participant_id,
+          stu.study_id AS study_id,
+
+          // Consistently choose a Diagnosis GUID
+          min(d.guid) AS guid,
+
+          head(
+            collect(
+              DISTINCT {
+                guid: p.guid,
+                race: p.race,
+                sex_at_birth: p.sex_at_birth
+              }
+            )
+          ) AS participant_tag
+
+        ORDER BY study_id, participant_id, diagnosis
+        SKIP $skip LIMIT $limit
+
+        RETURN
+          guid,
+          participant_tag.guid AS id,
+          participant_id,
+          study_id,
+          participant_tag.sex_at_birth AS sex_at_birth,
+          reduce(
+            result = '',
+            race IN participant_tag.race |
+            result + CASE WHEN result = '' THEN '' ELSE ';' END + race
+          ) AS race_str,
+          diagnosis;
+      page_size: 5000
+
   - index_name: genetic_analyses_table
     id_field: "id"
     mapping:
