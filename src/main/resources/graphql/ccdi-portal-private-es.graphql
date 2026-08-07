@@ -1202,10 +1202,9 @@ type SearchParticipantsResult {
 type CohortManifestResult {
     id: String
     participant_id: String
-    dbgap_accession: String
-    race: String
-    sex_at_birth: String
     study_id: String
+    sex_at_birth: String
+    race: String
     diagnosis: String
 }
 
