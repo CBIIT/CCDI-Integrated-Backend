@@ -2293,9 +2293,25 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             endpoint = propertyConfig.get("endpoint");
             indexName = propertyConfig.get("index");
             cohortIdProperty = indexName.equals("participants_table") ? "id" : "pid";
-            // Determine most populous buckets
-            Map<String, Object> combinedCohortParams = Map.of(cohortIdProperty, cohortsCombined);  // Changed from participant_pk to id
-            bucketNames = inventoryESService.getBucketNames(property, combinedCohortParams, RANGE_PARAMS, cardinalityAggName, indexName, endpoint);
+            // Participant-unique facets are counted from participants_table via nested +
+            // reverse_nested. Use that same exact-count query to select the most populous
+            // buckets so bucket names and counts come from one source of truth.
+            if (cardinalityAggName != null) {
+                Map<String, Object> combinedCohortParams = Map.of("id", cohortsCombined);
+                List<Map<String, Object>> combinedCohortGroupCounts = filterSubjectCountBy(
+                        property, combinedCohortParams, endpoint, cardinalityAggName, indexName);
+                combinedCohortGroupCounts.sort(
+                        Comparator.<Map<String, Object>>comparingInt(
+                                groupCount -> -((Number) groupCount.get("subjects")).intValue())
+                                .thenComparing(groupCount -> (String) groupCount.get("group")));
+                bucketNames = combinedCohortGroupCounts.stream()
+                        .map(groupCount -> (String) groupCount.get("group"))
+                        .toList();
+            } else {
+                Map<String, Object> combinedCohortParams = Map.of(cohortIdProperty, cohortsCombined);
+                bucketNames = inventoryESService.getBucketNames(
+                        property, combinedCohortParams, RANGE_PARAMS, null, indexName, endpoint);
+            }
 
             if (bucketNames.size() > COHORT_CHART_BUCKET_LIMIT_LOW) {
                 bucketNamesTopFew = new ArrayList<>(bucketNames.subList(0, COHORT_CHART_BUCKET_LIMIT_LOW));
@@ -2323,7 +2339,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             for (String cohortName : cohorts.keySet()) {
                 // Prepare map of data for the cohort
                 Map<String, Object> cohortData = new HashMap<String, Object>();
-                Map<String, Object> cohortParams = Map.of(cohortIdProperty, cohorts.get(cohortName));  // Changed from participant_pk to id
+                // Exact participant facet counts query participants_table, whose participant key
+                // is id. Non-participant-unique charts retain their source index's key.
+                String cohortCountIdProperty = cardinalityAggName != null ? "id" : cohortIdProperty;
+                Map<String, Object> cohortParams = Map.of(cohortCountIdProperty, cohorts.get(cohortName));
                 cohortData.put("cohort", cohortName);
 
                 // Retrieve data for the cohort
