@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.Request;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -26,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +35,43 @@ class PrivateESDataFetcherCohortChartsTest {
 
     @Mock
     private InventoryESService inventoryESService;
+
+    @Test
+    void cohortChartPropertyConfigurationIsLoadedFromYaml() throws Exception {
+        PrivateESDataFetcher dataFetcher = new PrivateESDataFetcher(inventoryESService);
+        Map<String, Map<String, String>> propertyConfiguration = getCohortChartPropertyConfiguration(dataFetcher);
+
+        assertEquals(Set.of("race", "sex_at_birth", "response", "treatment_type"),
+                propertyConfiguration.keySet());
+        assertEquals(Map.of(
+                "index", "participants_table",
+                "endpoint", "/participants_table/_search",
+                "cardinalityAggName", ""
+        ), propertyConfiguration.get("race"));
+        assertEquals(Map.of(
+                "index", "treatment_responses_table",
+                "endpoint", "/treatment_responses_table/_search",
+                "cardinalityAggName", "pid"
+        ), propertyConfiguration.get("response"));
+        assertEquals(Map.of(
+                "index", "treatments_table",
+                "endpoint", "/treatments_table/_search",
+                "cardinalityAggName", "pid"
+        ), propertyConfiguration.get("treatment_type"));
+    }
+
+    @Test
+    void unconfiguredPropertyIsSkippedWithoutQueryingOpenSearch() throws Exception {
+        PrivateESDataFetcher dataFetcher = new PrivateESDataFetcher(inventoryESService);
+
+        List<Map<String, Object>> result = invokeCohortCharts(dataFetcher, Map.of(
+                "c1", List.of("participant-1"),
+                "charts", List.of(Map.of("property", "occupation", "type", "count"))
+        ));
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(inventoryESService);
+    }
 
     @Test
     void participantUniqueChartsUseParticipantIdsAndReverseNestedCountsForBuckets() throws Exception {
@@ -112,6 +151,15 @@ class PrivateESDataFetcherCohortChartsTest {
                   }
                 }
                 """).getAsJsonObject();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Map<String, String>> getCohortChartPropertyConfiguration(
+            PrivateESDataFetcher dataFetcher
+    ) throws Exception {
+        Field field = PrivateESDataFetcher.class.getDeclaredField("cohortChartProperties");
+        field.setAccessible(true);
+        return (Map<String, Map<String, String>>) field.get(dataFetcher);
     }
 
     @SuppressWarnings("unchecked")

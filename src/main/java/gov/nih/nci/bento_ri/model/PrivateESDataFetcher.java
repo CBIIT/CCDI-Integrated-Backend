@@ -50,6 +50,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String ADDITIONAL_UPDATE = "additional_update";
 
     private Map<String, List<Map<String, Object>>> facetFilters;
+    private Map<String, Map<String, String>> cohortChartProperties;
 
     // parameters used in queries
     final String PAGE_SIZE = "first";
@@ -144,11 +145,19 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         try {
             String facetFiltersPath = Const.YAML_QUERY.SUB_FOLDER + "facet_filters.yaml";
             ClassPathResource facetFiltersResource = new ClassPathResource(facetFiltersPath);
-            InputStream facetFilterFileStream = facetFiltersResource.getInputStream();
-            Yaml facetFilterYaml = new Yaml();
-            this.facetFilters = facetFilterYaml.load(facetFilterFileStream);
+            try (InputStream facetFilterFileStream = facetFiltersResource.getInputStream()) {
+                Yaml facetFilterYaml = new Yaml();
+                this.facetFilters = facetFilterYaml.load(facetFilterFileStream);
+            }
+
+            String cohortChartPropertiesPath = Const.YAML_QUERY.SUB_FOLDER + "cohort_chart_properties.yaml";
+            ClassPathResource cohortChartPropertiesResource = new ClassPathResource(cohortChartPropertiesPath);
+            try (InputStream cohortChartPropertiesFileStream = cohortChartPropertiesResource.getInputStream()) {
+                Yaml cohortChartPropertiesYaml = new Yaml();
+                this.cohortChartProperties = cohortChartPropertiesYaml.load(cohortChartPropertiesFileStream);
+            }
         } catch (IOException e) {
-            logger.error("Error reading facet filters: "+ e.toString());
+            logger.error("Error reading facet or cohort chart configuration: " + e);
             throw new IOException(e.toString());
         }
     }
@@ -940,6 +949,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             Set<String> excludedParams,
             String indexType,
             List<String> only_includes) throws IOException {
+        if ("studies_for_cohorts".equals(indexType)) {
+            return exactStudyPropertyParticipantCounts(category, params);
+        }
+
         // Genetic facets: gene keys come from genetic_analyses_table (keyword arrays → individual
         // genes). Participant counts come from participants_table reverse_nested so they match
         // searchParticipants totals (not unique pids on genetic_analyses_table, which over-count).
@@ -947,15 +960,113 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             return exactGeneticFacetParticipantCounts(category, params, excludedParams, only_includes);
         }
 
-        String nestedProperty = getParticipantsFacetNestedPath(indexType);
+        boolean useCohortsIndex = "cohorts".equals(indexType);
+        String nestedProperty = useCohortsIndex
+                ? cohortChartProperties.get(category).getOrDefault("nestedPath", "")
+                : getParticipantsFacetNestedPath(indexType);
+        String participantIndex = useCohortsIndex ? "cohorts" : "participants_table";
+        String participantEndpoint = useCohortsIndex ? COHORTS_END_POINT : PARTICIPANTS_END_POINT;
         Map<String, Object> queryParticipants = inventoryESService.buildFacetFilterQuery(
-                params, RANGE_PARAMS, excludedParams, Set.of(), "nested_filters", "participants_table");
+                params, RANGE_PARAMS, excludedParams, Set.of(), "nested_filters", participantIndex);
         queryParticipants = inventoryESService.addCustomAggregations(
                 queryParticipants, "facetAgg", category, nestedProperty, only_includes);
-        Request request = new Request("GET", PARTICIPANTS_END_POINT);
+        Request request = new Request("GET", participantEndpoint);
         request.setJsonEntity(gson.toJson(queryParticipants));
         JsonObject jsonObject = inventoryESService.send(request);
         return collectCustomTermBuckets(jsonObject, "facetAgg");
+    }
+
+    /**
+     * Study metadata is stored once per study, while cohort membership is expressed as participant
+     * GUIDs. Count the selected participants per study in cohorts, then apply those exact weights to
+     * each value read from studies_for_cohorts.
+     */
+    private List<Map<String, Object>> exactStudyPropertyParticipantCounts(
+            String category,
+            Map<String, Object> params) throws IOException {
+        Map<String, Object> participantQuery = inventoryESService.buildFacetFilterQuery(
+                params, RANGE_PARAMS, Set.of(PAGE_SIZE, category), Set.of(), "nested_filters", "cohorts");
+        participantQuery = inventoryESService.addCustomAggregations(
+                participantQuery, "facetAgg", "study_guid", "", List.of());
+        Request participantRequest = new Request("GET", COHORTS_END_POINT);
+        participantRequest.setJsonEntity(gson.toJson(participantQuery));
+
+        Map<String, Integer> participantsByStudy = new HashMap<>();
+        for (Map<String, Object> bucket : collectCustomTermBuckets(
+                inventoryESService.send(participantRequest), "facetAgg")) {
+            participantsByStudy.put((String) bucket.get("group"), (Integer) bucket.get("subjects"));
+        }
+        if (participantsByStudy.isEmpty()) {
+            return List.of();
+        }
+
+        String nestedPath = cohortChartProperties.get(category).getOrDefault("nestedPath", "");
+        String sourceField = nestedPath.isEmpty() ? category : nestedPath + "." + category;
+        Map<String, Object> studyQuery = new HashMap<>();
+        studyQuery.put("size", participantsByStudy.size());
+        studyQuery.put("query", Map.of("terms", Map.of("guid", participantsByStudy.keySet())));
+        studyQuery.put("_source", List.of("guid", sourceField));
+        Request studyRequest = new Request("GET", STUDIES_FOR_COHORTS_END_POINT);
+        studyRequest.setJsonEntity(gson.toJson(studyQuery));
+        JsonArray hits = inventoryESService.send(studyRequest)
+                .getAsJsonObject("hits")
+                .getAsJsonArray("hits");
+
+        Map<String, Integer> participantsByValue = new HashMap<>();
+        for (JsonElement hitElement : hits) {
+            JsonObject source = hitElement.getAsJsonObject().getAsJsonObject("_source");
+            if (source == null || !source.has("guid")) {
+                continue;
+            }
+            int participantCount = participantsByStudy.getOrDefault(source.get("guid").getAsString(), 0);
+            Set<String> studyValues = new LinkedHashSet<>();
+            collectJsonValuesAtPath(source, sourceField.split("\\."), 0, studyValues);
+            for (String value : studyValues) {
+                participantsByValue.merge(value, participantCount, Integer::sum);
+            }
+        }
+
+        return new ArrayList<>(participantsByValue.entrySet().stream()
+                .map(entry -> Map.<String, Object>of(
+                        "group", entry.getKey(),
+                        "subjects", entry.getValue()))
+                .sorted((first, second) -> Integer.compare(
+                        (Integer) second.get("subjects"),
+                        (Integer) first.get("subjects")))
+                .toList());
+    }
+
+    private void collectJsonValuesAtPath(
+            JsonElement element,
+            String[] path,
+            int pathIndex,
+            Set<String> values) {
+        if (element == null || element.isJsonNull()) {
+            return;
+        }
+        if (element.isJsonArray()) {
+            for (JsonElement item : element.getAsJsonArray()) {
+                collectJsonValuesAtPath(item, path, pathIndex, values);
+            }
+            return;
+        }
+        if (pathIndex == path.length) {
+            if (element.isJsonPrimitive()) {
+                String value = element.getAsString().trim();
+                if (!value.isEmpty()) {
+                    values.add(value);
+                }
+            }
+            return;
+        }
+        if (!element.isJsonObject() || !element.getAsJsonObject().has(path[pathIndex])) {
+            return;
+        }
+        collectJsonValuesAtPath(
+                element.getAsJsonObject().get(path[pathIndex]),
+                path,
+                pathIndex + 1,
+                values);
     }
 
     /**
@@ -968,8 +1079,13 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             Set<String> excludedParams,
             List<String> only_includes) throws IOException {
         // 1) Individual gene keys (genetic_analyses_table expands keyword arrays).
+        Map<String, Object> geneKeyParams = new HashMap<>(params);
+        Object participantIds = geneKeyParams.remove("id");
+        if (participantIds != null) {
+            geneKeyParams.put("pid", participantIds);
+        }
         Map<String, Object> geneKeyQuery = inventoryESService.buildFacetFilterQuery(
-                params, RANGE_PARAMS, excludedParams, Set.of(), "nested_filters", "genetic_analyses_table");
+                geneKeyParams, RANGE_PARAMS, excludedParams, Set.of(), "nested_filters", "genetic_analyses_table");
         geneKeyQuery = inventoryESService.addCustomAggregations(
                 geneKeyQuery, "facetAgg", category, "", only_includes);
         Request geneKeyRequest = new Request("GET", GENETIC_ANALYSES_END_POINT);
@@ -2279,9 +2395,13 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             List<String> bucketNamesTopMany;
 
             // Obtain details for querying Opensearch
-            Map<String, String> propertyConfig = getPropertyConfig(property);
+            Map<String, String> propertyConfig = cohortChartProperties.get(property);
             if (propertyConfig == null) {
                 logger.warn("Skipping unknown property: " + property);
+                continue;
+            }
+            if ("false".equals(propertyConfig.get("available"))) {
+                logger.warn("Skipping cohort chart property that is not available in a participant-linked index: " + property);
                 continue;
             }
 
@@ -3909,84 +4029,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     private String getStringValue(Map<String, Object> map, String key) {
         Object value = map.get(key);
         return value != null ? value.toString() : null;
-    }
-
-    /**
-     * Maps property names to their OpenSearch index and aggregation configuration
-     * This replaces the YAML configuration approach used in C3DC
-     * @param propertyName The property to get configuration for
-     * @return Map containing index, endpoint, and cardinalityAggName, or null if not found
-     */
-    private Map<String, String> getPropertyConfig(String propertyName) {
-        // Demographics/Participant properties
-        if ("race".equals(propertyName) || "sex_at_birth".equals(propertyName)) {
-            return Map.of(
-                "index", "participants_table",
-                "endpoint", PARTICIPANTS_END_POINT,
-                "cardinalityAggName", ""  // No cardinality needed for participant-level fields
-            );
-        }
-        
-        // Treatment properties
-        if ("treatment_type".equals(propertyName) || "treatment_agent".equals(propertyName)) {
-            return Map.of(
-                "index", "treatments_table",
-                "endpoint", TREATMENTS_END_POINT,
-                "cardinalityAggName", "pid"  // Count unique participants
-            );
-        }
-        
-        // Treatment Response properties
-        if ("response".equals(propertyName) || "response_category".equals(propertyName)) {
-            return Map.of(
-                "index", "treatment_responses_table",
-                "endpoint", TREATMENT_RESPONSES_END_POINT,
-                "cardinalityAggName", "pid"  // Count unique participants
-            );
-        }
-        
-        // Diagnosis properties
-        if ("diagnosis".equals(propertyName) || "diagnosis_anatomic_site".equals(propertyName) || 
-            "disease_phase".equals(propertyName) || "diagnosis_classification_system".equals(propertyName)) {
-            return Map.of(
-                "index", "diagnosis_table",
-                "endpoint", DIAGNOSIS_END_POINT,
-                "cardinalityAggName", "pid"  // Count unique participants
-            );
-        }
-        
-        // Survival properties
-        if ("last_known_survival_status".equals(propertyName) || "first_event".equals(propertyName)) {
-            return Map.of(
-                "index", "survivals_table",
-                "endpoint", SURVIVALS_END_POINT,
-                "cardinalityAggName", "pid"  // Count unique participants
-            );
-        }
-        
-        // Sample properties
-        if ("sample_anatomic_site".equals(propertyName) || "sample_tumor_status".equals(propertyName) || 
-            "tumor_spatial_extent".equals(propertyName)) {
-            return Map.of(
-                "index", "samples_table",
-                "endpoint", SAMPLES_END_POINT,
-                "cardinalityAggName", "pid"  // Count unique participants
-            );
-        }
-        
-        // Study properties
-        if ("dbgap_accession".equals(propertyName) || "study_name".equals(propertyName) || 
-            "study_acronym".equals(propertyName)) {
-            return Map.of(
-                "index", "studies_table",
-                "endpoint", STUDIES_END_POINT,
-                "cardinalityAggName", ""  // No cardinality needed
-            );
-        }
-        
-        // Property not found
-        logger.warn("No configuration found for property: " + propertyName);
-        return null;
     }
 
     @PostConstruct
