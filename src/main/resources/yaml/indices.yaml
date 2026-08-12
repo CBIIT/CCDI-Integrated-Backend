@@ -2855,6 +2855,7 @@ indices:
         - race
         - race_str
         - sex_at_birth
+        - occupation
         - study_id
         - dbgap_accession
         - study_phase
@@ -2949,7 +2950,8 @@ indices:
                 ELSE result + ";" + x
               END
             ) AS race_str,
-            p.sex_at_birth AS sex_at_birth
+            p.sex_at_birth AS sex_at_birth,
+            p.occupation AS occupation
         page_size: 5000
       - name: "survival_filters"
         query: |
