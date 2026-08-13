@@ -717,6 +717,27 @@ public class InventoryESService extends ESService {
                                 diagnosis_filters.add(Map.of(
                                         "range", Map.of("diagnosis_filters." + key, range)));
                             }
+                        } else if (indexType.equals("diagnoses_table") && key.equals("age_at_diagnosis")) {
+                            // Root field on diagnoses_table — mirror participants/samples include-unknown (-999).
+                            String unknownAgesKey = key + "_unknownAges";
+                            boolean includeUnknown = true; // Default to including unknown values
+                            if (params.containsKey(unknownAgesKey)) {
+                                List<String> unknownAgesValues = (List<String>) params.get(unknownAgesKey);
+                                if (unknownAgesValues != null && !unknownAgesValues.isEmpty()
+                                        && !unknownAgesValues.get(0).equals("")) {
+                                    includeUnknown = false;
+                                }
+                            }
+
+                            if (includeUnknown) {
+                                filter.add(Map.of(
+                                        "bool", Map.of("should", List.of(
+                                                Map.of("range", Map.of(key, range)),
+                                                Map.of("term", Map.of(key, -999))))));
+                            } else {
+                                filter.add(Map.of(
+                                        "range", Map.of(key, range)));
+                            }
                         } else if (indexType.equals("diagnoses_table") && key.equals("participant_age_at_collection")) {
                             // Check if unknownAges parameter exists to determine if we should include
                             // unknown values
