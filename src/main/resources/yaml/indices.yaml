@@ -6394,19 +6394,9 @@ indices:
           WITH st
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (st)<-[:of_study_funding]-(stf:study_funding)
-          WITH
-            st,
-            [g IN COLLECT(DISTINCT stf.grant_id) WHERE g IS NOT NULL] AS grant_ids
           RETURN
             st.guid AS id,
-            reduce(
-              s = '',
-              g IN grant_ids |
-                CASE
-                  WHEN s = '' THEN g
-                  ELSE s + ';' + g
-                END
-            ) AS grant_id
+            collect(DISTINCT stf.grant_id) AS grant_id
         page_size: 1000
       - name: "study_personnel"
         query: |
@@ -6415,19 +6405,9 @@ indices:
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (st)<-[:of_study_personnel]-(stp:study_personnel)
           WHERE stp.personnel_type = 'PI'
-          WITH
-            st,
-            [n IN COLLECT(DISTINCT stp.personnel_name) WHERE n IS NOT NULL] AS pis
           RETURN
             st.guid AS id,
-            reduce(
-              s = '',
-              n IN pis |
-                CASE
-                  WHEN s = '' THEN n
-                  ELSE s + ';' + n
-                END
-            ) AS PIs
+            collect(DISTINCT stp.personnel_name) AS PIs
         page_size: 1000
       - name: "study_publications"
         query: |
@@ -6435,18 +6415,10 @@ indices:
           WITH st
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (st)<-[:of_publication]-(pub:publication)
-          WITH st, [pid IN COLLECT(DISTINCT pub.pubmed_id) WHERE pid IS NOT NULL] AS pub_ids
           RETURN
             st.guid AS id,
-            reduce(
-              s = '',
-              pid IN pub_ids |
-                CASE
-                  WHEN s = '' THEN pid
-                  ELSE s + ';' + pid
-                END
-            ) AS pubmed_ids,
-            size(pub_ids) AS num_of_publications
+            collect(DISTINCT pub.pubmed_id) AS pubmed_ids,
+            count(pub) AS num_of_publications
         page_size: 1000
       - name: "consent_codes"
         query: |
