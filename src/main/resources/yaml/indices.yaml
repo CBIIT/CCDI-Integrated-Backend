@@ -6348,6 +6348,10 @@ indices:
         - study_id_gs
         - study_name_gs
         - study_status_gs
+        - diagnosis_cancer
+        - diagnosis_anatomic_site
+        - file_types
+        - files
       integer:
         - num_of_diagnoses
         - num_of_participants
@@ -6357,11 +6361,6 @@ indices:
         - num_of_participant_files
         - num_of_sample_files
         - num_of_publications
-      text:
-        - diagnosis_cancer
-        - diagnosis_anatomic_site
-        - file_types
-        - files
     # Cypher queries will be used to retrieve data from Neo4j, and index into Elasticsearch.
     # Uses the GC initial_query + update_queries pattern: initial_query seeds the index with
     # primary keys, then each update_query is applied independently and merged into the
@@ -7170,6 +7169,9 @@ indices:
         - md5sum
         - file_mapping_level
         - file_access
+        - datamodel_dcf_indexd_guid
+        - datamodel_guid
+        - datamodel_file_id
         - library_selection
         - library_strategy
         - library_source_material
@@ -7210,6 +7212,7 @@ indices:
         - file_type_gs
         - file_name_gs
         - data_category_gs
+        - files
       integer:
         - participant_age_at_collection
         - combined_filters.survival_filters.age_at_last_known_survival_status
@@ -7223,8 +7226,6 @@ indices:
         - percent_necrosis
       long:
         - file_size
-      text:
-        - files
     initial_query:
       query: |
         MATCH (f:
@@ -7303,10 +7304,25 @@ indices:
             pathology_file |
             methylation_array_file
           )
-          WITH DISTINCT f.dcf_indexd_guid AS id, head(collect(f)) AS first_file
+          WITH
+            f.dcf_indexd_guid AS id,
+            head(collect(f)) AS first_file,
+            collect(DISTINCT f.guid) AS datamodel_guid,
+            collect(DISTINCT coalesce(
+              f.clinical_measure_file_id,
+              f.generic_file_id,
+              f.radiology_file_id,
+              f.cytogenomic_file_id,
+              f.sequencing_file_id,
+              f.pathology_file_id,
+              f.methylation_array_file_id
+            )) AS datamodel_file_id
           SKIP $skip LIMIT $limit
           RETURN
             id,
+            id AS datamodel_dcf_indexd_guid,
+            datamodel_guid,
+            datamodel_file_id,
             first_file.file_name AS file_name,
             first_file.data_category AS data_category,
             first_file.file_type AS file_type,
