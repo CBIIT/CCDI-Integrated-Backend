@@ -644,7 +644,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             String countResultFieldName = (String) category.get(GS_COUNT_RESULT_FIELD);
             String resultFieldName = (String) category.get(GS_RESULT_FIELD);
             String[][] properties = (String[][]) category.get(GS_COLLECT_FIELDS);
-            String[][] highlights = (String[][]) category.get(GS_HIGHLIGHT_FIELDS);
             Map<String, Object> query = getGlobalSearchQuery(input, category);
 
             // Get count
@@ -685,7 +684,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             request.setJsonEntity(gson.toJson(query));
             List<Map<String, Object>> objects;
             try {
-                objects = inventoryESService.collectPage(request, query, properties, highlights, size, offset);
+                // Use InventoryESService/ESService 5-arg collectPage (do not extend submodule API).
+                objects = inventoryESService.collectPage(request, query, properties, size, offset);
             } catch (IOException e) {
                 if ("model".equals(resultFieldName)) {
                     logger.warn("Data model global search skipped for "

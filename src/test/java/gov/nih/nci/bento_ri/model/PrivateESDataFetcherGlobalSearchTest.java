@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,7 +48,6 @@ class PrivateESDataFetcherGlobalSearchTest {
                 any(Request.class),
                 ArgumentMatchers.<Map<String, Object>>any(),
                 any(String[][].class),
-                nullable(String[][].class),
                 anyInt(),
                 anyInt()
         )).thenAnswer(invocation -> {
@@ -133,7 +131,6 @@ class PrivateESDataFetcherGlobalSearchTest {
                 any(Request.class),
                 ArgumentMatchers.<Map<String, Object>>any(),
                 any(String[][].class),
-                nullable(String[][].class),
                 anyInt(),
                 anyInt()
         )).thenReturn(List.of());
