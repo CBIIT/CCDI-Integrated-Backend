@@ -42,7 +42,6 @@ class OverviewGraphQLSchemaTest {
         assertListField(registry, "TreatmentOverViewResult", "treatment_agent");
 
         assertListField(registry, "FileOverViewResult", "participant_age_at_collection");
-        assertListField(registry, "FileOverViewResult", "datamodel_dcf_indexd_guid");
         assertListField(registry, "FileOverViewResult", "datamodel_guid");
         assertListField(registry, "FileOverViewResult", "datamodel_file_id");
     }

@@ -3249,32 +3249,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("md5sum", "md5sum")
         );
 
-        List<Map<String, Object>> page = overview(
-                FILES_END_POINT,
-                params,
-                PROPERTIES,
-                defaultSort,
-                mapping,
-                Set.of(),
-                "nested_filters",
-                "files_table"
-        );
-
-        Set<String> datamodelListFields = Set.of(
-                "datamodel_dcf_indexd_guid",
-                "datamodel_guid",
-                "datamodel_file_id"
-        );
-        for (Map<String, Object> row : page) {
-            for (String field : datamodelListFields) {
-                Object value = row.get(field);
-                if (value != null && !(value instanceof List<?>)) {
-                    row.put(field, List.of(value.toString()));
-                }
-            }
-        }
-
-        return page;
+        return overview(FILES_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "files_table");
     }
 
     private Map<String, Object> getFilenames(Map<String, Object> params) throws IOException {
