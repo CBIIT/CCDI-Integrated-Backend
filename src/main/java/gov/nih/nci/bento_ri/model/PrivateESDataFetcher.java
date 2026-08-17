@@ -303,25 +303,35 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         List<String> searchFields = (List<String>)category.get(GS_SEARCH_FIELD);
         List<Object> searchClauses = new ArrayList<>();
         String normalizedInput = input == null ? "" : input.trim();
-        // Prefer denormalized *_gs keyword fields when listed in GS_SEARCH_FIELD.
-        // Case-insensitive prefix + contains wildcards keep typing responsive on keyword fields.
+        String indexType = (String)category.get(GS_CATEGORY_TYPE);
+        // model_* indexes map node/property/value as search_as_you_type (indices.yaml).
+        // Prefix/wildcard queries are invalid on those fields; match WebService.
+        boolean usePhrasePrefix = "node".equals(indexType)
+                || "property".equals(indexType)
+                || "value".equals(indexType);
         String wildcardValue = "*" + escapeWildcard(normalizedInput) + "*";
         for (String searchFieldName: searchFields) {
             if (normalizedInput.isEmpty()) {
                 continue;
             }
-            searchClauses.add(Map.of(
-                    "prefix", Map.of(searchFieldName, Map.of(
-                            "value", normalizedInput,
-                            "case_insensitive", true
-                    ))
-            ));
-            searchClauses.add(Map.of(
-                    "wildcard", Map.of(searchFieldName, Map.of(
-                            "value", wildcardValue,
-                            "case_insensitive", true
-                    ))
-            ));
+            if (usePhrasePrefix) {
+                searchClauses.add(Map.of("match_phrase_prefix", Map.of(searchFieldName, normalizedInput)));
+            } else {
+                // Prefer denormalized *_gs keyword fields when listed in GS_SEARCH_FIELD.
+                // Case-insensitive prefix + contains wildcards keep typing responsive on keyword fields.
+                searchClauses.add(Map.of(
+                        "prefix", Map.of(searchFieldName, Map.of(
+                                "value", normalizedInput,
+                                "case_insensitive", true
+                        ))
+                ));
+                searchClauses.add(Map.of(
+                        "wildcard", Map.of(searchFieldName, Map.of(
+                                "value", wildcardValue,
+                                "case_insensitive", true
+                        ))
+                ));
+            }
         }
         Map<String, Object> query = new HashMap<>();
         if (searchClauses.isEmpty()) {
@@ -329,7 +339,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             query.put("query", Map.of("bool", Map.of("must_not", Map.of("match_all", Map.of()))));
             return query;
         }
-        String indexType = (String)category.get(GS_CATEGORY_TYPE);
         if (indexType.equals("file")) {
             query.put("query", Map.of("bool", Map.of(
                     "must", Map.of("exists", Map.of("field", "file_id")),
@@ -569,8 +578,63 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 },
                 GS_CATEGORY_TYPE, "file"
         ));
-        // model_nodes / model_properties / model_values are Bento template indexes and are not
-        // present in the CCDI OpenSearch cluster. Keep GraphQL contract with empty model results.
+        searchCategories.add(Map.of(
+                GS_END_POINT, NODES_END_POINT,
+                GS_COUNT_ENDPOINT, NODES_COUNT_END_POINT,
+                GS_COUNT_RESULT_FIELD, "model_count",
+                GS_RESULT_FIELD, "model",
+                GS_SEARCH_FIELD, List.of("node"),
+                GS_SORT_FIELD, "node_kw",
+                GS_COLLECT_FIELDS, new String[][]{
+                        new String[]{"node", "node"}
+                },
+                GS_HIGHLIGHT_FIELDS, new String[][] {
+                        new String[]{"highlight", "node"}
+                },
+                GS_CATEGORY_TYPE, "node"
+        ));
+        searchCategories.add(Map.of(
+                GS_END_POINT, PROPERTIES_END_POINT,
+                GS_COUNT_ENDPOINT, PROPERTIES_COUNT_END_POINT,
+                GS_COUNT_RESULT_FIELD, "model_count",
+                GS_RESULT_FIELD, "model",
+                GS_SEARCH_FIELD, List.of("property", "property_description", "property_type", "property_required"),
+                GS_SORT_FIELD, "property_kw",
+                GS_COLLECT_FIELDS, new String[][]{
+                        new String[]{"node", "node"},
+                        new String[]{"property", "property"},
+                        new String[]{"property_type", "property_type"},
+                        new String[]{"property_required", "property_required"},
+                        new String[]{"property_description", "property_description"}
+                },
+                GS_HIGHLIGHT_FIELDS, new String[][] {
+                        new String[]{"highlight", "property"},
+                        new String[]{"highlight", "property_description"},
+                        new String[]{"highlight", "property_type"},
+                        new String[]{"highlight", "property_required"}
+                },
+                GS_CATEGORY_TYPE, "property"
+        ));
+        searchCategories.add(Map.of(
+                GS_END_POINT, VALUES_END_POINT,
+                GS_COUNT_ENDPOINT, VALUES_COUNT_END_POINT,
+                GS_COUNT_RESULT_FIELD, "model_count",
+                GS_RESULT_FIELD, "model",
+                GS_SEARCH_FIELD, List.of("value"),
+                GS_SORT_FIELD, "value_kw",
+                GS_COLLECT_FIELDS, new String[][]{
+                        new String[]{"node", "node"},
+                        new String[]{"property", "property"},
+                        new String[]{"property_type", "property_type"},
+                        new String[]{"property_required", "property_required"},
+                        new String[]{"property_description", "property_description"},
+                        new String[]{"value", "value"}
+                },
+                GS_HIGHLIGHT_FIELDS, new String[][] {
+                        new String[]{"highlight", "value"}
+                },
+                GS_CATEGORY_TYPE, "value"
+        ));
         result.put("model", new ArrayList<>());
         result.put("model_count", 0);
 
@@ -585,7 +649,17 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             // Get count
             Request countRequest = new Request("GET", (String) category.get(GS_COUNT_ENDPOINT));
             countRequest.setJsonEntity(gson.toJson(query));
-            JsonObject countResult = esService.send(countRequest);
+            JsonObject countResult;
+            try {
+                countResult = esService.send(countRequest);
+            } catch (IOException e) {
+                if ("model".equals(resultFieldName)) {
+                    logger.warn("Data model global search skipped for "
+                            + category.get(GS_COUNT_ENDPOINT) + ": " + e.getMessage());
+                    continue;
+                }
+                throw e;
+            }
             int oldCount = (int)result.getOrDefault(countResultFieldName, 0);
             result.put(countResultFieldName, countResult.get("count").getAsInt() + oldCount);
 
@@ -608,7 +682,18 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             query.put("_source", Map.of("includes", dataFields));
 
             request.setJsonEntity(gson.toJson(query));
-            List<Map<String, Object>> objects = inventoryESService.collectPage(request, query, properties, size, offset);
+            List<Map<String, Object>> objects;
+            try {
+                // Use InventoryESService/ESService 5-arg collectPage (do not extend submodule API).
+                objects = inventoryESService.collectPage(request, query, properties, size, offset);
+            } catch (IOException e) {
+                if ("model".equals(resultFieldName)) {
+                    logger.warn("Data model global search skipped for "
+                            + category.get(GS_END_POINT) + ": " + e.getMessage());
+                    continue;
+                }
+                throw e;
+            }
 
             for (var object: objects) {
                 object.put(GS_CATEGORY_TYPE, category.get(GS_CATEGORY_TYPE));

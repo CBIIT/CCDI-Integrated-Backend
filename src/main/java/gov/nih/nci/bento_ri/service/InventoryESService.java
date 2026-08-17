@@ -1526,11 +1526,26 @@ public class InventoryESService extends ESService {
                 continue;
             }
             Map<String, Object> row = new HashMap<>();
+            JsonObject hit = searchHits.get(i).getAsJsonObject();
             for (String[] prop: properties) {
                 String propName = prop[0];
                 String dataField = prop[1];
-                JsonElement element = searchHits.get(i).getAsJsonObject().get("_source").getAsJsonObject().get(dataField);
+                JsonElement element = hit.getAsJsonObject("_source").get(dataField);
                 row.put(propName, getValue(element));
+            }
+            if (highlights != null && hit.has("highlight") && hit.get("highlight").isJsonObject()) {
+                JsonObject highlightObj = hit.getAsJsonObject("highlight");
+                for (String[] highlight: highlights) {
+                    String hlName = highlight[0];
+                    String hlField = highlight[1];
+                    JsonElement element = highlightObj.get(hlField);
+                    if (element != null) {
+                        Object highlighted = getValue(element);
+                        if (highlighted instanceof List && !((List<?>) highlighted).isEmpty()) {
+                            row.put(hlName, ((List<?>) highlighted).get(0));
+                        }
+                    }
+                }
             }
             data.add(row);
             if (data.size() >= pageSize) {
