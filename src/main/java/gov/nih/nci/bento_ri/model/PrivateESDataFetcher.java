@@ -3186,6 +3186,9 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 new String[]{"id", "id"},
             new String[]{"file_id", "file_id"},
             new String[]{"guid", "guid"},
+            new String[]{"datamodel_dcf_indexd_guid", "datamodel_dcf_indexd_guid"},
+            new String[]{"datamodel_guid", "datamodel_guid"},
+            new String[]{"datamodel_file_id", "datamodel_file_id"},
             new String[]{"file_name", "file_name"},
             new String[]{"data_category", "data_category"},
             new String[]{"file_description", "file_description"},
@@ -3246,7 +3249,32 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("md5sum", "md5sum")
         );
 
-        return overview(FILES_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "files_table");
+        List<Map<String, Object>> page = overview(
+                FILES_END_POINT,
+                params,
+                PROPERTIES,
+                defaultSort,
+                mapping,
+                Set.of(),
+                "nested_filters",
+                "files_table"
+        );
+
+        Set<String> datamodelListFields = Set.of(
+                "datamodel_dcf_indexd_guid",
+                "datamodel_guid",
+                "datamodel_file_id"
+        );
+        for (Map<String, Object> row : page) {
+            for (String field : datamodelListFields) {
+                Object value = row.get(field);
+                if (value != null && !(value instanceof List<?>)) {
+                    row.put(field, List.of(value.toString()));
+                }
+            }
+        }
+
+        return page;
     }
 
     private Map<String, Object> getFilenames(Map<String, Object> params) throws IOException {
@@ -3527,7 +3555,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     "file_mapping_level", "file_access", "anatomic_site", "participant_age_at_collection",
                     "sample_tumor_status", "tumor_spatial_extent", "sample_description", "percent_tumor",
                     "percent_necrosis", "consent_codes", "fixation_embedding_method", "staining_method",
-                    "study_id", "participant_id", "sample_id", "md5sum", "files")));
+                    "study_id", "participant_id", "sample_id", "md5sum", "files",
+                    "datamodel_dcf_indexd_guid", "datamodel_guid", "datamodel_file_id")));
             //query.put("_source", Map.of("exclude", Set.of("combined_filters", "participant_filters", "sample_diagnosis_filters", "survival_filters", "treatment_filters", "treatment_response_filters")));
         }
         int pageSize = (int) params.get(PAGE_SIZE);
