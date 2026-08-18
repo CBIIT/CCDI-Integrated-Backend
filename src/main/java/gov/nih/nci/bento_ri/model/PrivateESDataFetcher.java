@@ -3183,9 +3183,9 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> fileOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
-                new String[]{"id", "id"},
+            new String[]{"id", "id"},
             new String[]{"file_id", "file_id"},
-            new String[]{"guid", "guid"},
+            new String[]{"guid", "datamodel_dcf_indexd_guid"},
             new String[]{"datamodel_dcf_indexd_guid", "datamodel_dcf_indexd_guid"},
             new String[]{"datamodel_guid", "datamodel_guid"},
             new String[]{"datamodel_file_id", "datamodel_file_id"},
@@ -3214,39 +3214,39 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"participant_id", "participant_id"},
             new String[]{"sample_id", "sample_id"},
             new String[]{"md5sum", "md5sum"},
-                new String[]{"files", "files"}
+            new String[]{"files", "files"}
         };
 
         String defaultSort = "file_id"; // Default sort order
 
         Map<String, String> mapping = Map.ofEntries(
-                Map.entry("file_id", "file_id"),
-                Map.entry("guid", "guid"),
-                Map.entry("file_name", "file_name"),
-                Map.entry("data_category", "data_category"),
-                Map.entry("file_description", "file_description"),
-                Map.entry("file_type", "file_type"),
-                Map.entry("file_size", "file_size"),
-                Map.entry("study_id", "study_id"),
-                Map.entry("library_selection", "library_selection.sort"),
-                Map.entry("library_source_material", "library_source_material.sort"),
-                Map.entry("library_source_molecule", "library_source_molecule.sort"),
-                Map.entry("library_strategy", "library_strategy.sort"),
-                Map.entry("file_mapping_level", "file_mapping_level"),
-                Map.entry("file_access", "file_access"),
-                Map.entry("anatomic_site", "anatomic_site"),
-                Map.entry("participant_age_at_collection", "participant_age_at_collection"),
-                Map.entry("sample_tumor_status", "sample_tumor_status"),
-                Map.entry("tumor_spatial_extent", "tumor_spatial_extent"),
-                Map.entry("sample_description", "sample_description"),
-                Map.entry("percent_tumor", "percent_tumor"),
-                Map.entry("percent_necrosis", "percent_necrosis"),
-                Map.entry("consent_codes", "consent_codes"),
-                Map.entry("fixation_embedding_method", "fixation_embedding_method"),
-                Map.entry("staining_method", "staining_method"),
-                Map.entry("participant_id", "participant_id"),
-                Map.entry("sample_id", "sample_id"),
-                Map.entry("md5sum", "md5sum")
+            Map.entry("file_id", "file_id"),
+            Map.entry("guid", "datamodel_dcf_indexd_guid"),
+            Map.entry("file_name", "file_name"),
+            Map.entry("data_category", "data_category"),
+            Map.entry("file_description", "file_description"),
+            Map.entry("file_type", "file_type"),
+            Map.entry("file_size", "file_size"),
+            Map.entry("study_id", "study_id"),
+            Map.entry("library_selection", "library_selection.sort"),
+            Map.entry("library_source_material", "library_source_material.sort"),
+            Map.entry("library_source_molecule", "library_source_molecule.sort"),
+            Map.entry("library_strategy", "library_strategy.sort"),
+            Map.entry("file_mapping_level", "file_mapping_level"),
+            Map.entry("file_access", "file_access"),
+            Map.entry("anatomic_site", "anatomic_site"),
+            Map.entry("participant_age_at_collection", "participant_age_at_collection"),
+            Map.entry("sample_tumor_status", "sample_tumor_status"),
+            Map.entry("tumor_spatial_extent", "tumor_spatial_extent"),
+            Map.entry("sample_description", "sample_description"),
+            Map.entry("percent_tumor", "percent_tumor"),
+            Map.entry("percent_necrosis", "percent_necrosis"),
+            Map.entry("consent_codes", "consent_codes"),
+            Map.entry("fixation_embedding_method", "fixation_embedding_method"),
+            Map.entry("staining_method", "staining_method"),
+            Map.entry("participant_id", "participant_id"),
+            Map.entry("sample_id", "sample_id"),
+            Map.entry("md5sum", "md5sum")
         );
 
         return overview(FILES_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "files_table");
