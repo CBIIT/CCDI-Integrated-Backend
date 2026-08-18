@@ -1396,6 +1396,9 @@ type FileOverViewResult {
     study_id: String
     file_id: String
     guid: String
+    datamodel_dcf_indexd_guid: String
+    datamodel_guid: [String]
+    datamodel_file_id: [String]
     md5sum: String
     files: [String]
 }
