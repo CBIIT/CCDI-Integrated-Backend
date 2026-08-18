@@ -269,6 +269,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                             Map<String, Object> args = env.getArguments();
                             return filesManifestInList(args);
                         })
+                        .dataFetcher("filesInList", env -> {
+                            Map<String, Object> args = env.getArguments();
+                            return filesInList(args);
+                        })
                         .dataFetcher("globalSearch", env -> {
                             Map<String, Object> args = env.getArguments();
                             return globalSearch(args);
@@ -3599,7 +3603,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> filesManifestInList(Map<String, Object> params) throws IOException {
         final String[][] properties = new String[][]{
-                new String[]{"guid", "guid"},
+                new String[]{"guid", "datamodel_dcf_indexd_guid"},
                 new String[]{"file_name", "file_name"},
                 new String[]{"participant_id", "participant_id"},
                 new String[]{"md5sum", "md5sum"}
@@ -3613,6 +3617,49 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         query.put("_source", Map.of("includes", Set.of("guid", "file_name", "participant_id", "md5sum")));
         Request request = new Request("GET", FILES_END_POINT);
 
+        return esService.collectPage(request, query, properties, pageSize, offset);
+    }
+
+    private List<Map<String, Object>> filesInList(Map<String, Object> params) throws IOException {
+        final String[][] properties = new String[][]{
+                new String[]{"id", "id"},
+                new String[]{"file_id", "file_id"},
+                new String[]{"guid", "datamodel_dcf_indexd_guid"},
+                new String[]{"file_name", "file_name"},
+                new String[]{"library_selection", "library_selection"},
+                new String[]{"library_source_material", "library_source_material"},
+                new String[]{"library_source_molecule", "library_source_molecule"},
+                new String[]{"library_strategy", "library_strategy"},
+                new String[]{"file_mapping_level", "file_mapping_level"},
+                new String[]{"file_access", "file_access"},
+                new String[]{"study_name", "study_name"},
+                new String[]{"dbgap_accession", "dbgap_accession"},
+                new String[]{"sample_id", "sample_id"},
+                new String[]{"participant_id", "participant_id"},
+                new String[]{"study_id", "study_id"},
+                new String[]{"file_type", "file_type"},
+                new String[]{"file_size", "file_size"},
+                new String[]{"md5sum", "md5sum"}
+        };
+
+        Map<String, String> sortFields = new HashMap<>();
+        for (String[] property : properties) {
+            sortFields.put(property[0], property[1]);
+        }
+
+        Map<String, Object> fileIds = new HashMap<>();
+        if (params.containsKey("id")) {
+            fileIds.put("id", params.get("id"));
+        }
+
+        Map<String, Object> query = esService.buildListQuery(fileIds, Set.of(), false);
+        String orderBy = (String) params.get(ORDER_BY);
+        String direction = (String) params.get(SORT_DIRECTION);
+        query.put("sort", mapSortOrder(orderBy, direction, "file_name", sortFields));
+
+        int pageSize = Math.min((int) params.get(PAGE_SIZE), ESService.MAX_ES_SIZE);
+        int offset = (int) params.get(OFFSET);
+        Request request = new Request("GET", FILES_END_POINT);
         return esService.collectPage(request, query, properties, pageSize, offset);
     }
 
