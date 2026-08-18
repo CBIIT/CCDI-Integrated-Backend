@@ -3614,7 +3614,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         int pageSize = (int) params.get(PAGE_SIZE);
         int offset = (int) params.get(OFFSET);
         Map<String, Object> query = esService.buildListQuery(file_ids, Set.of(), false);
-        query.put("_source", Map.of("includes", Set.of("guid", "file_name", "participant_id", "md5sum")));
+        query.put("_source", Map.of("includes", Set.of("datamodel_dcf_indexd_guid", "file_name", "participant_id", "md5sum")));
         Request request = new Request("GET", FILES_END_POINT);
 
         return esService.collectPage(request, query, properties, pageSize, offset);
