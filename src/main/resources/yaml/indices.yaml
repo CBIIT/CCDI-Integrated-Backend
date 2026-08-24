@@ -8243,12 +8243,14 @@ indices:
           CALL {
             WITH p
             OPTIONAL MATCH (p)<-[:of_survival]-(su:survival)
-            RETURN [x IN collect(DISTINCT su) WHERE x IS NOT NULL | {
+            WITH su AS x
+            WITH CASE WHEN x IS NULL THEN null ELSE {
               last_known_survival_status: x.last_known_survival_status,
               cause_of_death: x.cause_of_death,
               first_event: x.first_event,
               age_at_last_known_survival_status: x.age_at_last_known_survival_status
-            }] AS survival_filters
+            } END AS projected_item
+            RETURN [x IN collect(DISTINCT projected_item) WHERE x IS NOT NULL] AS survival_filters
           }
 
           CALL {
@@ -8258,24 +8260,42 @@ indices:
 
             WITH
               p,
-              [x IN collect(DISTINCT tchemo) WHERE x IS NOT NULL | {
+              tchemo AS x
+
+            WITH
+              p,
+              CASE WHEN x IS NULL THEN null ELSE {
                 treatment_type: coalesce(x.treatment_type, x.chemotherapy_type, 'chemotherapy'),
                 treatment_agent: coalesce(x.treatment_agent, x.chemotherapy_agent),
                 age_at_treatment_start: x.age_at_treatment_start,
                 age_at_treatment_end: x.age_at_treatment_end
-              }] AS chemo_filters
+              } END AS projected_item
+
+            WITH
+              p,
+              [x IN collect(DISTINCT projected_item) WHERE x IS NOT NULL] AS chemo_filters
 
             OPTIONAL MATCH (p)<-[:of_treatment_radiation]-(trad:treatment_radiation)
 
             WITH
               p,
               chemo_filters,
-              [x IN collect(DISTINCT trad) WHERE x IS NOT NULL | {
+              trad AS x
+
+            WITH
+              p,
+              chemo_filters,
+              CASE WHEN x IS NULL THEN null ELSE {
                 treatment_type: coalesce(x.treatment_type, x.radiation_type, 'radiation'),
                 treatment_agent: coalesce(x.treatment_agent, x.radiation_agent),
                 age_at_treatment_start: x.age_at_treatment_start,
                 age_at_treatment_end: x.age_at_treatment_end
-              }] AS radiation_filters
+              } END AS projected_item
+
+            WITH
+              p,
+              chemo_filters,
+              [x IN collect(DISTINCT projected_item) WHERE x IS NOT NULL] AS radiation_filters
 
             OPTIONAL MATCH (p)<-[:of_treatment_surgery]-(tsurg:treatment_surgery)
 
@@ -8283,36 +8303,62 @@ indices:
               p,
               chemo_filters,
               radiation_filters,
-              [x IN collect(DISTINCT tsurg) WHERE x IS NOT NULL | {
+              tsurg AS x
+
+            WITH
+              p,
+              chemo_filters,
+              radiation_filters,
+              CASE WHEN x IS NULL THEN null ELSE {
                 treatment_type: coalesce(x.treatment_type, x.surgery_type, 'surgery'),
                 treatment_agent: coalesce(x.treatment_agent, x.surgery_agent),
                 age_at_treatment_start: x.age_at_treatment_start,
                 age_at_treatment_end: x.age_at_treatment_end
-              }] AS surgery_filters
+              } END AS projected_item
+
+            WITH
+              p,
+              chemo_filters,
+              radiation_filters,
+              [x IN collect(DISTINCT projected_item) WHERE x IS NOT NULL] AS surgery_filters
 
             OPTIONAL MATCH (p)<-[:of_treatment_other]-(tother:treatment_other)
+
+            WITH
+              chemo_filters,
+              radiation_filters,
+              surgery_filters,
+              tother AS x
+
+            WITH
+              chemo_filters,
+              radiation_filters,
+              surgery_filters,
+              CASE WHEN x IS NULL THEN null ELSE {
+                treatment_type: coalesce(x.treatment_type, x.other_treatment_type, 'other'),
+                treatment_agent: coalesce(x.treatment_agent, x.other_treatment_agent),
+                age_at_treatment_start: x.age_at_treatment_start,
+                age_at_treatment_end: x.age_at_treatment_end
+              } END AS projected_item
 
             RETURN
               chemo_filters +
               radiation_filters +
               surgery_filters +
-              [x IN collect(DISTINCT tother) WHERE x IS NOT NULL | {
-                treatment_type: coalesce(x.treatment_type, x.other_treatment_type, 'other'),
-                treatment_agent: coalesce(x.treatment_agent, x.other_treatment_agent),
-                age_at_treatment_start: x.age_at_treatment_start,
-                age_at_treatment_end: x.age_at_treatment_end
-              }] AS treatment_filters
+              [x IN collect(DISTINCT projected_item) WHERE x IS NOT NULL] AS treatment_filters
           }
 
           CALL {
             WITH p
             OPTIONAL MATCH (p)<-[:of_treatment_response]-(tresp:treatment_response)
-            RETURN [x IN collect(DISTINCT tresp) WHERE x IS NOT NULL | {
+            WITH tresp AS x
+            WITH CASE WHEN x IS NULL THEN null ELSE {
               response_category: x.response_category,
               age_at_response: x.age_at_response,
               response: x.response,
               response_system: x.response_system
-            }] AS treatment_response_filters
+            } END AS projected_item
+            RETURN [x IN collect(DISTINCT projected_item) WHERE x IS NOT NULL] AS treatment_response_filters
           }
 
           WITH
