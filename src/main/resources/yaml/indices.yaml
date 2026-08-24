@@ -674,7 +674,10 @@ indices:
           OPTIONAL MATCH (child:clinical_measure_file)-[:of_clinical_measure_file]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               clinical_measure_file_id: item.clinical_measure_file_id,
               file_name: item.file_name,
               data_category: item.data_category,
@@ -693,7 +696,10 @@ indices:
               participant_list: item.participant_list,
               guid: item.guid,
               crdc_id: item.crdc_id
-            }] AS clinical_measure_files
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS clinical_measure_files
           RETURN p.guid AS id, clinical_measure_files
         page_size: 5000
       - name: "diagnoses"
@@ -704,7 +710,10 @@ indices:
           OPTIONAL MATCH (child:diagnosis)-[:of_diagnosis]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               diagnosis_id: item.diagnosis_id,
               submitted_diagnosis: item.submitted_diagnosis,
               diagnosis: item.diagnosis,
@@ -727,7 +736,10 @@ indices:
               year_of_diagnosis: item.year_of_diagnosis,
               laterality: item.laterality,
               guid: item.guid
-            }] AS diagnoses
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS diagnoses
           RETURN p.guid AS id, diagnoses
         page_size: 5000
       - name: "exposures"
@@ -738,7 +750,10 @@ indices:
           OPTIONAL MATCH (child:exposure)-[:of_exposure]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               exposure_id: item.exposure_id,
               age_at_exposure: item.age_at_exposure,
               pack_years_smoked: item.pack_years_smoked,
@@ -761,7 +776,10 @@ indices:
               type_of_smoke_exposure: item.type_of_smoke_exposure,
               type_of_tobacco_used: item.type_of_tobacco_used,
               guid: item.guid
-            }] AS exposures
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS exposures
           RETURN p.guid AS id, exposures
         page_size: 5000
       - name: "family_relationships"
@@ -772,12 +790,18 @@ indices:
           OPTIONAL MATCH (child:family_relationship)-[:of_family_relationship]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               family_relationship_id: item.family_relationship_id,
               relationship: item.relationship,
               family_id: item.family_id,
               guid: item.guid
-            }] AS family_relationships
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS family_relationships
           RETURN p.guid AS id, family_relationships
         page_size: 5000
       - name: "laboratory_tests"
@@ -788,7 +812,10 @@ indices:
           OPTIONAL MATCH (child:laboratory_test)-[:of_laboratory_test]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               laboratory_test_id: item.laboratory_test_id,
               age_at_laboratory_test: item.age_at_laboratory_test,
               laboratory_test_method: item.laboratory_test_method,
@@ -800,7 +827,10 @@ indices:
               test_result_unit: item.test_result_unit,
               sensitivity: item.sensitivity,
               guid: item.guid
-            }] AS laboratory_tests
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS laboratory_tests
           RETURN p.guid AS id, laboratory_tests
         page_size: 5000
       - name: "medical_histories"
@@ -811,12 +841,18 @@ indices:
           OPTIONAL MATCH (child:medical_history)-[:of_medical_history]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               medical_history_id: item.medical_history_id,
               medical_history_category: item.medical_history_category,
               medical_history_condition: item.medical_history_condition,
               guid: item.guid
-            }] AS medical_histories
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS medical_histories
           RETURN p.guid AS id, medical_histories
         page_size: 5000
       - name: "radiology_files"
@@ -827,7 +863,10 @@ indices:
           OPTIONAL MATCH (child:radiology_file)-[:of_radiology_file]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               radiology_file_id: item.radiology_file_id,
               file_name: item.file_name,
               data_category: item.data_category,
@@ -874,7 +913,10 @@ indices:
               complexImageComponentCode: item.complexImageComponentCode,
               guid: item.guid,
               crdc_id: item.crdc_id
-            }] AS radiology_files
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS radiology_files
           RETURN p.guid AS id, radiology_files
         page_size: 5000
       - name: "survivals"
@@ -885,7 +927,10 @@ indices:
           OPTIONAL MATCH (child:survival)-[:of_survival]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               survival_id: item.survival_id,
               last_known_survival_status: item.last_known_survival_status,
               age_at_last_known_survival_status: item.age_at_last_known_survival_status,
@@ -900,7 +945,10 @@ indices:
               risk_factor: item.risk_factor,
               cause_of_death: item.cause_of_death,
               guid: item.guid
-            }] AS survivals
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS survivals
           RETURN p.guid AS id, survivals
         page_size: 5000
       - name: "synonyms"
@@ -911,7 +959,10 @@ indices:
           OPTIONAL MATCH (child:synonym)-[:of_synonym]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               synonym_id: item.synonym_id,
               repository_of_synonym_id: item.repository_of_synonym_id,
               associated_id: item.associated_id,
@@ -919,7 +970,10 @@ indices:
               domain_category: item.domain_category,
               data_location: item.data_location,
               guid: item.guid
-            }] AS synonyms
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS synonyms
           RETURN p.guid AS id, synonyms
         page_size: 5000
       - name: "treatments_chemotherapy"
@@ -930,7 +984,10 @@ indices:
           OPTIONAL MATCH (child:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               treatment_chemotherapy_id: item.treatment_chemotherapy_id,
               treatment_type: item.treatment_type,
               chemotherapy_type: item.chemotherapy_type,
@@ -945,7 +1002,10 @@ indices:
               dose_frequency: item.dose_frequency,
               protocol: item.protocol,
               guid: item.guid
-            }] AS treatments_chemotherapy
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS treatments_chemotherapy
           RETURN p.guid AS id, treatments_chemotherapy
         page_size: 5000
       - name: "treatments_other"
@@ -956,14 +1016,20 @@ indices:
           OPTIONAL MATCH (child:treatment_other)-[:of_treatment_other]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               treatment_other_id: item.treatment_other_id,
               treatment_type: item.treatment_type,
               other_treatment_type: item.other_treatment_type,
               age_at_treatment_start: item.age_at_treatment_start,
               age_at_treatment_end: item.age_at_treatment_end,
               guid: item.guid
-            }] AS treatments_other
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS treatments_other
           RETURN p.guid AS id, treatments_other
         page_size: 5000
       - name: "treatments_radiation"
@@ -974,7 +1040,10 @@ indices:
           OPTIONAL MATCH (child:treatment_radiation)-[:of_treatment_radiation]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               treatment_radiation_id: item.treatment_radiation_id,
               treatment_type: item.treatment_type,
               radiation_therapy_type: item.radiation_therapy_type,
@@ -989,7 +1058,10 @@ indices:
               fraction_radiation_dose: item.fraction_radiation_dose,
               fraction_radiation_dose_unit: item.fraction_radiation_dose_unit,
               guid: item.guid
-            }] AS treatments_radiation
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS treatments_radiation
           RETURN p.guid AS id, treatments_radiation
         page_size: 5000
       - name: "treatment_responses"
@@ -1000,14 +1072,20 @@ indices:
           OPTIONAL MATCH (child:treatment_response)-[:of_treatment_response]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               treatment_response_id: item.treatment_response_id,
               response: item.response,
               age_at_response: item.age_at_response,
               response_category: item.response_category,
               response_system: item.response_system,
               guid: item.guid
-            }] AS treatment_responses
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS treatment_responses
           RETURN p.guid AS id, treatment_responses
         page_size: 5000
       - name: "treatments_surgery"
@@ -1018,7 +1096,10 @@ indices:
           OPTIONAL MATCH (child:treatment_surgery)-[:of_treatment_surgery]->(p)
           WITH
             p,
-            [item IN collect(DISTINCT child) WHERE item IS NOT NULL | {
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
               treatment_surgery_id: item.treatment_surgery_id,
               treatment_type: item.treatment_type,
               surgery_type: item.surgery_type,
@@ -1027,7 +1108,10 @@ indices:
               anatomic_site: item.anatomic_site,
               resection_margin_status: item.resection_margin_status,
               guid: item.guid
-            }] AS treatments_surgery
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS treatments_surgery
           RETURN p.guid AS id, treatments_surgery
         page_size: 5000
       - name: "samples"
@@ -1041,7 +1125,8 @@ indices:
             CALL { // Collect diagnoses directly related to each participant sample.
               WITH sample
               OPTIONAL MATCH (sample)<-[:of_diagnosis]-(sample_diagnosis:diagnosis)
-              RETURN [item IN collect(DISTINCT sample_diagnosis) WHERE item IS NOT NULL | {
+              WITH sample_diagnosis AS item
+              WITH CASE WHEN item IS NULL THEN null ELSE {
                 diagnosis_id: item.diagnosis_id,
                 submitted_diagnosis: item.submitted_diagnosis,
                 diagnosis: item.diagnosis,
@@ -1064,12 +1149,14 @@ indices:
                 year_of_diagnosis: item.year_of_diagnosis,
                 laterality: item.laterality,
                 guid: item.guid
-              }] AS diagnoses
+              } END AS projected_item
+              RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS diagnoses
             }
             CALL { // Collect generic files directly related to each participant sample.
               WITH sample
               OPTIONAL MATCH (sample)<-[:of_generic_file]-(sample_generic_file:generic_file)
-              RETURN [item IN collect(DISTINCT sample_generic_file) WHERE item IS NOT NULL | {
+              WITH sample_generic_file AS item
+              WITH CASE WHEN item IS NULL THEN null ELSE {
                 generic_file_id: item.generic_file_id,
                 file_name: item.file_name,
                 data_category: item.data_category,
@@ -1085,12 +1172,14 @@ indices:
                 dcf_indexd_guid: item.dcf_indexd_guid,
                 guid: item.guid,
                 crdc_id: item.crdc_id
-              }] AS generic_files
+              } END AS projected_item
+              RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS generic_files
             }
             CALL { // Collect genetic analyses directly related to each participant sample.
               WITH sample
               OPTIONAL MATCH (sample)<-[:of_genetic_analysis]-(sample_genetic_analysis:genetic_analysis)
-              RETURN [item IN collect(DISTINCT sample_genetic_analysis) WHERE item IS NOT NULL | {
+              WITH sample_genetic_analysis AS item
+              WITH CASE WHEN item IS NULL THEN null ELSE {
                 genetic_analysis_id: item.genetic_analysis_id,
                 age_at_genetic_analysis: item.age_at_genetic_analysis,
                 genomic_source_category: item.genomic_source_category,
@@ -1122,12 +1211,14 @@ indices:
                 translocation_partner_chromosome: item.translocation_partner_chromosome,
                 translocation_partner_cytoband: item.translocation_partner_cytoband,
                 guid: item.guid
-              }] AS genetic_analyses
+              } END AS projected_item
+              RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS genetic_analyses
             }
             CALL { // Collect laboratory tests directly related to each participant sample.
               WITH sample
               OPTIONAL MATCH (sample)<-[:of_laboratory_test]-(sample_laboratory_test:laboratory_test)
-              RETURN [item IN collect(DISTINCT sample_laboratory_test) WHERE item IS NOT NULL | {
+              WITH sample_laboratory_test AS item
+              WITH CASE WHEN item IS NULL THEN null ELSE {
                 laboratory_test_id: item.laboratory_test_id,
                 age_at_laboratory_test: item.age_at_laboratory_test,
                 laboratory_test_method: item.laboratory_test_method,
@@ -1139,12 +1230,14 @@ indices:
                 test_result_unit: item.test_result_unit,
                 sensitivity: item.sensitivity,
                 guid: item.guid
-              }] AS laboratory_tests
+              } END AS projected_item
+              RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS laboratory_tests
             }
             CALL { // Collect methylation array files directly related to each participant sample.
               WITH sample
               OPTIONAL MATCH (sample)<-[:of_methylation_array_file]-(sample_methylation_array_file:methylation_array_file)
-              RETURN [item IN collect(DISTINCT sample_methylation_array_file) WHERE item IS NOT NULL | {
+              WITH sample_methylation_array_file AS item
+              WITH CASE WHEN item IS NULL THEN null ELSE {
                 methylation_array_file_id: item.methylation_array_file_id,
                 file_name: item.file_name,
                 data_category: item.data_category,
@@ -1162,12 +1255,14 @@ indices:
                 reporter_label: item.reporter_label,
                 guid: item.guid,
                 crdc_id: item.crdc_id
-              }] AS methylation_array_files
+              } END AS projected_item
+              RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS methylation_array_files
             }
             CALL { // Collect pathology files directly related to each participant sample.
               WITH sample
               OPTIONAL MATCH (sample)<-[:of_pathology_file]-(sample_pathology_file:pathology_file)
-              RETURN [item IN collect(DISTINCT sample_pathology_file) WHERE item IS NOT NULL | {
+              WITH sample_pathology_file AS item
+              WITH CASE WHEN item IS NULL THEN null ELSE {
                 pathology_file_id: item.pathology_file_id,
                 file_name: item.file_name,
                 data_category: item.data_category,
@@ -1190,12 +1285,14 @@ indices:
                 slim_url: item.slim_url,
                 guid: item.guid,
                 crdc_id: item.crdc_id
-              }] AS pathology_files
+              } END AS projected_item
+              RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS pathology_files
             }
             CALL { // Collect sequencing files directly related to each participant sample.
               WITH sample
               OPTIONAL MATCH (sample)<-[:of_sequencing_file]-(sample_sequencing_file:sequencing_file)
-              RETURN [item IN collect(DISTINCT sample_sequencing_file) WHERE item IS NOT NULL | {
+              WITH sample_sequencing_file AS item
+              WITH CASE WHEN item IS NULL THEN null ELSE {
                 sequencing_file_id: item.sequencing_file_id,
                 file_name: item.file_name,
                 data_category: item.data_category,
@@ -1247,12 +1344,14 @@ indices:
                 UMI_barcode_size: item.UMI_barcode_size,
                 guid: item.guid,
                 crdc_id: item.crdc_id
-              }] AS sequencing_files
+              } END AS projected_item
+              RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS sequencing_files
             }
             CALL { // Collect synonyms directly related to each participant sample.
               WITH sample
               OPTIONAL MATCH (sample)<-[:of_synonym]-(sample_synonym:synonym)
-              RETURN [item IN collect(DISTINCT sample_synonym) WHERE item IS NOT NULL | {
+              WITH sample_synonym AS item
+              WITH CASE WHEN item IS NULL THEN null ELSE {
                 synonym_id: item.synonym_id,
                 repository_of_synonym_id: item.repository_of_synonym_id,
                 associated_id: item.associated_id,
@@ -1260,7 +1359,8 @@ indices:
                 domain_category: item.domain_category,
                 data_location: item.data_location,
                 guid: item.guid
-              }] AS synonyms
+              } END AS projected_item
+              RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS synonyms
             }
             CALL { // Collect cell lines related to each participant sample.
               WITH sample
@@ -1271,7 +1371,8 @@ indices:
                 CALL { // Collect diagnoses directly related to each cell-line sample.
                   WITH cell_line_sample
                   OPTIONAL MATCH (cell_line_sample)<-[:of_diagnosis]-(cell_line_sample_diagnosis:diagnosis)
-                  RETURN [item IN collect(DISTINCT cell_line_sample_diagnosis) WHERE item IS NOT NULL | {
+                  WITH cell_line_sample_diagnosis AS item
+                  WITH CASE WHEN item IS NULL THEN null ELSE {
                     diagnosis_id: item.diagnosis_id,
                     submitted_diagnosis: item.submitted_diagnosis,
                     diagnosis: item.diagnosis,
@@ -1294,12 +1395,14 @@ indices:
                     year_of_diagnosis: item.year_of_diagnosis,
                     laterality: item.laterality,
                     guid: item.guid
-                  }] AS diagnoses
+                  } END AS projected_item
+                  RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS diagnoses
                 }
                 CALL { // Collect sequencing files directly related to each cell-line sample.
                   WITH cell_line_sample
                   OPTIONAL MATCH (cell_line_sample)<-[:of_sequencing_file]-(cell_line_sample_sequencing_file:sequencing_file)
-                  RETURN [item IN collect(DISTINCT cell_line_sample_sequencing_file) WHERE item IS NOT NULL | {
+                  WITH cell_line_sample_sequencing_file AS item
+                  WITH CASE WHEN item IS NULL THEN null ELSE {
                     sequencing_file_id: item.sequencing_file_id,
                     file_name: item.file_name,
                     data_category: item.data_category,
@@ -1351,7 +1454,8 @@ indices:
                     UMI_barcode_size: item.UMI_barcode_size,
                     guid: item.guid,
                     crdc_id: item.crdc_id
-                  }] AS sequencing_files
+                  } END AS projected_item
+                  RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS sequencing_files
                 }
                 WITH cell_line_sample, diagnoses, sequencing_files
                 RETURN [entry IN collect({
@@ -1393,7 +1497,8 @@ indices:
                 CALL { // Collect cytogenomic files directly related to each PDX sample.
                   WITH pdx_sample
                   OPTIONAL MATCH (pdx_sample)<-[:of_cytogenomic_file]-(pdx_sample_cytogenomic_file:cytogenomic_file)
-                  RETURN [item IN collect(DISTINCT pdx_sample_cytogenomic_file) WHERE item IS NOT NULL | {
+                  WITH pdx_sample_cytogenomic_file AS item
+                  WITH CASE WHEN item IS NULL THEN null ELSE {
                     cytogenomic_file_id: item.cytogenomic_file_id,
                     file_name: item.file_name,
                     data_category: item.data_category,
@@ -1410,12 +1515,14 @@ indices:
                     cytogenomic_platform: item.cytogenomic_platform,
                     guid: item.guid,
                     crdc_id: item.crdc_id
-                  }] AS cytogenomic_files
+                  } END AS projected_item
+                  RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS cytogenomic_files
                 }
                 CALL { // Collect diagnoses directly related to each PDX sample.
                   WITH pdx_sample
                   OPTIONAL MATCH (pdx_sample)<-[:of_diagnosis]-(pdx_sample_diagnosis:diagnosis)
-                  RETURN [item IN collect(DISTINCT pdx_sample_diagnosis) WHERE item IS NOT NULL | {
+                  WITH pdx_sample_diagnosis AS item
+                  WITH CASE WHEN item IS NULL THEN null ELSE {
                     diagnosis_id: item.diagnosis_id,
                     submitted_diagnosis: item.submitted_diagnosis,
                     diagnosis: item.diagnosis,
@@ -1438,12 +1545,14 @@ indices:
                     year_of_diagnosis: item.year_of_diagnosis,
                     laterality: item.laterality,
                     guid: item.guid
-                  }] AS diagnoses
+                  } END AS projected_item
+                  RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS diagnoses
                 }
                 CALL { // Collect methylation array files directly related to each PDX sample.
                   WITH pdx_sample
                   OPTIONAL MATCH (pdx_sample)<-[:of_methylation_array_file]-(pdx_sample_methylation_array_file:methylation_array_file)
-                  RETURN [item IN collect(DISTINCT pdx_sample_methylation_array_file) WHERE item IS NOT NULL | {
+                  WITH pdx_sample_methylation_array_file AS item
+                  WITH CASE WHEN item IS NULL THEN null ELSE {
                     methylation_array_file_id: item.methylation_array_file_id,
                     file_name: item.file_name,
                     data_category: item.data_category,
@@ -1461,12 +1570,14 @@ indices:
                     reporter_label: item.reporter_label,
                     guid: item.guid,
                     crdc_id: item.crdc_id
-                  }] AS methylation_array_files
+                  } END AS projected_item
+                  RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS methylation_array_files
                 }
                 CALL { // Collect pathology files directly related to each PDX sample.
                   WITH pdx_sample
                   OPTIONAL MATCH (pdx_sample)<-[:of_pathology_file]-(pdx_sample_pathology_file:pathology_file)
-                  RETURN [item IN collect(DISTINCT pdx_sample_pathology_file) WHERE item IS NOT NULL | {
+                  WITH pdx_sample_pathology_file AS item
+                  WITH CASE WHEN item IS NULL THEN null ELSE {
                     pathology_file_id: item.pathology_file_id,
                     file_name: item.file_name,
                     data_category: item.data_category,
@@ -1489,12 +1600,14 @@ indices:
                     slim_url: item.slim_url,
                     guid: item.guid,
                     crdc_id: item.crdc_id
-                  }] AS pathology_files
+                  } END AS projected_item
+                  RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS pathology_files
                 }
                 CALL { // Collect sequencing files directly related to each PDX sample.
                   WITH pdx_sample
                   OPTIONAL MATCH (pdx_sample)<-[:of_sequencing_file]-(pdx_sample_sequencing_file:sequencing_file)
-                  RETURN [item IN collect(DISTINCT pdx_sample_sequencing_file) WHERE item IS NOT NULL | {
+                  WITH pdx_sample_sequencing_file AS item
+                  WITH CASE WHEN item IS NULL THEN null ELSE {
                     sequencing_file_id: item.sequencing_file_id,
                     file_name: item.file_name,
                     data_category: item.data_category,
@@ -1546,7 +1659,8 @@ indices:
                     UMI_barcode_size: item.UMI_barcode_size,
                     guid: item.guid,
                     crdc_id: item.crdc_id
-                  }] AS sequencing_files
+                  } END AS projected_item
+                  RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS sequencing_files
                 }
                 WITH pdx_sample, cytogenomic_files, diagnoses, methylation_array_files,
                   pathology_files, sequencing_files
@@ -1836,7 +1950,10 @@ indices:
           OPTIONAL MATCH (file:clinical_measure_file)-[:of_clinical_measure_file]->(stu)
           WITH
             stu,
-            [item IN collect(DISTINCT file) WHERE item IS NOT NULL | {
+            file AS item
+          WITH
+            stu,
+            CASE WHEN item IS NULL THEN null ELSE {
               clinical_measure_file_id: item.clinical_measure_file_id,
               file_name: item.file_name,
               data_category: item.data_category,
@@ -1855,7 +1972,10 @@ indices:
               participant_list: item.participant_list,
               guid: item.guid,
               crdc_id: item.crdc_id
-            }] AS clinical_measure_files
+            } END AS projected_item
+          WITH
+            stu,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS clinical_measure_files
           RETURN stu.guid AS guid, clinical_measure_files
         page_size: 100
       - name: "generic_files"
@@ -1866,7 +1986,10 @@ indices:
           OPTIONAL MATCH (file:generic_file)-[:of_generic_file]->(stu)
           WITH
             stu,
-            [item IN collect(DISTINCT file) WHERE item IS NOT NULL | {
+            file AS item
+          WITH
+            stu,
+            CASE WHEN item IS NULL THEN null ELSE {
               generic_file_id: item.generic_file_id,
               file_name: item.file_name,
               data_category: item.data_category,
@@ -1882,7 +2005,10 @@ indices:
               dcf_indexd_guid: item.dcf_indexd_guid,
               guid: item.guid,
               crdc_id: item.crdc_id
-            }] AS generic_files
+            } END AS projected_item
+          WITH
+            stu,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS generic_files
           RETURN stu.guid AS guid, generic_files
         page_size: 100
       - name: "publications"
@@ -1893,11 +2019,17 @@ indices:
           OPTIONAL MATCH (publication:publication)-[:of_publication]->(stu)
           WITH
             stu,
-            [item IN collect(DISTINCT publication) WHERE item IS NOT NULL | {
+            publication AS item
+          WITH
+            stu,
+            CASE WHEN item IS NULL THEN null ELSE {
               publication_id: item.publication_id,
               pubmed_id: item.pubmed_id,
               guid: item.guid
-            }] AS publications
+            } END AS projected_item
+          WITH
+            stu,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS publications
           RETURN stu.guid AS guid, publications
         page_size: 100
       - name: "study_admins"
@@ -1908,13 +2040,19 @@ indices:
           OPTIONAL MATCH (study_admin:study_admin)-[:of_study_admin]->(stu)
           WITH
             stu,
-            [item IN collect(DISTINCT study_admin) WHERE item IS NOT NULL | {
+            study_admin AS item
+          WITH
+            stu,
+            CASE WHEN item IS NULL THEN null ELSE {
               study_admin_id: item.study_admin_id,
               organism_species: item.organism_species,
               adult_or_childhood_study: item.adult_or_childhood_study,
               file_types_and_format: item.file_types_and_format,
               guid: item.guid
-            }] AS study_admins
+            } END AS projected_item
+          WITH
+            stu,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS study_admins
           RETURN stu.guid AS guid, study_admins
         page_size: 100
       - name: "study_arms"
@@ -1925,13 +2063,19 @@ indices:
           OPTIONAL MATCH (study_arm:study_arm)-[:of_study_arm]->(stu)
           WITH
             stu,
-            [item IN collect(DISTINCT study_arm) WHERE item IS NOT NULL | {
+            study_arm AS item
+          WITH
+            stu,
+            CASE WHEN item IS NULL THEN null ELSE {
               study_arm_id: item.study_arm_id,
               study_arm_description: item.study_arm_description,
               clinical_trial_identifier: item.clinical_trial_identifier,
               clinical_trial_repository: item.clinical_trial_repository,
               guid: item.guid
-            }] AS study_arms
+            } END AS projected_item
+          WITH
+            stu,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS study_arms
           RETURN stu.guid AS guid, study_arms
         page_size: 100
       - name: "study_fundings"
@@ -1942,13 +2086,19 @@ indices:
           OPTIONAL MATCH (study_funding:study_funding)-[:of_study_funding]->(stu)
           WITH
             stu,
-            [item IN collect(DISTINCT study_funding) WHERE item IS NOT NULL | {
+            study_funding AS item
+          WITH
+            stu,
+            CASE WHEN item IS NULL THEN null ELSE {
               study_funding_id: item.study_funding_id,
               funding_agency: item.funding_agency,
               grant_id: item.grant_id,
               funding_source_program_name: item.funding_source_program_name,
               guid: item.guid
-            }] AS study_fundings
+            } END AS projected_item
+          WITH
+            stu,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS study_fundings
           RETURN stu.guid AS guid, study_fundings
         page_size: 100
       - name: "study_personnel"
@@ -1959,7 +2109,10 @@ indices:
           OPTIONAL MATCH (study_personnel:study_personnel)-[:of_study_personnel]->(stu)
           WITH
             stu,
-            [item IN collect(DISTINCT study_personnel) WHERE item IS NOT NULL | {
+            study_personnel AS item
+          WITH
+            stu,
+            CASE WHEN item IS NULL THEN null ELSE {
               study_personnel_id: item.study_personnel_id,
               personnel_name: item.personnel_name,
               personnel_type: item.personnel_type,
@@ -1968,7 +2121,10 @@ indices:
               orcid: item.orcid,
               guid: item.guid,
               crdc_id: item.crdc_id
-            }] AS study_personnels
+            } END AS projected_item
+          WITH
+            stu,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS study_personnels
           RETURN stu.guid AS guid, study_personnels
         page_size: 100
       - name: "study_statuses"
@@ -1979,7 +2135,10 @@ indices:
           OPTIONAL MATCH (study_status:study_status)-[:of_study_status]->(stu)
           WITH
             stu,
-            [item IN collect(DISTINCT study_status) WHERE item IS NOT NULL | {
+            study_status AS item
+          WITH
+            stu,
+            CASE WHEN item IS NULL THEN null ELSE {
               study_status_id: item.study_status_id,
               repository_name: item.repository_name,
               version: item.version,
@@ -1992,7 +2151,10 @@ indices:
               number_of_files: item.number_of_files,
               total_size_of_data_files: item.total_size_of_data_files,
               guid: item.guid
-            }] AS study_statuses
+            } END AS projected_item
+          WITH
+            stu,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS study_statuses
           RETURN stu.guid AS guid, study_statuses
         page_size: 100
       - name: "consent_groups"
@@ -2003,12 +2165,18 @@ indices:
           OPTIONAL MATCH (consent_group:consent_group)-[:of_consent_group]->(stu)
           WITH
             stu,
-            [item IN collect(DISTINCT consent_group) WHERE item IS NOT NULL | {
+            consent_group AS item
+          WITH
+            stu,
+            CASE WHEN item IS NULL THEN null ELSE {
               consent_group_id: item.consent_group_id,
               consent_group_name: item.consent_group_name,
               consent_group_suffix: item.consent_group_suffix,
               guid: item.guid
-            }] AS consent_groups
+            } END AS projected_item
+          WITH
+            stu,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS consent_groups
           RETURN stu.guid AS guid, consent_groups
         page_size: 100
       - name: "cell_lines"
@@ -2025,7 +2193,12 @@ indices:
             stu,
             cell_line,
             sample,
-            [item IN collect(DISTINCT sequencing_file) WHERE item IS NOT NULL | {
+            sequencing_file AS item
+          WITH
+            stu,
+            cell_line,
+            sample,
+            CASE WHEN item IS NULL THEN null ELSE {
               sequencing_file_id: item.sequencing_file_id,
               file_name: item.file_name,
               data_category: item.data_category,
@@ -2077,7 +2250,12 @@ indices:
               UMI_barcode_size: item.UMI_barcode_size,
               guid: item.guid,
               crdc_id: item.crdc_id
-            }] AS sequencing_files
+            } END AS projected_item
+          WITH
+            stu,
+            cell_line,
+            sample,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS sequencing_files
 
           WITH
             stu,
