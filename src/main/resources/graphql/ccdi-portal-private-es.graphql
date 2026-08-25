@@ -1687,7 +1687,7 @@ type QueryType {
         import_data: [String] = [""],
         
         # Demographics
-        pid: [String] = [""],
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -1776,7 +1776,7 @@ type QueryType {
         import_data: [String] = [""],
         
         # Demographics
-        pid: [String] = [""],
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -1953,7 +1953,7 @@ type QueryType {
         import_data: [String] = [""],
         
         # Demographics
-        pid: [String] = [""],
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -2042,7 +2042,7 @@ type QueryType {
         import_data: [String] = [""],
 
         # Demographics
-        pid: [String] = [""],
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -2131,7 +2131,7 @@ type QueryType {
         import_data: [String] = [""],
 
         # Demographics
-        pid: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -2220,7 +2220,7 @@ type QueryType {
         import_data: [String] = [""],
         
         # Demographics
-        pid: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -2309,7 +2309,7 @@ type QueryType {
         import_data: [String] = [""],
 
         # Demographics
-        pid: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -2399,7 +2399,7 @@ type QueryType {
         import_data: [String] = [""],
 
         # Demographics
-        pid: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
