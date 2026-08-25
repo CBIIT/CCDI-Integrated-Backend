@@ -1517,6 +1517,7 @@ type QueryType {
         import_data: [String] = [""],
 
         # Demographics
+        id: [String] = [""],
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -1686,12 +1687,13 @@ type QueryType {
         import_data: [String] = [""],
         
         # Demographics
-        id: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
 
         # Diagnoses
+        id: [String] = [""], 
         age_at_diagnosis: [Int] = [0],
         age_at_diagnosis_unknownAges: [String] = [""],
         diagnosis_anatomic_site: [String] = [""],
@@ -1774,7 +1776,7 @@ type QueryType {
         import_data: [String] = [""],
         
         # Demographics
-        id: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -1790,6 +1792,7 @@ type QueryType {
         diagnosis_category: [String] = [""],
 
         # Genetic Analyses
+        id: [String] = [""], 
         alteration: [String] = [""],
         alteration_type: [String] = [""],
         fusion_partner_gene: [String] = [""],
@@ -1950,7 +1953,7 @@ type QueryType {
         import_data: [String] = [""],
         
         # Demographics
-        id: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -1975,6 +1978,7 @@ type QueryType {
         status: [String] = [""],
 
         # Survivals
+        id: [String] = [""], 
         age_at_last_known_survival_status: [Int] = [0],
         age_at_last_known_survival_status_unknownAges: [String] = [""],
         cause_of_death: [String] = [""],
@@ -2038,7 +2042,7 @@ type QueryType {
         import_data: [String] = [""],
 
         # Demographics
-        id: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -2070,6 +2074,7 @@ type QueryType {
         last_known_survival_status: [String] = [""]
 
         # Treatments
+        id: [String] = [""], 
         age_at_treatment_start: [Int] = [0],
         age_at_treatment_start_unknownAges: [String] = [""],
         age_at_treatment_end: [Int] = [0],
@@ -2126,7 +2131,7 @@ type QueryType {
         import_data: [String] = [""],
 
         # Demographics
-        id: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -2166,6 +2171,7 @@ type QueryType {
         treatment_agent: [String] = [""],
 
         # Treatment Responses
+        id: [String] = [""], 
         response: [String] = [""],
         age_at_response: [Int] = [0],
         age_at_response_unknownAges: [String] = [""],
@@ -2214,7 +2220,7 @@ type QueryType {
         import_data: [String] = [""],
         
         # Demographics
-        id: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -2261,6 +2267,7 @@ type QueryType {
         response_system: [String] = [""],
 
         # Samples
+        id: [String] = [""], 
         sample_anatomic_site: [String] = [""],
         participant_age_at_collection: [Int] = [0],
         participant_age_at_collection_unknownAges: [String] = [""],
@@ -2302,7 +2309,7 @@ type QueryType {
         import_data: [String] = [""],
 
         # Demographics
-        id: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -2356,6 +2363,7 @@ type QueryType {
         tumor_spatial_extent: [String] = [""],
         
         # Files
+        id: [String] = [""], 
         data_category: [String] = [""],
         file_type: [String] = [""],
         file_mapping_level: [String] = [""],
@@ -2391,7 +2399,7 @@ type QueryType {
         import_data: [String] = [""],
 
         # Demographics
-        id: [String] = [""], 
+        pid: [String] = [""], # Participant GUID
         participant_ids: [String] = [""],
         race: [String] = [""],
         sex_at_birth: [String] = [""],
@@ -2445,6 +2453,7 @@ type QueryType {
         tumor_spatial_extent: [String] = [""],
         
         # Files
+        id: [String] = [""], 
         data_category: [String] = [""],
         file_type: [String] = [""],
         file_mapping_level: [String] = [""],
@@ -2492,7 +2501,7 @@ type QueryType {
         offset: Int = 0
     ): [FileDetail]
 
-     filesManifestInList(
+    filesManifestInList(
         id: [String],
         order_by: String = "",
         sort_direction: String = "ASC",
