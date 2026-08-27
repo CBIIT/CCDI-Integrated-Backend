@@ -134,18 +134,23 @@ class PrivateESDataFetcherCohortMetadataTest {
         when(inventoryESService.collectPage(
             any(Request.class),
             ArgumentMatchers.<Map<String, Object>>any(),
+            ArgumentMatchers.<List<Map<String, Object>>>any(),
+            ArgumentMatchers.anyInt(),
+            ArgumentMatchers.anyInt()
+        )).thenAnswer(invocation -> {
+            List<Map<String, Object>> properties = invocation.getArgument(2);
+            assertEquals(expectedParticipantFields, propertyNames(properties));
+            return List.of(participant);
+        });
+        when(inventoryESService.collectPage(
+            any(Request.class),
+            ArgumentMatchers.<Map<String, Object>>any(),
             any(String[][].class),
             ArgumentMatchers.anyInt(),
             ArgumentMatchers.anyInt()
         )).thenAnswer(invocation -> {
-            Request request = invocation.getArgument(0);
             String[][] properties = invocation.getArgument(2);
-            Set<String> fields = propertyNames(properties);
-            if ("/cohorts/_search".equals(request.getEndpoint())) {
-                assertEquals(expectedParticipantFields, fields);
-                return List.of(participant);
-            }
-            assertEquals(expectedStudyFields, fields);
+            assertEquals(expectedStudyFields, propertyNames(properties));
             return List.of(study(
                 "study-guid-1",
                 "STUDY-1",
@@ -170,14 +175,20 @@ class PrivateESDataFetcherCohortMetadataTest {
         when(inventoryESService.collectPage(
             any(Request.class),
             ArgumentMatchers.<Map<String, Object>>any(),
+            ArgumentMatchers.<List<Map<String, Object>>>any(),
+            ArgumentMatchers.anyInt(),
+            ArgumentMatchers.anyInt()
+        )).thenAnswer(invocation -> {
+            return participants;
+        });
+        when(inventoryESService.collectPage(
+            any(Request.class),
+            ArgumentMatchers.<Map<String, Object>>any(),
             any(String[][].class),
             ArgumentMatchers.anyInt(),
             ArgumentMatchers.anyInt()
         )).thenAnswer(invocation -> {
             Request request = invocation.getArgument(0);
-            if ("/cohorts/_search".equals(request.getEndpoint())) {
-                return participants;
-            }
             Map<String, Object> query = invocation.getArgument(1);
             assertEquals(
                 Map.of("query", Map.of("terms", Map.of(
@@ -227,12 +238,20 @@ class PrivateESDataFetcherCohortMetadataTest {
         when(inventoryESService.collectPage(
             any(Request.class),
             ArgumentMatchers.<Map<String, Object>>any(),
+            ArgumentMatchers.<List<Map<String, Object>>>any(),
+            ArgumentMatchers.anyInt(),
+            ArgumentMatchers.anyInt()
+        )).thenAnswer(invocation -> {
+            return participants;
+        });
+        when(inventoryESService.collectPage(
+            any(Request.class),
+            ArgumentMatchers.<Map<String, Object>>any(),
             any(String[][].class),
             ArgumentMatchers.anyInt(),
             ArgumentMatchers.anyInt()
         )).thenAnswer(invocation -> {
-            Request request = invocation.getArgument(0);
-            return "/cohorts/_search".equals(request.getEndpoint()) ? participants : studies;
+            return studies;
         });
 
         PrivateESDataFetcher dataFetcher = new PrivateESDataFetcher(inventoryESService);
@@ -339,6 +358,12 @@ class PrivateESDataFetcherCohortMetadataTest {
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> mapList(Map<String, Object> map, String key) {
         return (List<Map<String, Object>>) map.get(key);
+    }
+
+    private static Set<String> propertyNames(List<Map<String, Object>> properties) {
+        return properties.stream()
+            .map(property -> (String) property.get("gqlName"))
+            .collect(Collectors.toSet());
     }
 
     private static Set<String> propertyNames(String[][] properties) {

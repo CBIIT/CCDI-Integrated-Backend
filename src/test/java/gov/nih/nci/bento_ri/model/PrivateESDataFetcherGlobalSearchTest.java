@@ -47,7 +47,7 @@ class PrivateESDataFetcherGlobalSearchTest {
         when(inventoryESService.collectPage(
                 any(Request.class),
                 ArgumentMatchers.<Map<String, Object>>any(),
-                any(String[][].class),
+                ArgumentMatchers.<List<Map<String, Object>>>any(),
                 anyInt(),
                 anyInt()
         )).thenAnswer(invocation -> {
@@ -130,7 +130,7 @@ class PrivateESDataFetcherGlobalSearchTest {
         when(inventoryESService.collectPage(
                 any(Request.class),
                 ArgumentMatchers.<Map<String, Object>>any(),
-                any(String[][].class),
+                ArgumentMatchers.<List<Map<String, Object>>>any(),
                 anyInt(),
                 anyInt()
         )).thenReturn(List.of());

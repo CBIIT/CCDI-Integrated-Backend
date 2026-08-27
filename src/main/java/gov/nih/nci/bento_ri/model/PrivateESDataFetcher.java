@@ -487,24 +487,42 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         "study_name", "study_acronym", "study_phase", "dbgap_accession"
                 ),
                 GS_SORT_FIELD, "participant_id",
-                GS_COLLECT_FIELDS, new String[][]{
-                        new String[]{"id", "id"},
-                        new String[]{"participant_id", "participant_id"},
-                        new String[]{"diagnosis_str", "diagnosis_str"},
-                        new String[]{"diagnosis_category_str", "diagnosis_category_str"},
-                        new String[]{"age_at_diagnosis_str", "age_at_diagnosis_str"},
-                        new String[]{"treatment_agent_str", "treatment_agent_str"},
-                        new String[]{"treatment_type_str", "treatment_type_str"},
-                        new String[]{"study_id", "study_id"},
-                        new String[]{"race_str", "race_str"},
-                        new String[]{"sex_at_birth", "sex_at_birth"},
-                        new String[]{"last_known_survival_status_str", "last_known_survival_status_str"},
-                        new String[]{"consent_codes", "consent_codes"},
+                GS_COLLECT_FIELDS, List.of(
+                        propertyMapping("id", "id"),
+                        propertyMapping("participant_id", "participant_id"),
+                        propertyMapping("diagnosis_str", "diagnosis_str"),
+                        propertyMapping("diagnosis_category_str", "diagnosis_category_str"),
+                        propertyMapping("age_at_diagnosis_str", "age_at_diagnosis_str"),
+                        propertyMapping("treatment_agent_str", "treatment_agent_str"),
+                        propertyMapping("treatment_type_str", "treatment_type_str"),
+                        propertyMapping("study_id", "study_id"),
+                        propertyMapping("race_str", "race_str"),
+                        propertyMapping("sex_at_birth", "sex_at_birth"),
+                        propertyMapping("last_known_survival_status_str", "last_known_survival_status_str"),
+                        propertyMapping("consent_codes", "consent_codes"),
                         // Nested filter arrays used to build display strings after fetch
-                        new String[]{"_sample_diagnosis_filters", "sample_diagnosis_genetic_analysis_file_filters"},
-                        new String[]{"_treatment_filters", "treatment_filters"},
-                        new String[]{"_survival_filters", "survival_filters"}
-                },
+                        nestedPropertyMapping(
+                                "_sample_diagnosis_filters",
+                                "sample_diagnosis_genetic_analysis_file_filters",
+                                new String[][]{
+                                        new String[]{"diagnosis", "diagnosis"},
+                                        new String[]{"diagnosis_category", "diagnosis_category"},
+                                        new String[]{"age_at_diagnosis", "age_at_diagnosis"}
+                                }),
+                        nestedPropertyMapping(
+                                "_treatment_filters",
+                                "treatment_filters",
+                                new String[][]{
+                                        new String[]{"treatment_agent", "treatment_agent"},
+                                        new String[]{"treatment_type", "treatment_type"}
+                                }),
+                        nestedPropertyMapping(
+                                "_survival_filters",
+                                "survival_filters",
+                                new String[][]{
+                                        new String[]{"last_known_survival_status", "last_known_survival_status"}
+                                })
+                ),
                 GS_CATEGORY_TYPE, "subject"
         ));
         searchCategories.add(Map.of(
@@ -544,17 +562,23 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         "sample_tumor_status", "tumor_spatial_extent", "study_name", "sample_description"
                 ),
                 GS_SORT_FIELD, "sample_id",
-                GS_COLLECT_FIELDS, new String[][]{
-                        new String[]{"sample_id", "sample_id"},
-                        new String[]{"participant_id", "participant_id"},
-                        new String[]{"study_id", "study_id"},
-                        new String[]{"sample_anatomic_site_str", "sample_anatomic_site_str"},
-                        new String[]{"sample_tumor_status", "sample_tumor_status"},
-                        new String[]{"diagnosis_str", "diagnosis_str"},
-                        new String[]{"diagnosis_category_str", "diagnosis_category_str"},
-                        new String[]{"tumor_spatial_extent", "tumor_spatial_extent"},
-                        new String[]{"_diagnosis_filters", "diagnosis_filters"}
-                },
+                GS_COLLECT_FIELDS, List.of(
+                        propertyMapping("sample_id", "sample_id"),
+                        propertyMapping("participant_id", "participant_id"),
+                        propertyMapping("study_id", "study_id"),
+                        propertyMapping("sample_anatomic_site_str", "sample_anatomic_site_str"),
+                        propertyMapping("sample_tumor_status", "sample_tumor_status"),
+                        propertyMapping("diagnosis_str", "diagnosis_str"),
+                        propertyMapping("diagnosis_category_str", "diagnosis_category_str"),
+                        propertyMapping("tumor_spatial_extent", "tumor_spatial_extent"),
+                        nestedPropertyMapping(
+                                "_diagnosis_filters",
+                                "diagnosis_filters",
+                                new String[][]{
+                                        new String[]{"diagnosis", "diagnosis"},
+                                        new String[]{"diagnosis_category", "diagnosis_category"}
+                                })
+                ),
                 GS_CATEGORY_TYPE, "sample"
         ));
         searchCategories.add(Map.of(
@@ -647,7 +671,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         for (Map<String, Object> category: searchCategories) {
             String countResultFieldName = (String) category.get(GS_COUNT_RESULT_FIELD);
             String resultFieldName = (String) category.get(GS_RESULT_FIELD);
-            String[][] properties = (String[][]) category.get(GS_COLLECT_FIELDS);
+            List<Map<String, Object>> properties = propertyMappings(category.get(GS_COLLECT_FIELDS));
             Map<String, Object> query = getGlobalSearchQuery(input, category);
 
             // Get count
@@ -679,9 +703,8 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             }
 
             List<String> dataFields = new ArrayList<>();
-            for (String[] prop: properties) {
-                String dataField = prop[1];
-                dataFields.add(dataField);
+            for (Map<String, Object> property : properties) {
+                dataFields.add((String) property.get("osName"));
             }
             query.put("_source", Map.of("includes", dataFields));
 
@@ -798,6 +821,26 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             putIfBlank(participant, "last_known_survival_status_str",
                     aggregateNestedFilterValues(survivalFilters, "last_known_survival_status"));
         }
+    }
+
+    private Map<String, Object> propertyMapping(String gqlName, String osName) {
+        return Map.of("gqlName", gqlName, "osName", osName);
+    }
+
+    private Map<String, Object> nestedPropertyMapping(String gqlName, String osName, String[][] nestedProperties) {
+        return Map.of(
+                "gqlName", gqlName,
+                "osName", osName,
+                "nested", propertyMappings(nestedProperties)
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> propertyMappings(Object properties) {
+        if (properties instanceof List<?>) {
+            return (List<Map<String, Object>>) properties;
+        }
+        return mapPropertyMetadata((String[][]) properties);
     }
 
     /**
@@ -3495,6 +3538,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     // if the nestedProperty is set, this will filter based upon the params against the nested property for the endpoint's index.
     // otherwise, this will filter based upon the params against the top level properties for the index
     private List<Map<String, Object>> overview(String endpoint, Map<String, Object> params, String[][] properties, String defaultSort, Map<String, String> mapping, Set<String> regular_fields, String nestedProperty, String overviewType) throws IOException {
+        return overview(endpoint, params, mapPropertyMetadata(properties), defaultSort, mapping, regular_fields, nestedProperty, overviewType);
+    }
+
+    private List<Map<String, Object>> overview(String endpoint, Map<String, Object> params, List<Map<String, Object>> properties, String defaultSort, Map<String, String> mapping, Set<String> regular_fields, String nestedProperty, String overviewType) throws IOException {
         
         Request request = new Request("GET", endpoint);
         Map<String, Object> query = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(PAGE_SIZE, OFFSET, ORDER_BY, SORT_DIRECTION), regular_fields, nestedProperty, overviewType);
@@ -3563,7 +3610,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         query.put("sort", mapSortOrderWithMetadata(order_by, direction, defaultSort, mapping));
         int pageSize = (int) params.get(PAGE_SIZE);
         int offset = (int) params.get(OFFSET);
-        List<Map<String, Object>> page = inventoryESService.collectPage(request, query, mapProperties(properties), pageSize, offset);
+        List<Map<String, Object>> page = inventoryESService.collectPage(request, query, properties, pageSize, offset);
         return page;
     }
 
@@ -3723,6 +3770,14 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             Map<String, Object> property = properties.get(i);
             mappedProperties[i][0] = (String) property.get("gqlName");
             mappedProperties[i][1] = (String) property.get("osName");
+        }
+        return mappedProperties;
+    }
+
+    private List<Map<String, Object>> mapPropertyMetadata(String[][] properties) {
+        List<Map<String, Object>> mappedProperties = new ArrayList<>();
+        for (String[] property : properties) {
+            mappedProperties.add(Map.of("gqlName", property[0], "osName", property[1]));
         }
         return mappedProperties;
     }
