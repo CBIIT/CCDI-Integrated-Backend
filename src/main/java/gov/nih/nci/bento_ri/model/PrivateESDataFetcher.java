@@ -3591,13 +3591,13 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private Integer numberOfParticipants(Map<String, Object> params) throws IOException {
         Map<String, Object> query_participants = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "participants_table");
-        int numParticipants = getNodeCount("id", query_participants, PARTICIPANTS_END_POINT).size();
+        int numParticipants = inventoryESService.getCount(query_participants, "participants_table");
         return numParticipants;
     }
     
     private Integer numberOfStudies(Map<String, Object> params) throws IOException {
         Map<String, Object> query_studies = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "studies_table");
-        int numStudies = getNodeCount("study_id", query_studies, STUDIES_END_POINT).size();
+        int numStudies = inventoryESService.getCount(query_studies, "studies_table");
         return numStudies;
     }
 
