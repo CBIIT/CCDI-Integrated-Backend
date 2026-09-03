@@ -3728,16 +3728,17 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
     
     private List<String> fileIDsFromList(Map<String, Object> params) throws IOException {
+        List<String> participantPids = castIdList(params.get("pid"));
         List<String> participantIDsSet = castIdList(params.get("participant_ids"));
         List<String> diagnosisIDsSet = castIdList(params.get("diagnosis_ids"));
         List<String> studyIDsSet = castIdList(params.get("study_ids"));
         List<String> sampleIDsSet = castIdList(params.get("sample_ids"));
         List<String> fileIDsSet = castIdList(params.get("file_ids"));
 
-        // FE passes document GUIDs (participants_table.id). Integrated participants do not
-        // embed a files[] array (unlike WebService), so resolve through files_table.pid.
-        if (hasUsableIds(participantIDsSet)) {
-            return fileIDsFromFilesTableField("pid", participantIDsSet);
+        // Integrated participants do not embed a files[] array (unlike WebService).
+        // Align with overview filters: pid = participant GUID, participant_ids = display ID.
+        if (hasUsableIds(participantPids) || hasUsableIds(participantIDsSet)) {
+            return fileIDsFromParticipantIdentifiers(participantPids, participantIDsSet);
         }
 
         if (hasUsableIds(diagnosisIDsSet)) {
@@ -3781,6 +3782,31 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         }
 
         return new ArrayList<>();
+    }
+
+    /**
+     * Resolve file IDs from participant identifiers.
+     * {@code pid} looks up files_table.pid (participant GUID).
+     * {@code participant_ids} looks up files_table.participant_id (display ID).
+     * Each argument also falls back to the other field so mixed or legacy callers
+     * (GUIDs sent as participant_ids, or display IDs sent as pid) still resolve.
+     */
+    private List<String> fileIDsFromParticipantIdentifiers(
+            List<String> participantPids, List<String> participantIds) throws IOException {
+        LinkedHashSet<String> fileIds = new LinkedHashSet<>();
+        if (hasUsableIds(participantPids)) {
+            fileIds.addAll(fileIDsFromFilesTableField("pid", participantPids));
+            if (fileIds.isEmpty()) {
+                fileIds.addAll(fileIDsFromFilesTableField("participant_id", participantPids));
+            }
+        }
+        if (hasUsableIds(participantIds)) {
+            fileIds.addAll(fileIDsFromFilesTableField("participant_id", participantIds));
+            if (fileIds.isEmpty() && !hasUsableIds(participantPids)) {
+                fileIds.addAll(fileIDsFromFilesTableField("pid", participantIds));
+            }
+        }
+        return new ArrayList<>(fileIds);
     }
 
     private boolean hasUsableIds(List<String> ids) {
