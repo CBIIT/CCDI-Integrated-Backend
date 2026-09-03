@@ -2486,6 +2486,7 @@ type QueryType {
 
     numberOfMCICount:Int
     fileIDsFromList (
+        pid: [String] = [], # Participant GUID
         participant_ids: [String] = [],
         diagnosis_ids: [String] = [],
         study_ids: [String] = [],
