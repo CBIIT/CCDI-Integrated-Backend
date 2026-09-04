@@ -3,7 +3,7 @@ FROM maven:3.9.11-eclipse-temurin-21 AS build
 
 WORKDIR /usr/src/app
 COPY . .
-RUN mvn -DskipTests package \
+RUN mvn -DskipTests clean package \
  && mkdir -p /usr/src/app/extracted \
  && cd /usr/src/app/extracted \
  && jar -xf /usr/src/app/target/Bento-0.0.1.war
