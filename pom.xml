@@ -25,7 +25,7 @@
         <java.version>21</java.version>
         <snakeyaml.version>2.3</snakeyaml.version>
         <spring.restdocs.version>4.0.0</spring.restdocs.version>
-        <netty.version>4.1.136.Final</netty.version>
+        <netty.version>4.1.137.Final</netty.version>
         <opensearch.version>2.19.4</opensearch.version> 
     </properties>
 
