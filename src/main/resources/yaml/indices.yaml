@@ -2858,6 +2858,75 @@ indices:
             }) AS sample_diagnosis_genetic_analysis_file_filters
         page_size: 5000
 
+  # Pre-made cohorts to serve as example cohorts in the cohort analyzer
+  - index_name: example_cohorts
+    # A participant may belong to more than one example cohort, so the OpenSearch
+    # document ID must identify the membership rather than only the participant.
+    id_field: "cohort_membership_id"
+    mapping:
+      keyword:
+        - cohort_membership_id
+        - id
+        - cohort
+        - participant_id
+        - study_id
+    initial_query:
+      query: |
+        WITH [
+          {
+            cohort: "c1",
+            study_id: "phs002790",
+            participant_ids: [
+              "PBBPGL", "PBBSTM", "PBBRIL", "PBBUXY", "PBBSZR", "PBBLLB",
+              "PBBPPY", "PBBKXM", "PBBNGE", "PBBIJB", "PBBRJF", "PBBWJX",
+              "PBBMYK", "PBBUKV", "PBBNFS", "PBBPWE", "PBBNHL", "PBBRXN",
+              "PBBSTE", "PBBJGY", "PBBNSG", "PBBNFF", "PBBNXT", "PBBPME"
+            ]
+          },
+          {
+            cohort: "c2",
+            study_id: "phs002790",
+            participant_ids: [
+              "PBBIXN", "PBBLWR", "PBBMZW", "PBBHYH", "PBBMCU", "PBBIGN",
+              "PBBIIW", "PBBLPZ", "PBBIXR", "PBBMBK", "PBBIUS", "PBBHWP",
+              "PBBKKT", "PBBMYI", "PBBMCL", "PBBJHS", "PBBLFW", "PBBMYD",
+              "PBBKKX", "PBBKTU", "PBBMNW", "PBBKSG", "PBBIUN", "PBBKNA",
+              "PBBMCC"
+            ]
+          },
+          {
+            cohort: "c3",
+            study_id: "phs002790",
+            participant_ids: [
+              "PBBVDX", "PBBTCS", "PBBMZW", "PBBRKP", "PBBSIU", "PBBNIZ",
+              "PBBTRI", "PBBVPC", "PBBLHT", "PBBNCU", "PBBVUD", "PBBIUS",
+              "PBBVZJ", "PBBHWP", "PBBTED", "PBBJHS", "PBBLFW", "PBBMYD",
+              "PBBKKX", "PBBUNA", "PBBKSG", "PBBIUN", "PBBRKJ", "PBBMJP"
+            ]
+          }
+        ] AS cohort_specs
+
+        UNWIND cohort_specs AS spec
+        UNWIND range(0, size(spec.participant_ids) - 1) AS member_index
+        WITH spec, member_index, spec.participant_ids[member_index] AS requested_participant_id
+
+        MATCH (p:participant {participant_id: requested_participant_id})
+              -[:of_participant]->(:consent_group)
+              -[:of_consent_group]->(s:study {study_id: spec.study_id})
+
+        WITH DISTINCT spec.cohort AS cohort, member_index, p, s
+        ORDER BY cohort, member_index
+        SKIP $skip
+        LIMIT $limit
+
+        RETURN
+          cohort + ":" + p.guid AS cohort_membership_id,
+          p.guid AS id,
+          cohort,
+          p.participant_id AS participant_id,
+          s.study_id AS study_id;
+      page_size: 100
+
   # Data points for KM plot
   # Excludes survival records with bad age_at_last_known_survival_status
   # Excludes survival records associated with bad age_at_diagnosis

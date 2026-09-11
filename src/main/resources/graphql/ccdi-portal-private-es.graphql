@@ -100,6 +100,18 @@ type ParticipantResult {
     study_id: String
 }
 
+type ExampleCohortParticipant {
+    participant_id: String
+    id: String
+    study_id: String
+}
+
+type ExampleCohortsResult {
+    c1: [ExampleCohortParticipant]
+    c2: [ExampleCohortParticipant]
+    c3: [ExampleCohortParticipant]
+}
+
 type SearchParticipantsReturnObject {
     group: String
     subjects: Int
@@ -1478,6 +1490,7 @@ schema {
 type QueryType {
     esVersion: String
     findParticipantIdsInList(participant_id: [String] = []): [ParticipantResult]
+    exampleCohorts: ExampleCohortsResult
     globalSearch (input: String, first: Int = 10, offset: Int = 0): GlobalSearchResult
 
     idsLists(cpi_batch_size: Int = 2500, use_cache: Boolean = true): IdsListsES

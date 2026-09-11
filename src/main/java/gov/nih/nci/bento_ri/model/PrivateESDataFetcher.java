@@ -62,6 +62,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final int THREAD_POOL_SIZE = 8;
 
     final String COHORTS_END_POINT = "/cohorts/_search";
+    final String EXAMPLE_COHORTS_END_POINT = "/example_cohorts/_search";
     final String COHORT_MANIFEST_END_POINT = "/diagnoses_cohort_manifest/_search";
     final String PARTICIPANTS_END_POINT = "/participants_table/_search";
     final String SURVIVALS_END_POINT = "/survivals_table/_search";
@@ -265,6 +266,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                             Map<String, Object> args = env.getArguments();
                             return findParticipantIdsInList(args);
                         })
+                        .dataFetcher("exampleCohorts", env -> exampleCohorts())
                         .dataFetcher("filesManifestInList", env -> {
                             Map<String, Object> args = env.getArguments();
                             return filesManifestInList(args);
@@ -3581,6 +3583,58 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         Request request = new Request("GET",PARTICIPANTS_END_POINT);
 
         return esService.collectPage(request, query, properties, ESService.MAX_ES_SIZE, 0);
+    }
+
+    /**
+     * Retrieves every preconfigured cohort membership in one OpenSearch request
+     * and groups the participant records by the three GraphQL cohort fields.
+     */
+    private Map<String, Object> exampleCohorts() throws IOException {
+        final String[][] properties = new String[][]{
+            new String[]{"participant_id", "participant_id"},
+            new String[]{"id", "id"},
+            new String[]{"study_id", "study_id"},
+            new String[]{"cohort", "cohort"}
+        };
+
+        Request request = new Request("GET", EXAMPLE_COHORTS_END_POINT);
+        Map<String, Object> query = new HashMap<>();
+        query.put("query", Map.of("match_all", Map.of()));
+        query.put("sort", List.of(
+            Map.of("cohort", Map.of("order", "asc")),
+            Map.of("participant_id", Map.of("order", "asc"))
+        ));
+
+        List<Map<String, Object>> rows = inventoryESService.collectPage(
+            request,
+            query,
+            properties,
+            InventoryESService.MAX_ES_SIZE,
+            0
+        );
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        Map<String, List<Map<String, Object>>> participantsByCohort = new LinkedHashMap<>();
+        participantsByCohort.put("c1", new ArrayList<>());
+        participantsByCohort.put("c2", new ArrayList<>());
+        participantsByCohort.put("c3", new ArrayList<>());
+
+        for (Map<String, Object> row : rows) {
+            List<Map<String, Object>> cohortParticipants = participantsByCohort.get(row.get("cohort"));
+            if (cohortParticipants == null) {
+                logger.warn("Ignoring unknown example cohort: " + row.get("cohort"));
+                continue;
+            }
+
+            Map<String, Object> participant = new LinkedHashMap<>();
+            participant.put("participant_id", row.get("participant_id"));
+            participant.put("id", row.get("id"));
+            participant.put("study_id", row.get("study_id"));
+            cohortParticipants.add(participant);
+        }
+
+        participantsByCohort.forEach(result::put);
+        return result;
     }
 
     private Integer numberOfDiseases(Map<String, Object> params) throws IOException {
