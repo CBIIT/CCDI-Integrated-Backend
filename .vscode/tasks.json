@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Java: Run all unit tests",
+      "type": "process",
+      "command": "mvn",
+      "args": [
+        "clean",
+        "test",
+        "-Dspring.profiles.active=test"
+      ],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Java: Run PrivateESDataFetcher and InventoryESService tests",
+      "type": "process",
+      "command": "mvn",
+      "args": [
+        "test",
+        "-Dtest=PrivateESDataFetcher*Test,InventoryESService*Test",
+        "-Dspring.profiles.active=test"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Java: Run unit tests with coverage",
+      "type": "process",
+      "command": "mvn",
+      "args": [
+        "clean",
+        "test",
+        "jacoco:report",
+        "-Dspring.profiles.active=test"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}

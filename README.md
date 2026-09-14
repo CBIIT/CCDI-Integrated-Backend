@@ -35,6 +35,17 @@ mvn -Dtest=gov.nih.nci.bento_ri.util.ValueUtilsTest#toStringListConvertsListValu
 
 Note: use ````mvn```` directly unless the Maven wrapper metadata exists under ````.mvn/wrapper````. The wrapper scripts require those files to run reliably.
 
+### Run in the VS Code dev container
+The recommended Java extensions provide Run and Debug links beside each JUnit class and method, plus the Testing Explorer in the activity bar.
+
+For Maven-backed suite runs, open **Tasks: Run Test Task** from the Command Palette. The repository includes tasks for:
+
+* all unit tests;
+* the `PrivateESDataFetcher` and `InventoryESService` tests; and
+* all unit tests with a JaCoCo coverage report under `target/site/jacoco`.
+
+The tasks call `mvn` directly and therefore run inside the active dev container.
+
 ### Run with Docker
 If Java or Maven is not installed locally, run tests in a Maven/JDK container:
 

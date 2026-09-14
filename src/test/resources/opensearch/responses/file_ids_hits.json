@@ -1,0 +1,19 @@
+{
+  "hits": {
+    "hits": [
+      {
+        "_source": {
+          "id": "ccdi-int-p001",
+          "files": ["ccdi-int-f001", "ccdi-int-f002"]
+        }
+      },
+      {
+        "_source": {
+          "id": "ccdi-int-p002",
+          "files": ["ccdi-int-f003"]
+        }
+      }
+    ]
+  }
+}
+
