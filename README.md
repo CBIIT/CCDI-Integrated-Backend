@@ -8,8 +8,57 @@ The Bento Backend Framework is a server-side backend written in Java to be used 
 
 The Bento Backend can be found in this Github Repository: [Bento Backend](https://github.com/CBIIT/bento-backend)
 ## Pre-requisites
-*   Java 11 or newer installed on the server hosting the Bento Backend
+*   Java 17 or newer installed on the server hosting the Bento Backend
 *   The Neo4j database containing the Bento data has been initialized and is running
+
+## Running Unit Tests Locally
+This project uses Maven and JUnit for unit tests. Unit tests are located under ````src/test/java````.
+
+### Run with local Java and Maven
+Install JDK 17 and Maven 3.9 or newer, then run commands from the repository root:
+
+````bash
+mvn clean test -Dspring.profiles.active=test
+````
+
+Run a single test class:
+
+````bash
+mvn -Dtest=gov.nih.nci.bento_ri.util.ValueUtilsTest test
+````
+
+Run a single test method:
+
+````bash
+mvn -Dtest=gov.nih.nci.bento_ri.util.ValueUtilsTest#toStringListConvertsListValuesAndRemovesNulls test
+````
+
+Note: use ````mvn```` directly unless the Maven wrapper metadata exists under ````.mvn/wrapper````. The wrapper scripts require those files to run reliably.
+
+### Run with Docker
+If Java or Maven is not installed locally, run tests in a Maven/JDK container:
+
+````bash
+docker run --rm \
+  -v "$PWD:/usr/src/app" \
+  -w /usr/src/app \
+  maven:3.9.12-eclipse-temurin-17 \
+  mvn -Dtest=gov.nih.nci.bento_ri.util.ValueUtilsTest test
+````
+
+To run the full unit test suite in Docker:
+
+````bash
+docker run --rm \
+  -v "$PWD:/usr/src/app" \
+  -w /usr/src/app \
+  maven:3.9.12-eclipse-temurin-17 \
+  mvn clean test -Dspring.profiles.active=test
+````
+
+### NIH Network Certificate Workaround
+On the NIH network, Maven dependency downloads may fail inside Docker with a Java certificate error like ````PKIX path building failed````. This means the container JVM does not trust the local NIH certificate chain. For a disposable test container, extract the certificate chain and import it into the container truststore before running Maven.
+
 
 ## Configuration
 The following file will need to be edited to configure the Bento Backend Code to work within a Bento based application:

@@ -1,0 +1,24 @@
+# OpenSearch query information for cohort analyzer histogram charts.
+
+# Datamodel node: participant
+race:
+  index: participants_table
+  endpoint: /participants_table/_search
+  cardinalityAggName: ""
+sex_at_birth:
+  index: participants_table
+  endpoint: /participants_table/_search
+  cardinalityAggName: ""
+
+# Datamodel node: treatment_response
+response:
+  index: treatment_responses_table
+  endpoint: /treatment_responses_table/_search
+  cardinalityAggName: pid
+
+# Datamodel nodes: treatment_chemotherapy, treatment_other,
+# treatment_radiation, and treatment_surgery
+treatment_type:
+  index: treatments_table
+  endpoint: /treatments_table/_search
+  cardinalityAggName: pid

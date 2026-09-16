@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "scanning-docker-images-with-trivy": {
+      "source": "jonkiky/agentskills",
+      "skillPath": ".agents/skills/scanning-docker-images-with-trivy/SKILL.md",
+    },
+    "snyk-fix": {
+      "source": "jonkiky/agentskills",
+      "sourceType": "github",
+      "skillPath": "skills/snyk-fix/SKILL.md",
+      "computedHash": "cb1d22d15a0c82fc15ca4abbf2426998d97aa5e9eeb5f1dfdfe818ed62a39c7b"
+    }
+  }
+}

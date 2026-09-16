@@ -33,9 +33,9 @@ public class InventoryESService extends ESService {
     final Set<String> TREATMENT_RESPONSE_PARAMS = Set.of("response_category", "age_at_response", "response_system", "response");
     final Set<String> DIAGNOSIS_PARAMS = Set.of( "diagnosis", "disease_phase", "diagnosis_classification_system", "diagnosis_basis", "diagnosis_anatomic_site", "age_at_diagnosis", "diagnosis_category");
     final Set<String> GENETIC_ANALYSIS_PARAMS = Set.of( "alteration", "alteration_type", "fusion_partner_gene", "gene_symbol", "reported_significance", "reported_significance_system", "status");
-    final Set<String> SAMPLE_PARAMS = Set.of("sample_anatomic_site", "participant_age_at_collection", "sample_tumor_status", "tumor_classification");
+    final Set<String> SAMPLE_PARAMS = Set.of("sample_anatomic_site", "participant_age_at_collection", "sample_tumor_status", "tumor_spatial_extent");
     final Set<String> FILE_PARAMS = Set.of("data_category", "file_type", "library_selection", "library_source_material", "library_source_molecule", "library_strategy", "file_mapping_level");
-    final Set<String> SAMPLE_FILE_PARAMS = Set.of("sample_anatomic_site", "participant_age_at_collection", "sample_tumor_status", "tumor_classification", "data_category", "file_type", "library_selection", "library_source_material", "library_source_molecule", "library_strategy", "file_mapping_level");
+    final Set<String> SAMPLE_FILE_PARAMS = Set.of("sample_anatomic_site", "participant_age_at_collection", "sample_tumor_status", "tumor_spatial_extent", "data_category", "file_type", "library_selection", "library_source_material", "library_source_molecule", "library_strategy", "file_mapping_level");
     
     static final AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
 
@@ -717,6 +717,27 @@ public class InventoryESService extends ESService {
                                 diagnosis_filters.add(Map.of(
                                         "range", Map.of("diagnosis_filters." + key, range)));
                             }
+                        } else if (indexType.equals("diagnoses_table") && key.equals("age_at_diagnosis")) {
+                            // Root field on diagnoses_table — mirror participants/samples include-unknown (-999).
+                            String unknownAgesKey = key + "_unknownAges";
+                            boolean includeUnknown = true; // Default to including unknown values
+                            if (params.containsKey(unknownAgesKey)) {
+                                List<String> unknownAgesValues = (List<String>) params.get(unknownAgesKey);
+                                if (unknownAgesValues != null && !unknownAgesValues.isEmpty()
+                                        && !unknownAgesValues.get(0).equals("")) {
+                                    includeUnknown = false;
+                                }
+                            }
+
+                            if (includeUnknown) {
+                                filter.add(Map.of(
+                                        "bool", Map.of("should", List.of(
+                                                Map.of("range", Map.of(key, range)),
+                                                Map.of("term", Map.of(key, -999))))));
+                            } else {
+                                filter.add(Map.of(
+                                        "range", Map.of(key, range)));
+                            }
                         } else if (indexType.equals("diagnoses_table") && key.equals("participant_age_at_collection")) {
                             // Check if unknownAges parameter exists to determine if we should include
                             // unknown values
@@ -1134,8 +1155,19 @@ public class InventoryESService extends ESService {
         Map<String, Object> result = new HashMap<>();
         result.put("_source", Set.of("id", "files"));
         result.put("query", Map.of("terms", Map.of("id", ids)));
-        result.put("size", ids.size());
+        result.put("size", Math.max(ids.size(), 1));
         result.put("from", 0);
+        return result;
+    }
+
+    /**
+     * Query files_table by a keyword field (e.g. pid, sample_id, study_id).
+     * Caller should use ESService.collectPage (scroll) for large result sets.
+     */
+    public Map<String, Object> buildFilesTableIDsQuery(String fieldName, List<String> ids) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("_source", Set.of("id", "file_id"));
+        result.put("query", Map.of("terms", Map.of(fieldName, ids)));
         return result;
     }
 
@@ -1200,39 +1232,21 @@ public class InventoryESService extends ESService {
         Map<String, Object> fields = new HashMap<String, Object>();
         Map<String, Object> subField = new HashMap<String, Object>();
         Map<String, Object> subField_ranges = new HashMap<String, Object>();
+        // diagnoses_table: range on root field (e.g. age_at_diagnosis in days), not combined_filters (files_table).
         subField_ranges.put("field", rangeAggName);
-                // Opensearch ranges are [from, to)
-        subField_ranges.put("ranges", Set.of(
-            Map.of(
-                "key", "0 - 4",
-                "from", 0,
-                "to", 5 * 365
-            ), Map.of(
-                "key", "5 - 9",
-                "from", 5 * 365,
-                "to", 10 * 365
-            ), Map.of(
-                "key", "10 - 14",
-                "from", 10 * 365,
-                "to", 15 * 365
-            ), Map.of(
-                "key", "15 - 19",
-                "from", 15 * 365,
-                "to", 20 * 365
-            ), Map.of(
-                "key", "20 - 29",
-                "from", 20 * 365,
-                "to", 30 * 365
-            ), Map.of(
-                "key", "> 29",
-                "from", 30 * 365
-            )
-        ));
+        // Age-at-diagnosis bins: half-open [from, to) in days (365 days per year band).
+        List<Map<String, Object>> rangesList = new ArrayList<>();
+        rangesList.add(Map.of("key", "0 - 4", "from", 0, "to", 5 * 365));
+        rangesList.add(Map.of("key", "5 - 9", "from", 5 * 365, "to", 10 * 365));
+        rangesList.add(Map.of("key", "10 - 14", "from", 10 * 365, "to", 15 * 365));
+        rangesList.add(Map.of("key", "15 - 19", "from", 15 * 365, "to", 20 * 365));
+        rangesList.add(Map.of("key", "20 - 29", "from", 20 * 365, "to", 30 * 365));
+        rangesList.add(Map.of("key", "> 29", "from", 30 * 365));
+        subField_ranges.put("ranges", rangesList);
                 
         subField.put("range", subField_ranges);
-        if (! (cardinalityAggName == null)) {
-            subField.put("aggs", Map.of("cardinality_count", Map.of("cardinality", Map.of("field", cardinalityAggName, "precision_threshold", 40000))));
-        }
+        // Do not use cardinality here. Unique participant range counts are computed via
+        // nested + reverse_nested on participants_table (addCustomRangeAggregations).
         fields.put(rangeAggName, subField);
         newQuery.put("aggs", fields);
         
@@ -1281,32 +1295,39 @@ public class InventoryESService extends ESService {
             if (only_includes.size() > 0) {
                 subField.put("include", only_includes);
             }
-            if (! (subCardinalityAggName == null)) {
-                fields.put(field, Map.of("terms", subField, "aggs", addCardinalityHelper(subCardinalityAggName)));
-            } else {
-                fields.put(field, Map.of("terms", subField));
-            }
+            // No cardinality: unique participant facet counts use nested + reverse_nested instead.
+            fields.put(field, Map.of("terms", subField));
         }
         newQuery.put("aggs", fields);
         return newQuery;
     }
 
     public Map<String, Object> addCustomAggregations(Map<String, Object> query, String aggName, String field, String nestedProperty) {
+        return addCustomAggregations(query, aggName, field, nestedProperty, List.of());
+    }
+
+    public Map<String, Object> addCustomAggregations(Map<String, Object> query, String aggName, String field, String nestedProperty, List<String> only_includes) {
         // When nestedProperty is empty: root-level terms aggregation (no nested path).
-        // When nestedProperty is set: nested aggregation with reverse_nested for doc_count at root.
+        // When nestedProperty is set: nested aggregation with reverse_nested for exact parent participant counts.
         Map<String, Object> newQuery = new HashMap<>(query);
         newQuery.put("size", 0);
         Map<String, Object> aggSection = new HashMap<String, Object>();
+        int termsSize = 10000;
+
+        Map<String, Object> terms = new HashMap<>();
+        terms.put("field", (nestedProperty == null || nestedProperty.isEmpty()) ? field : nestedProperty + "." + field);
+        terms.put("size", termsSize);
+        if (only_includes != null && !only_includes.isEmpty()) {
+            terms.put("include", only_includes);
+        }
 
         if (nestedProperty == null || nestedProperty.isEmpty()) {
-            // Root-level aggregation: terms on field only, no nested/reverse_nested
-            Map<String, Object> aggSubSection = new HashMap<String, Object>();
-            aggSubSection.put("terms", Map.of("field", field, "size", 1000));
-            aggSection.put(aggName, aggSubSection);
+            aggSection.put(aggName, Map.of("terms", terms));
         } else {
-            // Nested aggregation: nested path + terms on nestedProperty.field + reverse_nested
             Map<String, Object> aggSubSection = new HashMap<String, Object>();
-            aggSubSection.put("agg_buckets", Map.of("terms", Map.of("field", nestedProperty + "." + field, "size", 1000), "aggs", Map.of("top_reverse_nested", Map.of("reverse_nested", Map.of()))));
+            aggSubSection.put("agg_buckets", Map.of(
+                    "terms", terms,
+                    "aggs", Map.of("top_reverse_nested", Map.of("reverse_nested", Map.of()))));
             aggSection.put(aggName, Map.of("nested", Map.of("path", nestedProperty), "aggs", aggSubSection));
         }
 
@@ -1314,7 +1335,50 @@ public class InventoryESService extends ESService {
         return newQuery;
     }
 
+    public Map<String, Object> addCustomRangeAggregations(Map<String, Object> query, String aggName, String field, String nestedProperty) {
+        // Exact range counts for participant facets.
+        // - When nestedProperty is set: nested(range) + reverse_nested to count parent participant docs exactly.
+        // - When nestedProperty is empty: root range aggregation (doc_count is exact at the index's root level).
+        Map<String, Object> newQuery = new HashMap<>(query);
+        newQuery.put("size", 0);
+
+        Map<String, Object> aggSection = new HashMap<String, Object>();
+
+        List<Map<String, Object>> rangesList = new ArrayList<>();
+        // Age-at-* bins: half-open [from,to) in days (365 days per year band).
+        rangesList.add(Map.of("key", "0 - 4", "from", 0, "to", 5 * 365));
+        rangesList.add(Map.of("key", "5 - 9", "from", 5 * 365, "to", 10 * 365));
+        rangesList.add(Map.of("key", "10 - 14", "from", 10 * 365, "to", 15 * 365));
+        rangesList.add(Map.of("key", "15 - 19", "from", 15 * 365, "to", 20 * 365));
+        rangesList.add(Map.of("key", "20 - 29", "from", 20 * 365, "to", 30 * 365));
+        rangesList.add(Map.of("key", "> 29", "from", 30 * 365));
+
+        if (nestedProperty == null || nestedProperty.isEmpty()) {
+            Map<String, Object> rangeAgg = new HashMap<>();
+            rangeAgg.put("field", field);
+            rangeAgg.put("ranges", rangesList);
+            aggSection.put(aggName, Map.of("range", rangeAgg));
+        } else {
+            Map<String, Object> rangeAgg = new HashMap<>();
+            rangeAgg.put("field", nestedProperty + "." + field);
+            rangeAgg.put("ranges", rangesList);
+
+            Map<String, Object> rangeAggSubSection = new HashMap<>();
+            rangeAggSubSection.put("range", rangeAgg);
+            rangeAggSubSection.put("aggs", Map.of("top_reverse_nested", Map.of("reverse_nested", Map.of())));
+
+            Map<String, Object> innerAggs = new HashMap<>();
+            innerAggs.put("agg_buckets", rangeAggSubSection);
+
+            aggSection.put(aggName, Map.of("nested", Map.of("path", nestedProperty), "aggs", innerAggs));
+        }
+
+        newQuery.put("aggs", aggSection);
+        return newQuery;
+    }
+
     public Map<String, Object> addCardinalityHelper(String cardinalityAggName) {
+        // Deprecated for facet participant counts — use nested + reverse_nested instead.
         return Map.of("cardinality_count", Map.of("cardinality", Map.of("field", cardinalityAggName, "precision_threshold", 40000)));
     }
 
@@ -1344,12 +1408,34 @@ public class InventoryESService extends ESService {
 
     public List<String> collectFileIDs(JsonObject jsonObject) {
         List<String> data = new ArrayList<>();
-        JsonArray searchHits = jsonObject.getAsJsonObject("hits").getAsJsonArray("hits");
+        if (jsonObject == null || !jsonObject.has("hits") || jsonObject.get("hits").isJsonNull()) {
+            return data;
+        }
+        JsonObject hitsObj = jsonObject.getAsJsonObject("hits");
+        if (!hitsObj.has("hits") || hitsObj.get("hits").isJsonNull()) {
+            return data;
+        }
+        JsonArray searchHits = hitsObj.getAsJsonArray("hits");
         for (var hit: searchHits) {
-            JsonObject obj = hit.getAsJsonObject().get("_source").getAsJsonObject();
-            JsonArray arr = obj.get("files").getAsJsonArray();
-            for (int i = 0; i < arr.size(); i++) {
-                data.add(arr.get(i).getAsString());
+            JsonObject source = hit.getAsJsonObject().getAsJsonObject("_source");
+            if (source == null) {
+                continue;
+            }
+            // Preferred: embedded files array (studies_table / WebService-style docs)
+            if (source.has("files") && source.get("files").isJsonArray()) {
+                JsonArray arr = source.getAsJsonArray("files");
+                for (int i = 0; i < arr.size(); i++) {
+                    if (!arr.get(i).isJsonNull()) {
+                        data.add(arr.get(i).getAsString());
+                    }
+                }
+                continue;
+            }
+            // Fallback: files_table docs expose file_id/id directly
+            if (source.has("file_id") && !source.get("file_id").isJsonNull()) {
+                data.add(source.get("file_id").getAsString());
+            } else if (source.has("id") && !source.get("id").isJsonNull()) {
+                data.add(source.get("id").getAsString());
             }
         }
         return data;
@@ -1440,11 +1526,26 @@ public class InventoryESService extends ESService {
                 continue;
             }
             Map<String, Object> row = new HashMap<>();
+            JsonObject hit = searchHits.get(i).getAsJsonObject();
             for (String[] prop: properties) {
                 String propName = prop[0];
                 String dataField = prop[1];
-                JsonElement element = searchHits.get(i).getAsJsonObject().get("_source").getAsJsonObject().get(dataField);
+                JsonElement element = hit.getAsJsonObject("_source").get(dataField);
                 row.put(propName, getValue(element));
+            }
+            if (highlights != null && hit.has("highlight") && hit.get("highlight").isJsonObject()) {
+                JsonObject highlightObj = hit.getAsJsonObject("highlight");
+                for (String[] highlight: highlights) {
+                    String hlName = highlight[0];
+                    String hlField = highlight[1];
+                    JsonElement element = highlightObj.get(hlField);
+                    if (element != null) {
+                        Object highlighted = getValue(element);
+                        if (highlighted instanceof List && !((List<?>) highlighted).isEmpty()) {
+                            row.put(hlName, ((List<?>) highlighted).get(0));
+                        }
+                    }
+                }
             }
             data.add(row);
             if (data.size() >= pageSize) {
