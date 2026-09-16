@@ -12,7 +12,10 @@ The Bento Backend can be found in this Github Repository: [Bento Backend](https:
 *   The Neo4j database containing the Bento data has been initialized and is running
 
 ## Running Unit Tests Locally
-This project uses Maven and JUnit for unit tests. Unit tests are located under ````src/test/java````.
+This project uses Maven and JUnit for unit tests. Unit tests are located under
+````src/test/java/gov/nih/nci/backendapi```` and are organized into the 13 backend API
+test groups documented in ````src/test/README.md````. OpenSearch integration tests remain
+separate under ````src/test/java/gov/nih/nci/integration````.
 
 ### Run with local Java and Maven
 Install JDK 17 and Maven 3.9 or newer, then run commands from the repository root:
@@ -24,13 +27,13 @@ mvn clean test -Dspring.profiles.active=test
 Run a single test class:
 
 ````bash
-mvn -Dtest=gov.nih.nci.bento_ri.util.ValueUtilsTest test
+mvn -Dtest=gov.nih.nci.backendapi.group12_query_engine.ValueUtilsTest test
 ````
 
 Run a single test method:
 
 ````bash
-mvn -Dtest=gov.nih.nci.bento_ri.util.ValueUtilsTest#toStringListConvertsListValuesAndRemovesNulls test
+mvn -Dtest=gov.nih.nci.backendapi.group12_query_engine.ValueUtilsTest#toStringListConvertsListValuesAndRemovesNulls test
 ````
 
 Note: use ````mvn```` directly unless the Maven wrapper metadata exists under ````.mvn/wrapper````. The wrapper scripts require those files to run reliably.
@@ -54,7 +57,7 @@ docker run --rm \
   -v "$PWD:/usr/src/app" \
   -w /usr/src/app \
   maven:3.9.12-eclipse-temurin-17 \
-  mvn -Dtest=gov.nih.nci.bento_ri.util.ValueUtilsTest test
+  mvn -Dtest=gov.nih.nci.backendapi.group12_query_engine.ValueUtilsTest test
 ````
 
 To run the full unit test suite in Docker:

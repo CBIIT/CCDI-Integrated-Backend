@@ -22,6 +22,24 @@
       "problemMatcher": []
     },
     {
+      "label": "Java: Run one backend API test group",
+      "type": "process",
+      "command": "mvn",
+      "args": [
+        "test",
+        "-Dtest=gov.nih.nci.backendapi.${input:backendApiTestGroup}.*Test",
+        "-Dsurefire.failIfNoSpecifiedTests=false",
+        "-Dspring.profiles.active=test"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Java: Run PrivateESDataFetcher and InventoryESService tests",
       "type": "process",
       "command": "mvn",
@@ -55,6 +73,29 @@
         "clear": true
       },
       "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "backendApiTestGroup",
+      "type": "pickString",
+      "description": "Backend API unit-test group",
+      "default": "group01_transport",
+      "options": [
+        "group01_transport",
+        "group02_schema",
+        "group03_public_graphql",
+        "group04_global_search",
+        "group05_participant_search",
+        "group06_participant_ids_cpi",
+        "group07_summary_counts",
+        "group08_study_cohort_metadata",
+        "group09_cohort_analytics",
+        "group10_overview_tables",
+        "group11_file_lookup_export",
+        "group12_query_engine",
+        "group13_response_handling"
+      ]
     }
   ]
 }
