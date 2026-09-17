@@ -1,4 +1,4 @@
-package gov.nih.nci.bento_ri.model;
+package gov.nih.nci.backendapi.graphqlschema;
 
 import graphql.language.FieldDefinition;
 import graphql.language.ListType;

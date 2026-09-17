@@ -1,4 +1,4 @@
-package gov.nih.nci.ccdi;
+package gov.nih.nci.backendapi.graphqlschema;
 
 import graphql.language.FieldDefinition;
 import graphql.language.ListType;

@@ -1,5 +1,6 @@
-package gov.nih.nci.bento_ri.util;
+package gov.nih.nci.backendapi.opensearchquery;
 
+import gov.nih.nci.bento_ri.util.ValueUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;

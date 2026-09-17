@@ -1,4 +1,4 @@
-package gov.nih.nci.bento;
+package gov.nih.nci.backendapi.transport;
 
 import gov.nih.nci.bento.controller.IndexController;
 import org.junit.jupiter.api.BeforeEach;

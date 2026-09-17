@@ -1,0 +1,101 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Java: Run all unit tests",
+      "type": "process",
+      "command": "mvn",
+      "args": [
+        "clean",
+        "test",
+        "-Dspring.profiles.active=test"
+      ],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Java: Run one backend API test area",
+      "type": "process",
+      "command": "mvn",
+      "args": [
+        "test",
+        "-Dtest=gov.nih.nci.backendapi.${input:backendApiTestArea}.*Test",
+        "-Dsurefire.failIfNoSpecifiedTests=false",
+        "-Dspring.profiles.active=test"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Java: Run PrivateESDataFetcher and InventoryESService tests",
+      "type": "process",
+      "command": "mvn",
+      "args": [
+        "test",
+        "-Dtest=PrivateESDataFetcher*Test,InventoryESService*Test",
+        "-Dspring.profiles.active=test"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Java: Run unit tests with coverage",
+      "type": "process",
+      "command": "mvn",
+      "args": [
+        "clean",
+        "test",
+        "jacoco:report",
+        "-Dspring.profiles.active=test"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "backendApiTestArea",
+      "type": "pickString",
+      "description": "Backend API unit-test area",
+      "default": "transport",
+      "options": [
+        "transport",
+        "graphqlschema",
+        "publicgraphql",
+        "globalsearch",
+        "participantsearch",
+        "participantids",
+        "summarycounts",
+        "studycohortmetadata",
+        "cohortanalytics",
+        "overviewtables",
+        "filelookup",
+        "opensearchquery",
+        "opensearchresponse"
+      ]
+    }
+  ]
+}

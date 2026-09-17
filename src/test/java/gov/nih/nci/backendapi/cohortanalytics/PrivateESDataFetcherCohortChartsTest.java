@@ -1,7 +1,8 @@
-package gov.nih.nci.bento_ri.model;
+package gov.nih.nci.backendapi.cohortanalytics;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import gov.nih.nci.bento_ri.model.PrivateESDataFetcher;
 import gov.nih.nci.bento_ri.service.InventoryESService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
