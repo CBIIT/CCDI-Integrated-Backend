@@ -74,6 +74,7 @@ jobs:
         exit-code: '${{ env.TRIVY_EXIT_CODE }}'
         ignore-unfixed: true
         severity: 'CRITICAL,HIGH'
+        skip-java-db-update: true
 
     - name: AWS OIDC Authentication
       uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
