@@ -37,7 +37,7 @@ jobs:
         BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
       run: |
         # Get all tags for the repo and find the latest tag for the branch being built
-        git fetch --tags --force --quiet
+        git fetch --tags --force --quiet --no-recurse-submodules
         tag=$(git tag -l $BRANCH_NAME* | sort -V | tail -1)
         if  [ ! -z "$tag" ];
         then
@@ -74,6 +74,7 @@ jobs:
         exit-code: '${{ env.TRIVY_EXIT_CODE }}'
         ignore-unfixed: true
         severity: 'CRITICAL,HIGH'
+        skip-java-db-update: true
 
     - name: AWS OIDC Authentication
       uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
