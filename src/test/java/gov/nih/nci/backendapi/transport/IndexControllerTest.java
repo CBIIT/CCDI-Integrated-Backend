@@ -7,12 +7,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 /**
  * Unit test for IndexController
@@ -30,33 +30,25 @@ public class IndexControllerTest {
         this.mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
-    /**
-     * Confirm that the "/ping" endpoint does NOT accept POST requests and verify the following within the response:
-     *     Http Status Code is 405 (METHOD NOT ALLOWED)
-     *
-     * @throws Exception
-     */
     @Test
-    public void pingEndpointTestPOST() throws Exception {
-        MvcResult result = this.mockMvc.perform(MockMvcRequestBuilders.post("/ping"))
-                .andExpect(MockMvcResultMatchers.status().isMethodNotAllowed())
-                .andReturn();
-        //assert method to satisfy codacy requirement, this statement will not be reached if the test fails
-        assertNotNull(result);
+    void root_getReturnsIndexView() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("/index"));
     }
 
-    /**
-     * Test that the "/ping" endpoint accepts GET requests
-     *
-     * @throws Exception
-     */
     @Test
-    public void pingEndpointTestGET() throws Exception {
-        MvcResult result = this.mockMvc.perform(MockMvcRequestBuilders.get("/ping")
+    void ping_getReturnsPong() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/ping")
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-        assertNotNull(result);
+                .andExpect(status().isOk())
+                .andExpect(content().string("pong"));
+    }
+
+    @Test
+    void ping_postReturnsMethodNotAllowed() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/ping"))
+                .andExpect(status().isMethodNotAllowed());
     }
 
 }
