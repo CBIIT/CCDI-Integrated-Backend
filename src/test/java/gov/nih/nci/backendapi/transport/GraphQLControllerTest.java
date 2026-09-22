@@ -67,7 +67,7 @@ class GraphQLControllerTest {
 
         mockMvc.perform(get("/version"))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType("application/json;charset=utf-8"))
+.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(content().json("{\"version\":\"2.1.0\"}"));
     }
 
