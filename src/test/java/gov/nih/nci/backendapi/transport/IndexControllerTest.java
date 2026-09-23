@@ -31,14 +31,14 @@ public class IndexControllerTest {
     }
 
     @Test
-    void root_getReturnsIndexView() throws Exception {
+    void returnsIndexViewForRootRequest() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("/index"));
     }
 
     @Test
-    void ping_getReturnsPong() throws Exception {
+    void returnsPongForGetRequest() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/ping")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -46,7 +46,7 @@ public class IndexControllerTest {
     }
 
     @Test
-    void ping_postReturnsMethodNotAllowed() throws Exception {
+    void rejectsPostRequestToPing() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/ping"))
                 .andExpect(status().isMethodNotAllowed());
     }

@@ -62,7 +62,7 @@ class GraphQLControllerTest {
     }
 
     @Test
-    void version_getReturnsConfiguredApiVersion() throws Exception {
+    void returnsConfiguredApiVersion() throws Exception {
         when(config.getBentoApiVersion()).thenReturn("2.1.0");
 
         mockMvc.perform(get("/version"))
@@ -72,7 +72,7 @@ class GraphQLControllerTest {
     }
 
     @Test
-    void neo4jVersion_getReturnsVersionFromPublicGraphQl() throws Exception {
+    void returnsNeo4jVersionFromPublicGraphQl() throws Exception {
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(bentoGraphQL.getPublicGraphQL()).thenReturn(publicGraphQL);
         stubResult(publicGraphQL, Map.of("data", Map.of("neo4jVersion", "5.26.0")));
@@ -85,7 +85,7 @@ class GraphQLControllerTest {
     }
 
     @Test
-    void openSearchVersion_getReturnsVersionFromPublicGraphQl() throws Exception {
+    void returnsOpenSearchVersionFromPublicGraphQl() throws Exception {
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(bentoGraphQL.getPublicGraphQL()).thenReturn(publicGraphQL);
         stubResult(publicGraphQL, Map.of("data", Map.of("esVersion", "2.19.4")));
@@ -98,7 +98,7 @@ class GraphQLControllerTest {
     }
 
     @Test
-    void privateGraphQl_postExecutesPrivateGraphQl() throws Exception {
+    void executesPrivateGraphQlForPostRequest() throws Exception {
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(bentoGraphQL.getPrivateGraphQL()).thenReturn(privateGraphQL);
         stubResult(privateGraphQL, Map.of("data", Map.of("example", "private-result")));
@@ -116,7 +116,7 @@ class GraphQLControllerTest {
     }
 
     @Test
-    void publicGraphQl_postExecutesPublicGraphQl() throws Exception {
+    void executesPublicGraphQlForPostRequest() throws Exception {
         when(config.isAllowGraphQLQuery()).thenReturn(true);
         when(bentoGraphQL.getPublicGraphQL()).thenReturn(publicGraphQL);
         stubResult(publicGraphQL, Map.of("data", Map.of("example", "public-result")));
@@ -135,7 +135,7 @@ class GraphQLControllerTest {
 
     @ParameterizedTest(name = "{0} {1} returns 405")
     @MethodSource("nonPostGraphQlRequests")
-    void graphQlRoutes_nonPostMethodsReturnMethodNotAllowed(
+    void rejectsNonPostRequestsForBothGraphQlRoutes(
             HttpMethod method,
             String path) throws Exception {
         MockHttpServletRequestBuilder request = request(method, path);
