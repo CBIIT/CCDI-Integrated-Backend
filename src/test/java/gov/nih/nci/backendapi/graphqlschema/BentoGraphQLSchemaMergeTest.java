@@ -17,6 +17,7 @@ import java.util.Set;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -25,16 +26,15 @@ class BentoGraphQLSchemaMergeTest {
     private static final String QUERY_TYPE = "QueryType";
 
     /**
-     * Verifies that merging the Neo4j and private ES schemas retains every query, parameter, and runtime fetcher.
+     * Verifies that the inherited Bento merge behavior retains every query, parameter, and runtime fetcher.
+     * The backend currently does not use Neo4j, so the Neo4j schema here is synthetic.
      */
     @Test
     void mergesNeo4jAndPrivateEsSchemaContracts() throws Exception {
         GraphQLSchema neo4jSchema = neo4jSchema();
         RuntimeWiring privateWiring =
                 new PrivateESDataFetcher(mock(InventoryESService.class)).buildRuntimeWiring();
-        GraphQLSchema privateEsSchema = PrivateESDataFetcherRuntimeWiringTest.executablePrivateSchema(
-                PrivateESDataFetcherRuntimeWiringTest.privateEsRegistry(),
-                privateWiring);
+        GraphQLSchema privateEsSchema = privateEsSchema(privateWiring);
 
         GraphQLSchema mergedSchema = invokeMergeSchema(neo4jSchema, privateEsSchema);
 
@@ -63,23 +63,35 @@ class BentoGraphQLSchemaMergeTest {
     }
 
     /**
-     * Verifies that the ES schema is returned unchanged when no Neo4j schema is supplied.
+     * Verifies the project's current ES-only configuration returns the ES schema unchanged.
+     * The backend currently does not use Neo4j.
      */
     @Test
     void returnsEsSchemaWhenNeo4jSchemaIsAbsent() throws Exception {
-        GraphQLSchema esSchema = neo4jSchema();
+        GraphQLSchema esSchema = privateEsSchema();
 
-        assertEquals(esSchema, invokeMergeSchema(null, esSchema));
+        assertSame(esSchema, invokeMergeSchema(null, esSchema));
     }
 
     /**
-     * Verifies that the Neo4j schema is returned unchanged when no ES schema is supplied.
+     * Verifies the inherited Bento Neo4j-only fallback even though this project does not use Neo4j.
      */
     @Test
     void returnsNeo4jSchemaWhenEsSchemaIsAbsent() throws Exception {
         GraphQLSchema neo4jSchema = neo4jSchema();
 
-        assertEquals(neo4jSchema, invokeMergeSchema(neo4jSchema, null));
+        assertSame(neo4jSchema, invokeMergeSchema(neo4jSchema, null));
+    }
+
+    private static GraphQLSchema privateEsSchema() throws Exception {
+        RuntimeWiring wiring =
+                new PrivateESDataFetcher(mock(InventoryESService.class)).buildRuntimeWiring();
+        return privateEsSchema(wiring);
+    }
+
+    private static GraphQLSchema privateEsSchema(RuntimeWiring wiring) {
+        return PrivateESDataFetcherRuntimeWiringTest.executablePrivateSchema(
+                PrivateESDataFetcherRuntimeWiringTest.privateEsRegistry(), wiring);
     }
 
     private static GraphQLSchema neo4jSchema() {
