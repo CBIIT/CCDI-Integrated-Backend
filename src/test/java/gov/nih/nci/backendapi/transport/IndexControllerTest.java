@@ -30,6 +30,9 @@ public class IndexControllerTest {
         this.mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
+    /**
+     * Verifies that GET / returns HTTP 200 and resolves to the application's index view.
+     */
     @Test
     void returnsIndexViewForRootRequest() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/"))
@@ -37,6 +40,9 @@ public class IndexControllerTest {
                 .andExpect(view().name("/index"));
     }
 
+    /**
+     * Verifies that GET /ping returns HTTP 200 with the expected "pong" response body.
+     */
     @Test
     void returnsPongForGetRequest() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/ping")
@@ -45,6 +51,9 @@ public class IndexControllerTest {
                 .andExpect(content().string("pong"));
     }
 
+    /**
+     * Verifies that /ping rejects POST requests with HTTP 405 because it only supports GET.
+     */
     @Test
     void rejectsPostRequestToPing() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/ping"))

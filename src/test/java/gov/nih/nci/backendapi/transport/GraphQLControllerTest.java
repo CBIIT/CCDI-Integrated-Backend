@@ -61,6 +61,9 @@ class GraphQLControllerTest {
                 .build();
     }
 
+    /**
+     * Verifies that GET /version returns the API version supplied by the application configuration.
+     */
     @Test
     void returnsConfiguredApiVersion() throws Exception {
         when(config.getBentoApiVersion()).thenReturn("2.1.0");
@@ -71,6 +74,9 @@ class GraphQLControllerTest {
                 .andExpect(content().json("{\"version\":\"2.1.0\"}"));
     }
 
+    /**
+     * Verifies that GET /neo4j-version queries the public GraphQL engine and returns its Neo4j version.
+     */
     @Test
     void returnsNeo4jVersionFromPublicGraphQl() throws Exception {
         when(config.isAllowGraphQLQuery()).thenReturn(true);
@@ -84,6 +90,9 @@ class GraphQLControllerTest {
         assertExecutedQuery(publicGraphQL, "{neo4jVersion}", Map.of());
     }
 
+    /**
+     * Verifies that GET /opensearch-version queries the public GraphQL engine and returns its OpenSearch version.
+     */
     @Test
     void returnsOpenSearchVersionFromPublicGraphQl() throws Exception {
         when(config.isAllowGraphQLQuery()).thenReturn(true);
@@ -97,6 +106,9 @@ class GraphQLControllerTest {
         assertExecutedQuery(publicGraphQL, "{esVersion}", Map.of());
     }
 
+    /**
+     * Verifies that POST /v1/graphql/ forwards the query and variables to the private GraphQL engine.
+     */
     @Test
     void executesPrivateGraphQlForPostRequest() throws Exception {
         when(config.isAllowGraphQLQuery()).thenReturn(true);
@@ -115,6 +127,9 @@ class GraphQLControllerTest {
                 Map.of("id", "abc"));
     }
 
+    /**
+     * Verifies that POST /v1/public-graphql/ forwards the query and variables to the public GraphQL engine.
+     */
     @Test
     void executesPublicGraphQlForPostRequest() throws Exception {
         when(config.isAllowGraphQLQuery()).thenReturn(true);
@@ -133,6 +148,9 @@ class GraphQLControllerTest {
                 Map.of("id", "abc"));
     }
 
+    /**
+     * Verifies that both GraphQL routes reject every supported non-POST method with HTTP 405 and an error message.
+     */
     @ParameterizedTest(name = "{0} {1} returns 405")
     @MethodSource("nonPostGraphQlRequests")
     void rejectsNonPostRequestsForBothGraphQlRoutes(
