@@ -9,7 +9,6 @@ import gov.nih.nci.bento_ri.service.InventoryESService;
 import graphql.language.FieldDefinition;
 import graphql.language.ObjectTypeDefinition;
 import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -75,19 +74,14 @@ class PrivateESDataFetcherRuntimeWiringTest {
     }
 
     /**
-     * Verifies that schema generation preserves every private query and parameter and assigns a data fetcher.
+     * Verifies that schema generation preserves every private query and parameter.
+     * Explicit fetcher registration is checked separately by wiresEveryPrivateDataQuery.
      */
     @Test
     void buildsCompleteExecutablePrivateSchema() {
         GraphQLSchema schema = executablePrivateSchema(registry, wiring);
 
         assertEquals(expectedContract(), executableContract(schema));
-        GraphQLObjectType queryType = schema.getQueryType();
-        for (GraphQLFieldDefinition field : queryType.getFieldDefinitions()) {
-            assertNotNull(
-                    schema.getCodeRegistry().getDataFetcher(queryType, field),
-                    () -> "No data fetcher for " + field.getName());
-        }
     }
 
     static Map<String, Set<String>> expectedContract() {

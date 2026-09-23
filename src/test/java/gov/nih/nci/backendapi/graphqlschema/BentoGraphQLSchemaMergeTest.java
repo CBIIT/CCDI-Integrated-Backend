@@ -2,14 +2,17 @@ package gov.nih.nci.backendapi.graphqlschema;
 
 import gov.nih.nci.bento.graphql.BentoGraphQL;
 import gov.nih.nci.bento_ri.model.PrivateESDataFetcher;
+import gov.nih.nci.bento_ri.model.PublicESDataFetcher;
 import gov.nih.nci.bento_ri.service.InventoryESService;
 import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -17,6 +20,7 @@ import java.util.Set;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -63,6 +67,32 @@ class BentoGraphQLSchemaMergeTest {
     }
 
     /**
+     * Verifies that the public ES esVersion fetcher remains explicitly wired after the inherited
+     * Bento merge with a synthetic Neo4j schema. The OpenSearch version endpoint executes this
+     * field through the public GraphQL schema even though this project does not use Neo4j.
+     */
+    @Test
+    void preservesPublicEsVersionFetcherWhenSchemasAreMerged() throws Exception {
+        RuntimeWiring publicWiring =
+                new PublicESDataFetcher(mock(InventoryESService.class)).buildRuntimeWiring();
+        assertTrue(publicWiring.getDataFetcherForType(QUERY_TYPE).containsKey("esVersion"));
+
+        GraphQLSchema publicEsSchema = publicEsSchema(publicWiring);
+        GraphQLSchema mergedSchema = invokeMergeSchema(neo4jSchema(), publicEsSchema);
+        GraphQLFieldDefinition publicEsVersion =
+                publicEsSchema.getQueryType().getFieldDefinition("esVersion");
+        GraphQLFieldDefinition mergedEsVersion =
+                mergedSchema.getQueryType().getFieldDefinition("esVersion");
+
+        assertNotNull(mergedEsVersion);
+        assertSame(
+                publicEsSchema.getCodeRegistry().getDataFetcher(
+                        publicEsSchema.getQueryType(), publicEsVersion),
+                mergedSchema.getCodeRegistry().getDataFetcher(
+                        mergedSchema.getQueryType(), mergedEsVersion));
+    }
+
+    /**
      * Verifies the project's current ES-only configuration returns the ES schema unchanged.
      * The backend currently does not use Neo4j.
      */
@@ -92,6 +122,13 @@ class BentoGraphQLSchemaMergeTest {
     private static GraphQLSchema privateEsSchema(RuntimeWiring wiring) {
         return PrivateESDataFetcherRuntimeWiringTest.executablePrivateSchema(
                 PrivateESDataFetcherRuntimeWiringTest.privateEsRegistry(), wiring);
+    }
+
+    private static GraphQLSchema publicEsSchema(RuntimeWiring wiring) {
+        InputStream schema = BentoGraphQLSchemaMergeTest.class.getResourceAsStream(
+                "/graphql/ccdi-portal-public-es.graphql");
+        assertNotNull(schema, "public ES schema should be on the classpath");
+        return new SchemaGenerator().makeExecutableSchema(new SchemaParser().parse(schema), wiring);
     }
 
     private static GraphQLSchema neo4jSchema() {
