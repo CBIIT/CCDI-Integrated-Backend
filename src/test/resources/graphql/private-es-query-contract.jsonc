@@ -1,0 +1,139 @@
+{
+  // Node ownership follows ccdi-dcc-model tag 1.0.0.
+  "argumentGroups": {
+    "participantFilters": [
+      // API control; not a DCC data-model property
+      "import_data",
+
+      // participant node (id maps to guid; participant_ids maps to participant_id)
+      "id",
+      "participant_ids",
+      "race",
+      "sex_at_birth",
+
+      // diagnosis node (diagnosis_anatomic_site maps to anatomic_site)
+      "age_at_diagnosis",
+      // API-only companion for selecting records with an unknown age_at_diagnosis
+      "age_at_diagnosis_unknownAges",
+      "diagnosis_anatomic_site",
+      "disease_phase",
+      "diagnosis_classification_system",
+      "diagnosis_basis",
+      "diagnosis",
+      "diagnosis_category",
+
+      // genetic_analysis node
+      "alteration",
+      "alteration_type",
+      "fusion_partner_gene",
+      "gene_symbol",
+      "reported_significance",
+      "reported_significance_system",
+      "status",
+
+      // treatment_chemotherapy, treatment_radiation, treatment_surgery, and treatment_other nodes
+      "treatment_type",
+      // Normalized from chemotherapy_agent, radiation_therapy_type, surgery_type, or other_treatment_type
+      "treatment_agent",
+      "age_at_treatment_start",
+      // API-only companion for selecting records with an unknown age_at_treatment_start
+      "age_at_treatment_start_unknownAges",
+      "age_at_treatment_end",
+      // API-only companion for selecting records with an unknown age_at_treatment_end
+      "age_at_treatment_end_unknownAges",
+
+      // treatment_response node
+      "response",
+      "response_category",
+      "age_at_response",
+      // API-only companion for selecting records with an unknown age_at_response
+      "age_at_response_unknownAges",
+      "response_system",
+
+      // survival node
+      "last_known_survival_status",
+      "age_at_last_known_survival_status",
+      // API-only companion for selecting records with an unknown age_at_last_known_survival_status
+      "age_at_last_known_survival_status_unknownAges",
+      "first_event",
+      "cause_of_death",
+
+      // sample node (sample_anatomic_site and anatomic_site both expose sample.anatomic_site)
+      "sample_anatomic_site",
+      "anatomic_site",
+      "participant_age_at_collection",
+      // API-only companion for selecting records with an unknown participant_age_at_collection
+      "participant_age_at_collection_unknownAges",
+      "sample_tumor_status",
+      "tumor_spatial_extent",
+      "sample_description",
+      "percent_tumor",
+      "percent_necrosis",
+
+      // Shared by the seven file nodes in tag 1.0.0
+      "data_category",
+      "file_type",
+      "file_mapping_level",
+      "file_size",
+      "file_description",
+      "file_access",
+
+      // sequencing_file node
+      "library_selection",
+      "library_source_material",
+      "library_source_molecule",
+      "library_strategy",
+
+      // pathology_file node
+      "fixation_embedding_method",
+      "staining_method",
+
+      // consent_group node (consent_codes is derived from consent_group_name)
+      "consent_codes",
+
+      // study node
+      "dbgap_accession",
+      "study_name",
+      "study_phase"
+    ],
+    "table": ["first", "offset", "order_by", "sort_direction"]
+  },
+  "queries": {
+    "esVersion": [],
+    "findParticipantIdsInList": ["participant_id"],
+    "globalSearch": ["input", "first", "offset"],
+    "idsLists": ["cpi_batch_size", "use_cache"],
+    "numberOfDiseases": [],
+    "numberOfParticipants": [],
+    "numberOfStudies": [],
+    "cohortManifest": ["id", "$table"],
+    "cohortMetadata": ["id", "$table"],
+    "cohortCharts": ["c1", "c2", "c3", "charts"],
+    "kMPlot": ["c1", "c2", "c3"],
+    "riskTableData": ["c1", "c2", "c3"],
+    "studyDetails": ["study_id"],
+    "studiesListing": ["$table"],
+    "searchParticipants": ["$participantFilters"],
+    "participantOverview": ["$participantFilters", "$table"],
+    "diagnosisOverview": ["$participantFilters", "$table", "pid"],
+    "geneticAnalysisOverview": ["$participantFilters", "$table", "pid"],
+    "studyOverview": ["$participantFilters", "$table"],
+    "survivalOverview": ["$participantFilters", "$table", "pid"],
+    "treatmentOverview": ["$participantFilters", "$table", "pid"],
+    "treatmentResponseOverview": ["$participantFilters", "$table", "pid"],
+    "sampleOverview": ["$participantFilters", "$table", "pid"],
+    "fileOverview": ["$participantFilters", "$table", "pid"],
+    "getFilenames": ["$participantFilters", "$table", "pid", "filename"],
+    "numberOfMCICount": [],
+    "fileIDsFromList": [
+      "pid",
+      "participant_ids",
+      "diagnosis_ids",
+      "study_ids",
+      "sample_ids",
+      "file_ids"
+    ],
+    "filesInList": ["id", "$table"],
+    "filesManifestInList": ["id", "$table"]
+  }
+}
