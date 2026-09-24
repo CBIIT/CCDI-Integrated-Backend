@@ -703,12 +703,12 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 object.put(GS_CATEGORY_TYPE, category.get(GS_CATEGORY_TYPE));
             }
 
-            if (resultFieldName.equals("samples") && objects != null && !objects.isEmpty()) {
+            if (resultFieldName.equals("samples") && !objects.isEmpty()) {
                 enrichGlobalSearchSamplesFromNestedFilters(objects);
             }
 
             // Add CPI data enrichment for participants
-            if (resultFieldName.equals("participants") && objects != null && !objects.isEmpty()) {
+            if (resultFieldName.equals("participants") && !objects.isEmpty()) {
                 enrichGlobalSearchParticipantsFromNestedFilters(objects);
                 enrichGlobalSearchParticipantsWithConsentCodes(objects);
                 // Check if CPIFetcherService is properly injected
@@ -719,7 +719,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         
                         // Fetch CPI data
                         List<FormattedCPIResponse> cpi_data = cpiFetcherService.fetchAssociatedParticipantIds(extracted_ids);
-                        logger.info("GlobalSearch CPI data received: " + cpi_data.size() + " records");
+                        logger.info("GlobalSearch CPI data received: " + (cpi_data == null ? 0 : cpi_data.size()) + " records");
                         
                         if (cpi_data != null && !cpi_data.isEmpty()) {
                             // Enrich CPI data with additional participant information
@@ -739,7 +739,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 }
             }
 
-            if (resultFieldName.equals("studies") && objects != null && !objects.isEmpty()) {
+            if (resultFieldName.equals("studies") && !objects.isEmpty()) {
                 normalizeGlobalSearchConsentCodes(objects);
             }
 
