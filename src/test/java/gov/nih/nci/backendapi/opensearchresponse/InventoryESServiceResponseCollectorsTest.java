@@ -2,6 +2,7 @@ package gov.nih.nci.backendapi.opensearchresponse;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import gov.nih.nci.backendapi.support.InventoryESServiceTestSupport;
 import gov.nih.nci.bento_ri.service.InventoryESService;
 import org.apache.http.entity.ContentType;
@@ -16,8 +17,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -160,6 +163,72 @@ class InventoryESServiceResponseCollectorsTest {
 
         assertEquals(1, page.size());
         assertEquals("ccdi-int-p002", page.get(0).get("participant_id"));
+    }
+
+    /**
+     * Verifies the source-array, missing-value, and global-search highlight handling performed by
+     * the project-owned response collector.
+     */
+    @Test
+    void collectPageMapsGlobalSearchHighlightsAndMissingValues() throws IOException {
+        JsonObject response = JsonParser.parseString("""
+                {
+                  "hits": {
+                    "hits": [
+                      {
+                        "_source": {
+                          "node": "participant",
+                          "aliases": ["subject", "patient"],
+                          "description": null
+                        },
+                        "highlight": {
+                          "node": ["$participant$"],
+                          "description": [],
+                          "scalar": "not-an-array"
+                        }
+                      },
+                      {
+                        "_source": {"node": "study"},
+                        "highlight": "not-an-object"
+                      },
+                      {
+                        "_source": {"node": "file"}
+                      }
+                    ]
+                  }
+                }
+                """).getAsJsonObject();
+        String[][] properties = {
+                {"node", "node"},
+                {"aliases", "aliases"},
+                {"description", "description"},
+                {"missing", "missing"}
+        };
+        String[][] highlights = {
+                {"highlight", "node"},
+                {"descriptionHighlight", "description"},
+                {"scalarHighlight", "scalar"},
+                {"missingHighlight", "missing"}
+        };
+
+        List<Map<String, Object>> page = service.collectPage(
+                response,
+                properties,
+                highlights,
+                10,
+                0
+        );
+
+        assertEquals(3, page.size());
+        assertEquals(List.of("subject", "patient"), page.get(0).get("aliases"));
+        assertNull(page.get(0).get("description"));
+        assertNull(page.get(0).get("missing"));
+        assertEquals("$participant$", page.get(0).get("highlight"));
+        assertFalse(page.get(0).containsKey("descriptionHighlight"));
+        assertFalse(page.get(0).containsKey("scalarHighlight"));
+        assertFalse(page.get(0).containsKey("missingHighlight"));
+        assertFalse(page.get(1).containsKey("highlight"));
+        assertFalse(page.get(2).containsKey("highlight"));
     }
 
     @Test
