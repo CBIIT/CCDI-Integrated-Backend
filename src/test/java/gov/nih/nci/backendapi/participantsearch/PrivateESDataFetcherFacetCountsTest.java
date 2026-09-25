@@ -27,6 +27,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -120,11 +121,15 @@ class PrivateESDataFetcherFacetCountsTest {
     void bypassesCacheWhenImportDataIsProvided() throws Exception {
         stubSummaryCountQueries();
         Map<String, Object> params = Map.of("import_data", List.of("PARTICIPANT-1"));
-        cache.put("all", Map.of("cached", true));
+        String cacheKey = invokePrivate("generateCacheKey", new Class<?>[]{Map.class}, params);
+        Map<String, Object> sentinel = Map.of("cached", true);
+        cache.put(cacheKey, sentinel);
 
         Map<String, Object> result = invokeSearchParticipants(params);
 
+        assertNotSame(sentinel, result);
         assertEquals(11, result.get("numberOfParticipants"));
+        assertSame(sentinel, cache.getIfPresent(cacheKey));
         assertEquals(1, cache.estimatedSize());
         verify(inventoryESService, times(9)).send(any(Request.class));
     }
