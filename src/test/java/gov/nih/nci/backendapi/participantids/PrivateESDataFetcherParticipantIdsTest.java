@@ -207,7 +207,7 @@ class PrivateESDataFetcherParticipantIdsTest {
      */
     @Test
     void findsParticipantIdsUsingTheListQuery() throws Exception {
-        Map<String, Object> params = Map.of("id", List.of("PID-1", "PID-2"));
+        Map<String, Object> params = Map.of("participant_id", List.of("PID-1", "PID-2"));
         Map<String, Object> query = new HashMap<>(Map.of("query", Map.of("match_all", Map.of())));
         List<Map<String, Object>> expected = List.of(
                 Map.of("participant_id", "P1", "study_id", "STUDY-A"),
@@ -230,7 +230,7 @@ class PrivateESDataFetcherParticipantIdsTest {
     /** Verifies findParticipantIdsInList propagates OpenSearch query-construction failures. */
     @Test
     void propagatesParticipantListQueryFailures() throws Exception {
-        Map<String, Object> params = Map.of("id", List.of("PID-1"));
+        Map<String, Object> params = Map.of("participant_id", List.of("PID-1"));
         Map<String, Object> query = new HashMap<>();
         when(inventoryESService.buildListQuery(params, Set.of(), false)).thenReturn(query);
         when(inventoryESService.collectPage(
