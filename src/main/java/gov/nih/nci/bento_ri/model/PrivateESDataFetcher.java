@@ -3912,7 +3912,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     if (lower == null && higher == null) {
                         throw new IOException("Lower bound and Upper bound can't be both null!");
                     }
-                    keys.add(key.concat(String.valueOf(lower)).concat(String.valueOf(higher)));
+                    keys.add(key + "[" + lower + "," + higher + "]");
                 }
             } else {
                 List<String> valueSet = null;

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -393,11 +394,20 @@ class PrivateESDataFetcherFacetCountsTest {
 
         String key = invokePrivate("generateCacheKey", new Class<?>[]{Map.class}, params);
 
-        assertTrue(key.contains("age_at_diagnosis510"));
+        assertTrue(key.contains("age_at_diagnosis[5,10]"));
         assertTrue(key.contains("race[Asian, null]"));
         assertTrue(key.contains("search[tumor]"));
         assertTrue(key.contains("first[25]"));
         assertTrue(key.contains("include[true]"));
+        String firstRangeKey = invokePrivate(
+                "generateCacheKey",
+                new Class<?>[]{Map.class},
+                Map.of("age_at_diagnosis", List.of(1, 234)));
+        String secondRangeKey = invokePrivate(
+                "generateCacheKey",
+                new Class<?>[]{Map.class},
+                Map.of("age_at_diagnosis", List.of(12, 34)));
+        assertNotEquals(firstRangeKey, secondRangeKey);
         IOException exception = assertThrows(IOException.class, () -> invokePrivate(
                 "generateCacheKey",
                 new Class<?>[]{Map.class},
