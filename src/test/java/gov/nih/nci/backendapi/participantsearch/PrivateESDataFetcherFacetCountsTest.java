@@ -383,6 +383,13 @@ class PrivateESDataFetcherFacetCountsTest {
                 "treatment_responses_table"));
         assertEquals("sample_diagnosis_genetic_analysis_file_filters", invokePrivate(
                 "getParticipantsFacetNestedPath", new Class<?>[]{String.class}, "samples_table"));
+        assertEquals("sample_diagnosis_genetic_analysis_file_filters", invokePrivate(
+                "getParticipantsFacetNestedPath", new Class<?>[]{String.class}, "diagnoses_table"));
+        assertEquals("sample_diagnosis_genetic_analysis_file_filters", invokePrivate(
+                "getParticipantsFacetNestedPath", new Class<?>[]{String.class},
+                "genetic_analyses_table"));
+        assertEquals("sample_diagnosis_genetic_analysis_file_filters", invokePrivate(
+                "getParticipantsFacetNestedPath", new Class<?>[]{String.class}, "files_table"));
         assertEquals("", invokePrivate(
                 "getParticipantsFacetNestedPath", new Class<?>[]{String.class}, "participants_table"));
     }
