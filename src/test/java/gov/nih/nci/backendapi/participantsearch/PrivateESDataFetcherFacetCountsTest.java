@@ -466,6 +466,24 @@ class PrivateESDataFetcherFacetCountsTest {
                         "generateCacheKey", new Class<?>[]{Map.class}, Map.of("include", "true")));
         assertEquals("all", invokePrivate(
                 "generateCacheKey", new Class<?>[]{Map.class}, Map.of("race", List.of(""))));
+        assertEquals("all", invokePrivate(
+                "generateCacheKey", new Class<?>[]{Map.class}, Map.of("search", "")));
+        assertEquals("all", invokePrivate(
+                "generateCacheKey", new Class<?>[]{Map.class},
+                Map.of("age_at_diagnosis", "not-a-range")));
+        assertEquals("all", invokePrivate(
+                "generateCacheKey", new Class<?>[]{Map.class},
+                Map.of("age_at_diagnosis", List.of(5))));
+        assertEquals("all", invokePrivate(
+                "generateCacheKey", new Class<?>[]{Map.class},
+                Map.of("age_at_diagnosis", List.of("not-a-bound"))));
+        assertEquals("all", invokePrivate(
+                "generateCacheKey", new Class<?>[]{Map.class},
+                Map.of("unsupported", Map.of("nested", "value"))));
+        assertEquals("{\"age_at_diagnosis\":[null,10]}", invokePrivate(
+                "generateCacheKey",
+                new Class<?>[]{Map.class},
+                Map.of("age_at_diagnosis", java.util.Arrays.asList(null, 10))));
         IOException exception = assertThrows(IOException.class, () -> invokePrivate(
                 "generateCacheKey",
                 new Class<?>[]{Map.class},
