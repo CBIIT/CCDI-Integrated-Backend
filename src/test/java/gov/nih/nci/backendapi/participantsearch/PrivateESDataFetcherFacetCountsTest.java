@@ -260,21 +260,23 @@ class PrivateESDataFetcherFacetCountsTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(inventoryESService.send(any(Request.class))).thenAnswer(invocation -> {
             Request request = invocation.getArgument(0);
-            if ("/genetic_analyses_table/_search".equals(request.getEndpoint())) {
-                return JsonParser.parseString("""
+            return switch (request.getEndpoint()) {
+                case "/genetic_analyses_table/_search" -> JsonParser.parseString("""
                         {"aggregations":{"facetAgg":{"buckets":[
                           {"key":"ALK"}, {"key":"MYCN"}, {"key":"TP53"},
                           {"key":"[ALK, MYCN]"}, {"key":""}, {"key":null}
                         ]}}}
                         """).getAsJsonObject();
-            }
-            return JsonParser.parseString("""
-                    {"aggregations":{"facetAgg":{"agg_buckets":{"buckets":[
-                      {"key":"ALK","top_reverse_nested":{"doc_count":4}},
-                      {"key":"MYCN","doc_count":2},
-                      {"key":"[ALK, MYCN]","doc_count":8}
-                    ]}}}}
-                    """).getAsJsonObject();
+                case PARTICIPANTS_ENDPOINT -> JsonParser.parseString("""
+                        {"aggregations":{"facetAgg":{"agg_buckets":{"buckets":[
+                          {"key":"ALK","top_reverse_nested":{"doc_count":4}},
+                          {"key":"MYCN","doc_count":2},
+                          {"key":"[ALK, MYCN]","doc_count":8}
+                        ]}}}}
+                        """).getAsJsonObject();
+                default -> throw new AssertionError(
+                        "Unexpected OpenSearch endpoint: " + request.getEndpoint());
+            };
         });
         Map<String, Object> filter = facet(
                 "gene_symbol", "pid", "gene_filter_count", null);
@@ -303,9 +305,12 @@ class PrivateESDataFetcherFacetCountsTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(inventoryESService.send(any(Request.class))).thenAnswer(invocation -> {
             Request request = invocation.getArgument(0);
-            return PARTICIPANTS_ENDPOINT.equals(request.getEndpoint())
-                    ? customRangeResponse()
-                    : new JsonObject();
+            return switch (request.getEndpoint()) {
+                case "/diagnoses_table/_search" -> new JsonObject();
+                case PARTICIPANTS_ENDPOINT -> customRangeResponse();
+                default -> throw new AssertionError(
+                        "Unexpected OpenSearch endpoint: " + request.getEndpoint());
+            };
         });
         Map<String, Object> filter = facet(
                 "age_at_diagnosis", "pid", "age_filter_count", "age_widget_count");
