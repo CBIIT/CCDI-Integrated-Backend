@@ -3888,13 +3888,13 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
 
     private String generateCacheKey(Map<String, Object> params) throws IOException {
-        List<String> keys = new ArrayList<>();
-        for (String key: params.keySet()) {
+        Map<String, Object> normalizedParams = new TreeMap<>();
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            String key = entry.getKey();
+            Object rawValue = entry.getValue();
             if (RANGE_PARAMS.contains(key)) {
                 List<Integer> bounds = null;
-                Object boundsRaw = params.get(key);
-
-                if (boundsRaw instanceof List<?> rawBounds) {
+                if (rawValue instanceof List<?> rawBounds) {
                     List<Integer> casted = new ArrayList<>();
                     for (Object o : rawBounds) {
                         if (o instanceof Number) {
@@ -3912,39 +3912,25 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     if (lower == null && higher == null) {
                         throw new IOException("Lower bound and Upper bound can't be both null!");
                     }
-                    keys.add(key + "[" + lower + "," + higher + "]");
+                    normalizedParams.put(key, Arrays.asList(lower, higher));
                 }
             } else {
-                List<String> valueSet = null;
-                Object valueSetRaw = params.get(key);
-
-                if (valueSetRaw instanceof List<?> rawList) {
-                    List<String> asStrings = new ArrayList<>();
-                    for (Object o : rawList) {
-                        asStrings.add(o != null ? o.toString() : "null");
+                if (rawValue instanceof List<?> rawList) {
+                    if (!rawList.isEmpty()
+                            && !(rawList.size() == 1 && "".equals(rawList.get(0)))) {
+                        normalizedParams.put(key, new ArrayList<>(rawList));
                     }
-                    valueSet = asStrings;
-                } else if (valueSetRaw instanceof String s) {
-                    valueSet = List.of(s);
-                } else if (valueSetRaw instanceof Number n) {
-                    valueSet = List.of(n.toString());
-                } else if (valueSetRaw instanceof Boolean b) {
-                    valueSet = List.of(b.toString());
-                }
-
-                if (valueSet != null) {
-                    if (valueSet.size() > 0 && !(valueSet.size() == 1 && valueSet.get(0).equals(""))) {
-                        keys.add(key.concat(valueSet.toString()));
+                } else if (rawValue instanceof String value) {
+                    if (!value.isEmpty()) {
+                        normalizedParams.put(key, value);
                     }
+                } else if (rawValue instanceof Number || rawValue instanceof Boolean) {
+                    normalizedParams.put(key, rawValue);
                 }
             }
         }
 
-        if (keys.isEmpty()) {
-            return "all";
-        } else {
-            return keys.toString();
-        }
+        return normalizedParams.isEmpty() ? "all" : gson.toJson(normalizedParams);
     }
 
     /**

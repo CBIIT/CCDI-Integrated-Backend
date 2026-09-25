@@ -406,7 +406,10 @@ class PrivateESDataFetcherFacetCountsTest {
                 "getParticipantsFacetNestedPath", new Class<?>[]{String.class}, "participants_table"));
     }
 
-    /** Verifies cache keys encode filters and ranges and reject an entirely open range. */
+    /**
+     * Verifies cache keys canonically encode sorted, typed filters and ranges, cannot be confused
+     * by delimiter-like values, and reject an entirely open range.
+     */
     @Test
     void generatesCacheKeysForFacetFilterValuesAndRanges() throws Exception {
         Map<String, Object> params = new java.util.LinkedHashMap<>();
@@ -418,11 +421,10 @@ class PrivateESDataFetcherFacetCountsTest {
 
         String key = invokePrivate("generateCacheKey", new Class<?>[]{Map.class}, params);
 
-        assertTrue(key.contains("age_at_diagnosis[5,10]"));
-        assertTrue(key.contains("race[Asian, null]"));
-        assertTrue(key.contains("search[tumor]"));
-        assertTrue(key.contains("first[25]"));
-        assertTrue(key.contains("include[true]"));
+        assertEquals(
+                "{\"age_at_diagnosis\":[5,10],\"first\":25,\"include\":true,"
+                        + "\"race\":[\"Asian\",null],\"search\":\"tumor\"}",
+                key);
         String firstRangeKey = invokePrivate(
                 "generateCacheKey",
                 new Class<?>[]{Map.class},
@@ -432,6 +434,38 @@ class PrivateESDataFetcherFacetCountsTest {
                 new Class<?>[]{Map.class},
                 Map.of("age_at_diagnosis", List.of(12, 34)));
         assertNotEquals(firstRangeKey, secondRangeKey);
+
+        Map<String, Object> delimiterValue = Map.of(
+                "race", List.of("Asian], age_at_diagnosis[1,2"));
+        Map<String, Object> separateParameters = new java.util.LinkedHashMap<>();
+        separateParameters.put("race", List.of("Asian"));
+        separateParameters.put("age_at_diagnosis", List.of(1, 2));
+        assertNotEquals(
+                (String) invokePrivate(
+                        "generateCacheKey", new Class<?>[]{Map.class}, delimiterValue),
+                (String) invokePrivate(
+                        "generateCacheKey", new Class<?>[]{Map.class}, separateParameters));
+
+        Map<String, Object> reverseOrder = new java.util.LinkedHashMap<>();
+        reverseOrder.put("search", "tumor");
+        reverseOrder.put("race", java.util.Arrays.asList("Asian", null));
+        reverseOrder.put("include", true);
+        reverseOrder.put("first", 25);
+        reverseOrder.put("age_at_diagnosis", List.of(5, 10));
+        assertEquals(key, invokePrivate(
+                "generateCacheKey", new Class<?>[]{Map.class}, reverseOrder));
+        assertNotEquals(
+                (String) invokePrivate(
+                        "generateCacheKey", new Class<?>[]{Map.class}, Map.of("first", 25)),
+                (String) invokePrivate(
+                        "generateCacheKey", new Class<?>[]{Map.class}, Map.of("first", "25")));
+        assertNotEquals(
+                (String) invokePrivate(
+                        "generateCacheKey", new Class<?>[]{Map.class}, Map.of("include", true)),
+                (String) invokePrivate(
+                        "generateCacheKey", new Class<?>[]{Map.class}, Map.of("include", "true")));
+        assertEquals("all", invokePrivate(
+                "generateCacheKey", new Class<?>[]{Map.class}, Map.of("race", List.of(""))));
         IOException exception = assertThrows(IOException.class, () -> invokePrivate(
                 "generateCacheKey",
                 new Class<?>[]{Map.class},
