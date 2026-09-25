@@ -293,8 +293,8 @@ class PrivateESDataFetcherFacetCountsTest {
     }
 
     /**
-     * Verifies range filter statistics and exact participant range buckets, including an explicit
-     * cardinality index override for the widget query.
+     * Verifies range filter statistics and exact participant range buckets are read from the
+     * participant index through the diagnosis facet's nested path.
      */
     @Test
     void computesRangeFilterAndExactParticipantWidgetCounts() throws Exception {
@@ -314,7 +314,6 @@ class PrivateESDataFetcherFacetCountsTest {
         });
         Map<String, Object> filter = facet(
                 "age_at_diagnosis", "pid", "age_filter_count", "age_widget_count");
-        filter.put("cardinality_index_name", "participants_table");
         filter.put("_index", "diagnoses_table");
         filter.put("_endpoint", "/diagnoses_table/_search");
 
@@ -327,6 +326,14 @@ class PrivateESDataFetcherFacetCountsTest {
                 Map.of("group", "20-39", "subjects", 3),
                 Map.of("group", "40+", "subjects", 0)),
                 result.get("age_widget_count"));
+        verify(inventoryESService).buildFacetFilterQuery(
+                anyMap(), anySet(), anySet(), anySet(), eq("nested_filters"),
+                eq("participants_table"));
+        verify(inventoryESService).addCustomRangeAggregations(
+                anyMap(), eq("facetAgg"), eq("age_at_diagnosis"),
+                eq("sample_diagnosis_genetic_analysis_file_filters"));
+        verify(inventoryESService).send(org.mockito.ArgumentMatchers.argThat(
+                request -> PARTICIPANTS_ENDPOINT.equals(request.getEndpoint())));
     }
 
     /** Verifies non-cardinality range widgets use range-count aggregations on their own index. */
