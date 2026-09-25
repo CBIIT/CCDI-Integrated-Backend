@@ -257,13 +257,19 @@ class CPIFetcherServiceTest {
                 "filterResponse", new Class<?>[]{Map.class}, source);
 
         assertFalse(filtered.containsKey("supplementary_domains"));
-        assertFalse(listItem.containsKey("supplementary_domains"));
+        List<?> filteredData = (List<?>) filtered.get("data");
+        Map<?, ?> filteredListItem = (Map<?, ?>) filteredData.get(0);
+        assertFalse(filteredListItem.containsKey("supplementary_domains"));
+        assertTrue(listItem.containsKey("supplementary_domains"));
         assertTrue(source.containsKey("supplementary_domains"));
 
         Map<String, Object> nestedMap = new HashMap<>(Map.of("supplementary_domains", "extra"));
-        invokePrivate("filterResponse", new Class<?>[]{Map.class},
+        Map<String, Object> filteredMapResponse = invokePrivate(
+                "filterResponse", new Class<?>[]{Map.class},
                 new HashMap<>(Map.of("data", nestedMap)));
-        assertFalse(nestedMap.containsKey("supplementary_domains"));
+        Map<?, ?> filteredMap = (Map<?, ?>) filteredMapResponse.get("data");
+        assertFalse(filteredMap.containsKey("supplementary_domains"));
+        assertTrue(nestedMap.containsKey("supplementary_domains"));
         assertNull(invokePrivate("filterResponse", new Class<?>[]{Map.class}, (Object) null));
     }
 

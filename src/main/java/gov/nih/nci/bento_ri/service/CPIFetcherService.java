@@ -373,13 +373,21 @@ public class CPIFetcherService {
         Object data = filteredResponse.get("data");
         if (data instanceof List) {
             List<Object> dataList = (List<Object>) data;
+            List<Object> filteredDataList = new ArrayList<>(dataList.size());
             for (Object item : dataList) {
                 if (item instanceof Map) {
-                    ((Map<String, Object>) item).remove("supplementary_domains");
+                    Map<String, Object> filteredItem = new HashMap<>((Map<String, Object>) item);
+                    filteredItem.remove("supplementary_domains");
+                    filteredDataList.add(filteredItem);
+                } else {
+                    filteredDataList.add(item);
                 }
             }
+            filteredResponse.put("data", filteredDataList);
         } else if (data instanceof Map) {
-            ((Map<String, Object>) data).remove("supplementary_domains");
+            Map<String, Object> filteredData = new HashMap<>((Map<String, Object>) data);
+            filteredData.remove("supplementary_domains");
+            filteredResponse.put("data", filteredData);
         }
         
         // Check for any nested structures that might contain supplementary_domains
