@@ -1,10 +1,12 @@
 package gov.nih.nci.backendapi.statsbar;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import gov.nih.nci.bento_ri.model.PrivateESDataFetcher;
 import gov.nih.nci.bento_ri.service.InventoryESService;
+import org.apache.http.util.EntityUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -77,7 +79,7 @@ class PrivateESDataFetcherStatsBarTest {
         assertEquals(3, result);
         ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
         verify(inventoryESService).send(requestCaptor.capture());
-        assertRequest(requestCaptor.getValue(), DIAGNOSES_ENDPOINT);
+        assertRequest(requestCaptor.getValue(), DIAGNOSES_ENDPOINT, aggregationQuery);
     }
 
     /**
@@ -142,13 +144,19 @@ class PrivateESDataFetcherStatsBarTest {
         assertEquals(37, result);
         ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
         verify(inventoryESService).send(requestCaptor.capture());
-        assertRequest(requestCaptor.getValue(), PARTICIPANTS_ENDPOINT);
+        assertRequest(requestCaptor.getValue(), PARTICIPANTS_ENDPOINT, query);
     }
 
-    private static void assertRequest(Request request, String expectedEndpoint) {
+    private static void assertRequest(
+            Request request, String expectedEndpoint, Map<String, Object> expectedQuery)
+            throws Exception {
         assertEquals("GET", request.getMethod());
         assertEquals(expectedEndpoint, request.getEndpoint());
         assertNotNull(request.getEntity());
+        JsonObject actualQuery = JsonParser.parseString(
+                EntityUtils.toString(request.getEntity())).getAsJsonObject();
+        JsonObject expectedJson = new Gson().toJsonTree(expectedQuery).getAsJsonObject();
+        assertEquals(expectedJson, actualQuery);
     }
 
     private Integer invokeCount(String methodName, Object... arguments) throws Exception {
