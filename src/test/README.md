@@ -14,7 +14,8 @@ Shared test doubles and fixture loaders live in
 | `participantsearch` | Participant search and facets | Not started |
 | `participantids` | Participant identifiers and CPI | Not started |
 | `summarycounts` | Summary and count operations | Not started |
-| `studycohortmetadata` | Studies and cohort metadata | `PrivateESDataFetcherCohortMetadataTest` |
+| `studies` | Study details and listings | `PrivateESDataFetcherStudyOperationsTest` |
+| `cohortAnalyzer` | Cohort manifests and metadata | `PrivateESDataFetcherCohortManifestTest`, `PrivateESDataFetcherCohortMetadataTest` |
 | `cohortanalytics` | Cohort analytics | `PrivateESDataFetcherCohortChartsTest` |
 | `overviewtables` | Overview tables | Schema coverage currently resides in `graphqlschema`; behavioral tests not started |
 | `filelookup` | File lookup and export | Supporting coverage currently resides in `opensearchquery` and `opensearchresponse`; endpoint tests not started |
