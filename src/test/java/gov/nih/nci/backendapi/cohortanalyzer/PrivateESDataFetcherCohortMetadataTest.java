@@ -1,4 +1,4 @@
-package gov.nih.nci.backendapi.cohortAnalyzer;
+package gov.nih.nci.backendapi.cohortanalyzer;
 
 import gov.nih.nci.bento_ri.model.PrivateESDataFetcher;
 import gov.nih.nci.bento_ri.service.InventoryESService;
