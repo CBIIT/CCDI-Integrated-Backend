@@ -1,4 +1,4 @@
-package gov.nih.nci.backendapi.studycohortmetadata;
+package gov.nih.nci.backendapi.cohortanalyzer;
 
 import gov.nih.nci.bento_ri.model.PrivateESDataFetcher;
 import gov.nih.nci.bento_ri.service.InventoryESService;
@@ -219,6 +219,79 @@ class PrivateESDataFetcherCohortMetadataTest {
         );
     }
 
+    /** Verifies participants without a nonblank study GUID cannot produce cohort metadata. */
+    @Test
+    void cohortMetadataReturnsEmptyWhenNoParticipantHasAUsableStudyGuid() throws Exception {
+        Map<String, Object> params = params();
+        Map<String, Object> nullStudyGuid = participant("P-1", "unused", "consent-guid-1");
+        nullStudyGuid.put("study_guid", null);
+        Map<String, Object> blankStudyGuid = participant("P-2", "   ", "consent-guid-2");
+        stubFacetQuery(params);
+        when(inventoryESService.collectPage(
+            any(Request.class),
+            ArgumentMatchers.<Map<String, Object>>any(),
+            any(String[][].class),
+            ArgumentMatchers.anyInt(),
+            ArgumentMatchers.anyInt()
+        )).thenReturn(List.of(nullStudyGuid, blankStudyGuid));
+
+        List<Map<String, Object>> result = invokeCohortMetadata(
+            new PrivateESDataFetcher(inventoryESService), params);
+
+        assertEquals(List.of(), result);
+    }
+
+    /**
+     * Verifies malformed study and consent-group entries are ignored while valid hierarchy
+     * members remain associated with their participants.
+     */
+    @Test
+    void cohortMetadataSkipsMalformedAndUnreferencedHierarchyEntries() throws Exception {
+        Map<String, Object> participantWithoutConsent =
+            participant("P-1", "study-guid-1", "unused");
+        participantWithoutConsent.put("consent_group_guid", null);
+        Map<String, Object> matchedParticipant =
+            participant("P-2", "study-guid-2", "consent-guid-2");
+        Map<String, Object> participantWithoutStudy =
+            participant("P-3", "missing-study-guid", "consent-guid-3");
+
+        Map<String, Object> malformedStudy = mutableMap("study_id", "NO-GUID");
+        Map<String, Object> studyWithoutConsentList =
+            study("study-guid-1", "STUDY-1", "phs001");
+        studyWithoutConsentList.put("consent_groups", "invalid");
+        Map<String, Object> studyWithMixedConsentGroups = study(
+            "study-guid-2",
+            "STUDY-2",
+            "phs002",
+            mutableMap("consent_group_id", "NO-GUID"),
+            consentGroup("unused-consent-guid", "UNUSED"),
+            consentGroup("consent-guid-2", "CG-2")
+        );
+
+        List<Map<String, Object>> result = runCohortMetadata(
+            List.of(participantWithoutConsent, matchedParticipant, participantWithoutStudy),
+            List.of(malformedStudy, studyWithoutConsentList, studyWithMixedConsentGroups)
+        );
+
+        assertEquals(2, result.size());
+        assertEquals(List.of(), mapList(result.get(0), "consent_groups"));
+        assertEquals(List.of(matchedParticipant),
+            participantsFor(result.get(1), "consent-guid-2"));
+        assertEquals(1, mapList(result.get(1), "consent_groups").size());
+    }
+
+    /** Verifies cohort survival ordering compares null, numeric, and numeric-string ages. */
+    @Test
+    void compareNullableNumbersHandlesEverySupportedAgeShape() throws Exception {
+        PrivateESDataFetcher dataFetcher = new PrivateESDataFetcher(inventoryESService);
+
+        assertEquals(0, invokeComparison(dataFetcher, null, null));
+        assertEquals(1, invokeComparison(dataFetcher, null, 1));
+        assertEquals(-1, invokeComparison(dataFetcher, 1, null));
+        assertEquals(-1, invokeComparison(dataFetcher, "2", 10));
+        assertEquals(1, invokeComparison(dataFetcher, 10, "2"));
+    }
+
     private List<Map<String, Object>> runCohortMetadata(
         List<Map<String, Object>> participants,
         List<Map<String, Object>> studies
@@ -273,6 +346,17 @@ class PrivateESDataFetcherCohortMetadataTest {
             }
             throw e;
         }
+    }
+
+    private static int invokeComparison(
+        PrivateESDataFetcher dataFetcher,
+        Object first,
+        Object second
+    ) throws Exception {
+        Method method = PrivateESDataFetcher.class.getDeclaredMethod(
+            "compareNullableNumbers", Object.class, Object.class);
+        method.setAccessible(true);
+        return (int) method.invoke(dataFetcher, first, second);
     }
 
     private static Map<String, Object> params() {
