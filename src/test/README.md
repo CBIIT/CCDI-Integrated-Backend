@@ -14,6 +14,7 @@ Shared test doubles and fixture loaders live in
 | `participantsearch` | Participant search and facets | Not started |
 | `participantids` | Participant identifiers and CPI | Not started |
 | `summarycounts` | Summary and count operations | Not started |
+| `statsbar` | Stats bar counts | `PrivateESDataFetcherStatsBarTest` |
 | `studies` | Study details and listings | `PrivateESDataFetcherStudyOperationsTest` |
 | `cohortanalyzer` | Cohort manifests and metadata | `PrivateESDataFetcherCohortManifestTest`, `PrivateESDataFetcherCohortMetadataTest` |
 | `cohortanalytics` | Cohort analytics | `PrivateESDataFetcherCohortChartsTest` |

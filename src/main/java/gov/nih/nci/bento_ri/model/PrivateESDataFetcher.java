@@ -2114,7 +2114,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             String cardinalityAggName = (String)agg.get(CARDINALITY_AGG_NAME);
             // System.out.println(cardinalityAggName);
             List<Map<String, Object>> filterCount = filterSubjectCountBy(field, query_params, endpoint, cardinalityAggName, indexType);
-            study.put(filterCountQueryName, filterCount);
+            if(RANGE_PARAMS.contains(field)) {
+                study.put(filterCountQueryName, filterCount.get(0));
+            } else {
+                study.put(filterCountQueryName, filterCount);
+            }
 
             if (additionalUpdate != null) {
                 List<Map<String, Object>> filterCount_2_update = (List<Map<String, Object>>)study.get(filterCountQueryName);
@@ -2382,7 +2386,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     List<Map<String, Object>> consentGroupParticipants = consentGroupGuid == null
                         ? null
                         : participantsByConsentGroup.get(consentGroupGuid.toString());
-                    if (consentGroupParticipants != null) {
+                    if (consentGroupParticipants != null && !consentGroupParticipants.isEmpty()) {
                         consentGroup.put("participants", consentGroupParticipants);
                         selectedConsentGroups.add(consentGroup);
                     }
