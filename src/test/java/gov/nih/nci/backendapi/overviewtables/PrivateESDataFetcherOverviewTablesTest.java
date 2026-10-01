@@ -2,7 +2,9 @@ package gov.nih.nci.backendapi.overviewtables;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import gov.nih.nci.bento_ri.model.ParticipantRequest;
 import gov.nih.nci.bento_ri.model.PrivateESDataFetcher;
+import gov.nih.nci.bento_ri.service.CPIFetcherService;
 import gov.nih.nci.bento_ri.service.InventoryESService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.Request;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -23,7 +26,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -37,19 +39,202 @@ class PrivateESDataFetcherOverviewTablesTest {
     private static final Set<String> PAGING_ARGUMENTS =
             Set.of("first", "offset", "order_by", "sort_direction");
 
+    private static final List<List<String>> PARTICIPANT_PROPERTIES = pairs(
+            "id", "id",
+            "participant_id", "participant_id",
+            "dbgap_accession", "dbgap_accession",
+            "study_id", "study_id",
+            "race", "race",
+            "sex_at_birth", "sex_at_birth",
+            "synonym_id", "alternate_participant_id",
+            "files", "files",
+            "diagnosis", "diagnosis_str",
+            "anatomic_site", "diagnosis_anatomic_site_str",
+            "diagnosis_category", "diagnosis_category_str",
+            "age_at_diagnosis", "age_at_diagnosis_str",
+            "treatment_agent", "treatment_agent_str",
+            "treatment_type", "treatment_type_str",
+            "age_at_treatment_start", "age_at_treatment_start_str",
+            "first_event", "first_event_str",
+            "last_known_survival_status", "last_known_survival_status_str",
+            "age_at_last_known_survival_status", "age_at_last_known_survival_status_str");
+
+    private static final List<List<String>> DIAGNOSIS_PROPERTIES = pairs(
+            "id", "id",
+            "pid", "pid",
+            "diagnosis_id", "diagnosis_id",
+            "participant_id", "participant_id",
+            "dbgap_accession", "dbgap_accession",
+            "study_id", "study_id",
+            "diagnosis", "diagnosis",
+            "anatomic_site", "diagnosis_anatomic_site",
+            "disease_phase", "disease_phase",
+            "diagnosis_classification_system", "diagnosis_classification_system",
+            "diagnosis_basis", "diagnosis_basis",
+            "diagnosis_category", "diagnosis_category",
+            "age_at_diagnosis", "age_at_diagnosis",
+            "diagnosis_comment", "diagnosis_comment",
+            "tumor_spatial_extent", "tumor_spatial_extent",
+            "toronto_childhood_cancer_staging", "toronto_childhood_cancer_staging",
+            "tumor_grade", "tumor_grade",
+            "tumor_stage_clinical_t", "tumor_stage_clinical_t",
+            "tumor_stage_clinical_n", "tumor_stage_clinical_n",
+            "tumor_stage_clinical_m", "tumor_stage_clinical_m",
+            "tumor_stage_clinical_o", "tumor_stage_clinical_o");
+
+    private static final List<List<String>> GENETIC_ANALYSIS_PROPERTIES = pairs(
+            "ga_id", "id",
+            "pid", "pid",
+            "genetic_analysis_id", "genetic_analysis_id",
+            "participant_id", "participant_id",
+            "dbgap_accession", "dbgap_accession",
+            "study_id", "study_id",
+            "alteration", "alteration",
+            "fusion_partner_gene", "fusion_partner_gene",
+            "gene_symbol", "gene_symbol",
+            "reported_significance", "reported_significance",
+            "reported_significance_system", "reported_significance_system",
+            "status", "status",
+            "test", "test",
+            "alteration_effect", "alteration_effect",
+            "alteration_type", "alteration_type",
+            "chromosome", "chromosome",
+            "exon", "exon",
+            "fusion_partner_exon", "fusion_partner_exon",
+            "reference_genome", "reference_genome",
+            "cytoband", "cytoband",
+            "genomic_source_category", "genomic_source_category",
+            "hgvs_coding", "hgvs_coding",
+            "hgvs_genome", "hgvs_genome",
+            "hgvs_protein", "hgvs_protein");
+
+    private static final List<List<String>> TREATMENT_PROPERTIES = pairs(
+            "t_id", "id",
+            "pid", "pid",
+            "treatment_id", "treatment_id",
+            "participant_id", "participant_id",
+            "dbgap_accession", "dbgap_accession",
+            "study_id", "study_id",
+            "treatment_type", "treatment_type",
+            "treatment_agent", "treatment_agent",
+            "age_at_treatment_start", "age_at_treatment_start",
+            "age_at_treatment_end", "age_at_treatment_end");
+
+    private static final List<List<String>> TREATMENT_RESPONSE_PROPERTIES = pairs(
+            "tr_id", "id",
+            "pid", "pid",
+            "treatment_response_id", "treatment_response_id",
+            "participant_id", "participant_id",
+            "dbgap_accession", "dbgap_accession",
+            "study_id", "study_id",
+            "response", "response",
+            "response_category", "response_category",
+            "response_system", "response_system",
+            "age_at_response", "age_at_response");
+
+    private static final List<List<String>> SURVIVAL_PROPERTIES = pairs(
+            "s_id", "id",
+            "pid", "pid",
+            "survival_id", "survival_id",
+            "participant_id", "participant_id",
+            "dbgap_accession", "dbgap_accession",
+            "study_id", "study_id",
+            "age_at_event_free_survival_status", "age_at_event_free_survival_status",
+            "age_at_last_known_survival_status", "age_at_last_known_survival_status",
+            "cause_of_death", "cause_of_death",
+            "event_free_survival_status", "event_free_survival_status",
+            "first_event", "first_event",
+            "last_known_survival_status", "last_known_survival_status");
+
+    private static final List<List<String>> STUDY_PROPERTIES = pairs(
+            "id", "id",
+            "study_id", "study_id",
+            "grant_id", "grant_id",
+            "dbgap_accession", "dbgap_accession",
+            "study_name", "study_name",
+            "study_phase", "study_phase",
+            "personnel_name", "PIs",
+            "num_of_participants", "num_of_participants",
+            "diagnosis", "diagnosis_cancer",
+            "num_of_samples", "num_of_samples",
+            "anatomic_site", "diagnosis_anatomic_site",
+            "num_of_files", "num_of_files",
+            "file_type", "file_types",
+            "pubmed_id", "pubmed_ids",
+            "files", "files");
+
+    private static final List<List<String>> SAMPLE_PROPERTIES = pairs(
+            "id", "id",
+            "sample_id", "sample_id",
+            "participant_id", "participant_id",
+            "study_id", "study_id",
+            "anatomic_site", "sample_anatomic_site_str",
+            "participant_age_at_collection", "participant_age_at_collection",
+            "laterality", "laterality",
+            "sample_description", "sample_description",
+            "sample_tumor_status", "sample_tumor_status",
+            "percent_tumor", "percent_tumor",
+            "percent_necrosis", "percent_necrosis",
+            "pdx_id", "pdx_id",
+            "cell_line_id", "cell_line_id",
+            "tumor_spatial_extent", "tumor_spatial_extent",
+            "diagnosis", "diagnosis_str",
+            "diagnosis_category", "diagnosis_category_str",
+            "files", "files");
+
+    private static final List<List<String>> FILE_PROPERTIES = pairs(
+            "id", "id",
+            "file_id", "file_id",
+            "guid", "datamodel_dcf_indexd_guid",
+            "datamodel_dcf_indexd_guid", "datamodel_dcf_indexd_guid",
+            "datamodel_guid", "datamodel_guid",
+            "datamodel_file_id", "datamodel_file_id",
+            "file_name", "file_name",
+            "data_category", "data_category",
+            "file_description", "file_description",
+            "file_type", "file_type",
+            "file_size", "file_size",
+            "library_selection", "library_selection",
+            "library_source_material", "library_source_material",
+            "library_source_molecule", "library_source_molecule",
+            "library_strategy", "library_strategy",
+            "file_mapping_level", "file_mapping_level",
+            "file_access", "file_access",
+            "anatomic_site", "anatomic_site",
+            "participant_age_at_collection", "participant_age_at_collection",
+            "sample_tumor_status", "sample_tumor_status",
+            "tumor_spatial_extent", "tumor_spatial_extent",
+            "sample_description", "sample_description",
+            "percent_tumor", "percent_tumor",
+            "percent_necrosis", "percent_necrosis",
+            "consent_codes", "consent_codes",
+            "fixation_embedding_method", "fixation_embedding_method",
+            "staining_method", "staining_method",
+            "study_id", "study_id",
+            "participant_id", "participant_id",
+            "sample_id", "sample_id",
+            "md5sum", "md5sum",
+            "files", "files");
+
     @Mock
     private InventoryESService inventoryESService;
+
+    @Mock
+    private CPIFetcherService cpiFetcherService;
 
     private PrivateESDataFetcher dataFetcher;
 
     @BeforeEach
     void setUp() throws Exception {
         dataFetcher = new PrivateESDataFetcher(inventoryESService);
+        setField("cpiFetcherService", cpiFetcherService);
     }
 
     /** Verifies participant overview projection, participant endpoint, sorting, and nested exclusions. */
     @Test
     void returnsParticipantOverview() throws Exception {
+        when(cpiFetcherService.fetchAssociatedParticipantIds(any())).thenReturn(List.of());
+
         verifyOverview(
                 "participantOverview",
                 "/participants_table/_search",
@@ -61,9 +246,15 @@ class PrivateESDataFetcherOverviewTablesTest {
                         "survival_filters",
                         "treatment_filters",
                         "treatment_response_filters")),
-                List.of(List.of("participant_id", "participant_id"),
-                        List.of("synonym_id", "alternate_participant_id")),
+                PARTICIPANT_PROPERTIES,
                 true);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ParticipantRequest>> idsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(cpiFetcherService).fetchAssociatedParticipantIds(idsCaptor.capture());
+        assertEquals(1, idsCaptor.getValue().size());
+        assertEquals("PARTICIPANT-1", idsCaptor.getValue().get(0).getParticipantId());
+        assertEquals("STUDY-1", idsCaptor.getValue().get(0).getStudyId());
     }
 
     /** Verifies diagnosis overview uses the diagnosis index and its public-to-index field mappings. */
@@ -80,8 +271,7 @@ class PrivateESDataFetcherOverviewTablesTest {
                         "survival_filters",
                         "treatment_filters",
                         "treatment_response_filters")),
-                List.of(List.of("diagnosis_id", "diagnosis_id"),
-                        List.of("anatomic_site", "diagnosis_anatomic_site")),
+                DIAGNOSIS_PROPERTIES,
                 false);
     }
 
@@ -99,8 +289,7 @@ class PrivateESDataFetcherOverviewTablesTest {
                         "survival_filters",
                         "treatment_filters",
                         "treatment_response_filters")),
-                List.of(List.of("genetic_analysis_id", "genetic_analysis_id"),
-                        List.of("hgvs_protein", "hgvs_protein")),
+                GENETIC_ANALYSIS_PROPERTIES,
                 false);
     }
 
@@ -117,8 +306,7 @@ class PrivateESDataFetcherOverviewTablesTest {
                         "sample_diagnosis_genetic_analysis_file_filters",
                         "survival_filters",
                         "treatment_response_filters")),
-                List.of(List.of("treatment_id", "treatment_id"),
-                        List.of("age_at_treatment_end", "age_at_treatment_end")),
+                TREATMENT_PROPERTIES,
                 false);
     }
 
@@ -135,8 +323,7 @@ class PrivateESDataFetcherOverviewTablesTest {
                         "sample_diagnosis_genetic_analysis_file_filters",
                         "survival_filters",
                         "treatment_filters")),
-                List.of(List.of("treatment_response_id", "treatment_response_id"),
-                        List.of("age_at_response", "age_at_response")),
+                TREATMENT_RESPONSE_PROPERTIES,
                 false);
     }
 
@@ -153,8 +340,7 @@ class PrivateESDataFetcherOverviewTablesTest {
                         "sample_diagnosis_genetic_analysis_file_filters",
                         "treatment_filters",
                         "treatment_response_filters")),
-                List.of(List.of("survival_id", "survival_id"),
-                        List.of("last_known_survival_status", "last_known_survival_status")),
+                SURVIVAL_PROPERTIES,
                 false);
     }
 
@@ -174,8 +360,7 @@ class PrivateESDataFetcherOverviewTablesTest {
                         "survival_filters",
                         "treatment_filters",
                         "treatment_response_filters")),
-                List.of(List.of("sample_id", "sample_id"),
-                        List.of("anatomic_site", "sample_anatomic_site_str")),
+                SAMPLE_PROPERTIES,
                 false);
     }
 
@@ -199,8 +384,7 @@ class PrivateESDataFetcherOverviewTablesTest {
                 "library_selection",
                 "library_selection.sort",
                 Map.of("includes", includedFields),
-                List.of(List.of("guid", "datamodel_dcf_indexd_guid"),
-                        List.of("datamodel_file_id", "datamodel_file_id")),
+                FILE_PROPERTIES,
                 false);
     }
 
@@ -241,11 +425,14 @@ class PrivateESDataFetcherOverviewTablesTest {
             String expectedSortField,
             Map<String, Set<String>> expectedSource,
             List<List<String>> expectedPropertyPairs,
-            boolean returnEmptyPage) throws Exception {
+            boolean useParticipantFixture) throws Exception {
         Map<String, Object> params = pagingParams(orderBy, "DESC", 17, 3);
         Map<String, Object> query = new HashMap<>();
-        List<Map<String, Object>> expected = returnEmptyPage
-                ? new ArrayList<>()
+        List<Map<String, Object>> expected = useParticipantFixture
+                ? new ArrayList<>(List.of(new HashMap<>(Map.of(
+                        "id", "result-1",
+                        "participant_id", "PARTICIPANT-1",
+                        "study_id", "STUDY-1"))))
                 : new ArrayList<>(List.of(new HashMap<>(Map.of("id", "result-1"))));
         when(inventoryESService.buildFacetFilterQuery(
                 eq(params), anySet(), eq(PAGING_ARGUMENTS), eq(Set.of()),
@@ -266,7 +453,7 @@ class PrivateESDataFetcherOverviewTablesTest {
                 requestCaptor.capture(), eq(query), propertiesCaptor.capture(), eq(17), eq(3));
         assertEquals(endpoint, requestCaptor.getValue().getEndpoint());
         List<List<String>> actualProperties = propertyPairs(propertiesCaptor.getValue());
-        assertTrue(actualProperties.containsAll(expectedPropertyPairs));
+        assertEquals(expectedPropertyPairs, actualProperties);
     }
 
     private void verifyStudyOverview(List<String> bucketStudyIds, List<String> expectedStudyIds)
@@ -324,10 +511,7 @@ class PrivateESDataFetcherOverviewTablesTest {
         verify(inventoryESService).collectPage(
                 studyRequest.capture(), eq(studyQuery), propertiesCaptor.capture(), eq(11), eq(4));
         assertEquals("/studies_table/_search", studyRequest.getValue().getEndpoint());
-        assertTrue(propertyPairs(propertiesCaptor.getValue()).containsAll(List.of(
-                List.of("study_id", "study_id"),
-                List.of("personnel_name", "PIs"),
-                List.of("diagnosis", "diagnosis_cancer"))));
+        assertEquals(STUDY_PROPERTIES, propertyPairs(propertiesCaptor.getValue()));
     }
 
     @SuppressWarnings("unchecked")
@@ -344,6 +528,12 @@ class PrivateESDataFetcherOverviewTablesTest {
         }
     }
 
+    private void setField(String fieldName, Object value) throws Exception {
+        Field field = PrivateESDataFetcher.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(dataFetcher, value);
+    }
+
     private static Map<String, Object> pagingParams(
             String orderBy, String direction, int first, int offset) {
         Map<String, Object> params = new LinkedHashMap<>();
@@ -352,6 +542,17 @@ class PrivateESDataFetcherOverviewTablesTest {
         params.put("first", first);
         params.put("offset", offset);
         return params;
+    }
+
+    private static List<List<String>> pairs(String... values) {
+        if (values.length % 2 != 0) {
+            throw new IllegalArgumentException("Projection fixtures require source/result pairs");
+        }
+        List<List<String>> result = new ArrayList<>();
+        for (int index = 0; index < values.length; index += 2) {
+            result.add(List.of(values[index], values[index + 1]));
+        }
+        return List.copyOf(result);
     }
 
     private static List<List<String>> propertyPairs(String[][] properties) {
