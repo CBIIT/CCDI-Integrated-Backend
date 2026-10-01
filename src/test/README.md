@@ -17,7 +17,7 @@ Shared test doubles and fixture loaders live in
 | `statsbar` | Stats bar counts | `PrivateESDataFetcherStatsBarTest` |
 | `studies` | Study details and listings | `PrivateESDataFetcherStudyOperationsTest` |
 | `cohortanalyzer` | Cohort manifests, metadata, charts, and survival analytics | `PrivateESDataFetcherCohortManifestTest`, `PrivateESDataFetcherCohortMetadataTest`, `PrivateESDataFetcherCohortChartsTest`, `PrivateESDataFetcherSurvivalAnalyticsTest` |
-| `overviewtables` | Overview tables | Schema coverage currently resides in `graphqlschema`; behavioral tests not started |
+| `overviewtables` | Overview tables | `PrivateESDataFetcherOverviewTablesTest` |
 | `filelookup` | File lookup and export | Supporting coverage currently resides in `opensearchquery` and `opensearchresponse`; endpoint tests not started |
 | `opensearchquery` | Shared OpenSearch query engine | `InventoryESServiceBuildListQueryTest`, `InventoryESServiceAggregationBuildersTest`, `PrivateESDataFetcherHelpersTest`, `ValueUtilsTest` |
 | `opensearchresponse` | Shared OpenSearch response handling | `InventoryESServiceHttpMethodsTest`, `InventoryESServiceResponseCollectorsTest` |
