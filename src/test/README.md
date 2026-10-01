@@ -16,8 +16,7 @@ Shared test doubles and fixture loaders live in
 | `summarycounts` | Summary and count operations | Not started |
 | `statsbar` | Stats bar counts | `PrivateESDataFetcherStatsBarTest` |
 | `studies` | Study details and listings | `PrivateESDataFetcherStudyOperationsTest` |
-| `cohortanalyzer` | Cohort manifests and metadata | `PrivateESDataFetcherCohortManifestTest`, `PrivateESDataFetcherCohortMetadataTest` |
-| `cohortanalytics` | Cohort analytics | `PrivateESDataFetcherCohortChartsTest` |
+| `cohortanalyzer` | Cohort manifests, metadata, charts, and survival analytics | `PrivateESDataFetcherCohortManifestTest`, `PrivateESDataFetcherCohortMetadataTest`, `PrivateESDataFetcherCohortChartsTest`, `PrivateESDataFetcherSurvivalAnalyticsTest` |
 | `overviewtables` | Overview tables | Schema coverage currently resides in `graphqlschema`; behavioral tests not started |
 | `filelookup` | File lookup and export | Supporting coverage currently resides in `opensearchquery` and `opensearchresponse`; endpoint tests not started |
 | `opensearchquery` | Shared OpenSearch query engine | `InventoryESServiceBuildListQueryTest`, `InventoryESServiceAggregationBuildersTest`, `PrivateESDataFetcherHelpersTest`, `ValueUtilsTest` |
