@@ -173,7 +173,7 @@ class PrivateESDataFetcherSurvivalAnalyticsTest {
         Map<String, Object> result = invokeRiskTableData(Map.of(
                 "c1", List.of("participant-1", "participant-2"),
                 "c2", List.of("participant-3"),
-                "c3", "not-a-list"
+                "c3", List.of("participant-4")
         ));
 
         assertEquals(List.of(
@@ -198,24 +198,68 @@ class PrivateESDataFetcherSurvivalAnalyticsTest {
         ArgumentCaptor<Map<String, Object>> countQueryCaptor = ArgumentCaptor.forClass(Map.class);
         verify(inventoryESService, times(3)).getCount(
                 countQueryCaptor.capture(), eq("km_plot_data"));
-        String firstCountQuery = new com.google.gson.Gson()
-                .toJson(countQueryCaptor.getAllValues().get(0));
-        assertTrue(firstCountQuery.contains("\"is_valid\":true"));
-        assertTrue(firstCountQuery.contains("participant-1"));
-        assertTrue(firstCountQuery.contains("participant-2"));
+        List<List<String>> expectedCohortIds = List.of(
+                List.of("participant-1", "participant-2"),
+                List.of("participant-3"),
+                List.of("participant-4"));
+        for (int index = 0; index < expectedCohortIds.size(); index++) {
+            JsonObject countQuery = JsonParser.parseString(new com.google.gson.Gson()
+                            .toJson(countQueryCaptor.getAllValues().get(index)))
+                    .getAsJsonObject();
+            assertEquals(expectedCohortIds.get(index), participantIds(countQuery));
+            assertTrue(countQuery.toString().contains("\"is_valid\":true"));
+        }
 
         ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
         verify(inventoryESService, times(3)).send(requestCaptor.capture());
-        for (Request request : requestCaptor.getAllValues()) {
+        for (int index = 0; index < requestCaptor.getAllValues().size(); index++) {
+            Request request = requestCaptor.getAllValues().get(index);
             assertEquals(KM_PLOT_ENDPOINT, request.getEndpoint());
             JsonObject requestBody = JsonParser.parseString(EntityUtils.toString(request.getEntity()))
                     .getAsJsonObject();
+            assertEquals(expectedCohortIds.get(index), participantIds(requestBody));
+            assertEquals(expectedCutoffRanges(), requestBody.getAsJsonObject("aggs")
+                    .getAsJsonObject("cutoff_times")
+                    .getAsJsonObject("range")
+                    .getAsJsonArray("ranges"));
             String body = requestBody.toString();
             assertTrue(body.contains("\"event\":1"));
             assertTrue(body.contains("\"is_valid\":true"));
             assertTrue(body.contains("\"field\":\"time\""));
             assertTrue(body.contains("\"field\":\"id\""));
         }
+    }
+
+    private static List<String> participantIds(JsonObject query) {
+        JsonArray filters = query.getAsJsonObject("query")
+                .getAsJsonObject("bool").getAsJsonArray("filter");
+        for (var filter : filters) {
+            JsonObject filterObject = filter.getAsJsonObject();
+            if (!filterObject.has("terms")) {
+                continue;
+            }
+            JsonObject terms = filterObject.getAsJsonObject("terms");
+            if (!terms.has("id")) {
+                continue;
+            }
+            List<String> ids = new ArrayList<>();
+            terms.getAsJsonArray("id").forEach(id -> ids.add(id.getAsString()));
+            return ids;
+        }
+        throw new AssertionError("Expected participant ID terms filter");
+    }
+
+    private static JsonArray expectedCutoffRanges() {
+        return JsonParser.parseString("""
+                [
+                  {"key":"6 Months","from":0,"to":183},
+                  {"key":"12 Months","from":183,"to":365},
+                  {"key":"18 Months","from":365,"to":548},
+                  {"key":"24 Months","from":548,"to":730},
+                  {"key":"30 Months","from":730,"to":913},
+                  {"key":"36 Months","from":913,"to":1095}
+                ]
+                """).getAsJsonArray();
     }
 
     private static JsonArray rangeCounts(int... counts) {
