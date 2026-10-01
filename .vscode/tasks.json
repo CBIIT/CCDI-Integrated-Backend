@@ -93,7 +93,7 @@
         "studies",
         "cohortanalyzer",
         "overviewtables",
-        "filelookup",
+        "files",
         "opensearchquery",
         "opensearchresponse"
       ]
