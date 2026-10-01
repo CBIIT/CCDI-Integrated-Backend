@@ -1,5 +1,6 @@
 package gov.nih.nci.backendapi.files;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import gov.nih.nci.bento.service.ESService;
@@ -43,6 +44,13 @@ class PrivateESDataFetcherFileLookupTest {
     private static final String FILES_ENDPOINT = "/files_table/_search";
     private static final Set<String> FILENAME_EXCLUDED_ARGUMENTS = Set.of(
             "first", "offset", "order_by", "sort_direction", "filename");
+    private static final Set<String> FILENAME_SEARCH_FIELDS = Set.of(
+            "file_name", "data_category", "file_description", "file_type", "file_access",
+            "study_id", "participant_id", "sample_id", "guid", "md5sum",
+            "library_selection", "library_source_material", "library_strategy",
+            "library_source_molecule", "file_mapping_level", "anatomic_site",
+            "sample_tumor_status", "tumor_spatial_extent", "sample_description",
+            "consent_codes", "fixation_embedding_method", "staining_method");
     private static final List<List<String>> FILENAME_PROPERTIES = pairs(
             "id", "id",
             "file_id", "file_id",
@@ -142,12 +150,12 @@ class PrivateESDataFetcherFileLookupTest {
 
         Map<String, Object> query = queryCaptor.getValue();
         assertEquals(Map.of("file_id", "asc"), query.get("sort"));
-        String queryJson = new com.google.gson.Gson().toJson(query);
-        assertTrue(queryJson.contains("\"value\":\"*rna*\""));
-        assertTrue(queryJson.contains("\"case_insensitive\":true"));
-        assertTrue(queryJson.contains("\"file_name\""));
-        assertTrue(queryJson.contains("\"md5sum\""));
-        assertTrue(queryJson.contains("\"staining_method\""));
+        JsonObject queryJson = JsonParser.parseString(
+                new com.google.gson.Gson().toJson(query)).getAsJsonObject();
+        JsonArray wildcardClauses = queryJson.getAsJsonObject("query")
+                .getAsJsonObject("bool").getAsJsonArray("must").get(1).getAsJsonObject()
+                .getAsJsonObject("bool").getAsJsonArray("should");
+        assertWildcardSearch(wildcardClauses, "rna");
 
         ArgumentCaptor<Request> countRequestCaptor = ArgumentCaptor.forClass(Request.class);
         verify(inventoryESService).send(countRequestCaptor.capture());
@@ -299,13 +307,20 @@ class PrivateESDataFetcherFileLookupTest {
     @Test
     void fallsBackToFilesTableForDiagnosisFileIds() throws Exception {
         List<String> diagnosisIds = List.of("DIAGNOSIS-GUID-1");
+        List<String> participantPids = List.of("PARTICIPANT-GUID-9");
         Map<String, Object> embeddedQuery = Map.of("query", "diagnosis");
         Map<String, Object> filesQuery = Map.of("query", "files");
-        JsonObject response = new JsonObject();
+        JsonObject response = JsonParser.parseString("""
+                {"hits":{"hits":[{"_source":{
+                  "id":"DIAGNOSIS-GUID-1",
+                  "pid":"PARTICIPANT-GUID-9",
+                  "files":[]
+                }}]}}
+                """).getAsJsonObject();
         when(inventoryESService.buildGetFileIDsQuery(diagnosisIds)).thenReturn(embeddedQuery);
         when(inventoryESService.send(any(Request.class))).thenReturn(response);
         when(inventoryESService.collectFileIDs(response)).thenReturn(List.of());
-        when(inventoryESService.buildFilesTableIDsQuery("pid", diagnosisIds))
+        when(inventoryESService.buildFilesTableIDsQuery("pid", participantPids))
                 .thenReturn(filesQuery);
         when(inventoryESService.collectPage(
                 any(Request.class), eq(filesQuery), any(String[][].class),
@@ -316,6 +331,11 @@ class PrivateESDataFetcherFileLookupTest {
                 "fileIDsFromList", Map.of("diagnosis_ids", diagnosisIds));
 
         assertEquals(List.of("FILE-1"), result);
+        ArgumentCaptor<Request> diagnosisRequestCaptor = ArgumentCaptor.forClass(Request.class);
+        verify(inventoryESService).send(diagnosisRequestCaptor.capture());
+        assertEquals(Set.of("id", "files", "pid"),
+                new com.google.gson.Gson().fromJson(
+                        requestBody(diagnosisRequestCaptor.getValue()).get("_source"), Set.class));
     }
 
     /** Verifies study lookup uses embedded study files when they are available. */
@@ -437,6 +457,20 @@ class PrivateESDataFetcherFileLookupTest {
 
     private static JsonObject requestBody(Request request) throws IOException {
         return JsonParser.parseString(EntityUtils.toString(request.getEntity())).getAsJsonObject();
+    }
+
+    private static void assertWildcardSearch(JsonArray wildcardClauses, String term) {
+        Set<String> actualFields = new java.util.LinkedHashSet<>();
+        for (var clause : wildcardClauses) {
+            JsonObject wildcard = clause.getAsJsonObject().getAsJsonObject("wildcard");
+            assertEquals(1, wildcard.size());
+            var fieldEntry = wildcard.entrySet().iterator().next();
+            actualFields.add(fieldEntry.getKey());
+            JsonObject options = fieldEntry.getValue().getAsJsonObject();
+            assertEquals("*" + term + "*", options.get("value").getAsString());
+            assertTrue(options.get("case_insensitive").getAsBoolean());
+        }
+        assertEquals(FILENAME_SEARCH_FIELDS, actualFields);
     }
 
     private static List<List<String>> pairs(String... values) {
