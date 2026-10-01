@@ -26,6 +26,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -475,11 +476,12 @@ class PrivateESDataFetcherOverviewTablesTest {
                 eq("nested_filters"), any(String.class)))
                 .thenAnswer(invocation -> "participants_table".equals(invocation.getArgument(5))
                         ? participantQuery : studyQuery);
-        when(inventoryESService.addAggregations(eq(participantQuery), any(String[].class)))
+        when(inventoryESService.addAggregations(
+                eq(participantQuery), aryEq(new String[] {"study_id"})))
                 .thenReturn(aggregationQuery);
         when(inventoryESService.send(any(Request.class))).thenReturn(aggregationResponse);
         when(inventoryESService.collectTermAggs(
-                eq(aggregationResponse), any(String[].class)))
+                eq(aggregationResponse), aryEq(new String[] {"study_id"})))
                 .thenReturn(Map.of("study_id", buckets));
         List<Map<String, Object>> expected = new ArrayList<>(List.of(
                 new HashMap<>(Map.of("study_id", "STUDY-1"))));
