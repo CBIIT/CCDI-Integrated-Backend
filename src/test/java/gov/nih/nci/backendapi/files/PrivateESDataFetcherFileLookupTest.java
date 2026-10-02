@@ -312,14 +312,12 @@ class PrivateESDataFetcherFileLookupTest {
         Map<String, Object> filesQuery = Map.of("query", "files");
         JsonObject response = JsonParser.parseString("""
                 {"hits":{"hits":[{"_source":{
-                  "id":"DIAGNOSIS-GUID-1",
-                  "pid":"PARTICIPANT-GUID-9",
-                  "files":[]
+                  "pid":"PARTICIPANT-GUID-9"
                 }}]}}
                 """).getAsJsonObject();
         when(inventoryESService.buildGetFileIDsQuery(diagnosisIds)).thenReturn(embeddedQuery);
         when(inventoryESService.send(any(Request.class))).thenReturn(response);
-        when(inventoryESService.collectFileIDs(response)).thenReturn(List.of());
+        when(inventoryESService.collectFileIDs(response)).thenCallRealMethod();
         when(inventoryESService.buildFilesTableIDsQuery("pid", participantPids))
                 .thenReturn(filesQuery);
         when(inventoryESService.collectPage(
@@ -333,7 +331,7 @@ class PrivateESDataFetcherFileLookupTest {
         assertEquals(List.of("FILE-1"), result);
         ArgumentCaptor<Request> diagnosisRequestCaptor = ArgumentCaptor.forClass(Request.class);
         verify(inventoryESService).send(diagnosisRequestCaptor.capture());
-        assertEquals(Set.of("id", "files", "pid"),
+        assertEquals(Set.of("files", "pid"),
                 new com.google.gson.Gson().fromJson(
                         requestBody(diagnosisRequestCaptor.getValue()).get("_source"), Set.class));
     }

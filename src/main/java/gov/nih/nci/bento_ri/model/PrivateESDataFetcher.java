@@ -3744,7 +3744,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         if (hasUsableIds(diagnosisIDsSet)) {
             Map<String, Object> query = new HashMap<>(
                     inventoryESService.buildGetFileIDsQuery(diagnosisIDsSet));
-            query.put("_source", Set.of("id", "files", "pid"));
+            query.put("_source", Set.of("files", "pid"));
             Request request = new Request("GET", DIAGNOSIS_END_POINT);
             request.setJsonEntity(gson.toJson(query));
             JsonObject jsonObject = inventoryESService.send(request);
