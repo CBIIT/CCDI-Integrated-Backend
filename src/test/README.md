@@ -19,7 +19,7 @@ Shared test doubles and fixture loaders live in
 | `cohortanalyzer` | Cohort manifests, metadata, charts, and survival analytics | `PrivateESDataFetcherCohortManifestTest`, `PrivateESDataFetcherCohortMetadataTest`, `PrivateESDataFetcherCohortChartsTest`, `PrivateESDataFetcherSurvivalAnalyticsTest` |
 | `overviewtables` | Overview tables | `PrivateESDataFetcherOverviewTablesTest` |
 | `files` | File lookup, cart, and export operations | `PrivateESDataFetcherFileLookupTest`, `InventoryESServiceFileQueryTest` |
-| `opensearchquery` | Shared OpenSearch query engine | `InventoryESServiceBuildListQueryTest`, `InventoryESServiceAggregationBuildersTest`, `PrivateESDataFetcherHelpersTest`, `ValueUtilsTest` |
+| `opensearchquery` | Shared OpenSearch query engine | `InventoryESServiceBuildListQueryTest`, `InventoryESServiceFacetFilterQueryTest`, `InventoryESServiceAggregationBuildersTest`, `PrivateESDataFetcherHelpersTest`, `ValueUtilsTest` |
 | `opensearchresponse` | Shared OpenSearch response handling | `InventoryESServiceHttpMethodsTest`, `InventoryESServiceResponseCollectorsTest` |
 
 Tests under these packages must mock OpenSearch and external services. Tests
