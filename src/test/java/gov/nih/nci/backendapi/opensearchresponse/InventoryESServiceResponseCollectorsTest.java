@@ -21,12 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Phase 3: unit tests for {@link InventoryESService} OpenSearch response parsing (no live cluster).
+ * Unit tests for {@link InventoryESService} OpenSearch response parsing (no live cluster).
  */
 class InventoryESServiceResponseCollectorsTest {
 
@@ -42,8 +43,9 @@ class InventoryESServiceResponseCollectorsTest {
         InventoryESServiceTestSupport.closeClient(service);
     }
 
+    /** Verifies that flat term aggregations use each bucket's document count. */
     @Test
-    void collectCustomTerms_flatBuckets_usesDocCount() {
+    void usesDocumentCountsForFlatCustomTerms() {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("custom_terms_flat.json");
 
         Map<String, Integer> terms = service.collectCustomTerms(response, "facetAgg");
@@ -53,8 +55,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertEquals(19703, terms.get("Completed"));
     }
 
+    /** Verifies that nested term aggregations use the reverse-nested participant count. */
     @Test
-    void collectCustomTerms_nestedBuckets_usesReverseNestedDocCount() {
+    void usesReverseNestedCountsForNestedCustomTerms() {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("custom_terms_nested.json");
 
         Map<String, Integer> terms = service.collectCustomTerms(response, "facetAgg");
@@ -64,8 +67,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertEquals(4100, terms.get("White"));
     }
 
+    /** Verifies that embedded file arrays from every hit are flattened into one ID list. */
     @Test
-    void collectFileIDs_flattensFilesFromAllHits() {
+    void flattensEmbeddedFileIdsFromAllHits() {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("file_ids_hits.json");
 
         List<String> fileIds = service.collectFileIDs(response);
@@ -73,8 +77,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertEquals(List.of("ccdi-int-f001", "ccdi-int-f002", "ccdi-int-f003"), fileIds);
     }
 
+    /** Verifies that the simple term collector extracts every bucket key. */
     @Test
-    void collectTerms_extractsBucketKeys() {
+    void extractsTermBucketKeys() {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("terms_aggs.json");
 
         List<String> keys = service.collectTerms(response, "study_status");
@@ -82,8 +87,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertEquals(List.of("active", "completed"), keys);
     }
 
+    /** Verifies that node-count aggregation buckets are returned under the requested node name. */
     @Test
-    void collectNodeCountAggs_returnsBucketsArray() {
+    void returnsNodeCountBuckets() {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("node_count_aggs.json");
 
         Map<String, JsonArray> aggs = service.collectNodeCountAggs(response, "race");
@@ -92,8 +98,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertEquals("Asian", aggs.get("race").get(0).getAsJsonObject().get("key").getAsString());
     }
 
+    /** Verifies that range-count aggregation buckets are returned under the requested name. */
     @Test
-    void collectRangCountAggs_returnsRangeBuckets() {
+    void returnsRangeCountBuckets() {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("range_count_aggs.json");
 
         Map<String, JsonArray> aggs = service.collectRangCountAggs(response, "age_at_diagnosis");
@@ -102,8 +109,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertEquals("0 - 4", aggs.get("age_at_diagnosis").get(0).getAsJsonObject().get("key").getAsString());
     }
 
+    /** Verifies that nested range statistics are collected from the inner aggregation. */
     @Test
-    void collectRangAggs_returnsInnerRangeStats() {
+    void returnsInnerRangeStatistics() {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("range_stats_aggs.json");
 
         Map<String, JsonObject> aggs = service.collectRangAggs(response, "age_at_diagnosis");
@@ -114,8 +122,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertEquals(65.0, stats.get("max").getAsDouble());
     }
 
+    /** Verifies that multiple named term aggregation buckets can be collected. */
     @Test
-    void collectTermAggs_returnsNamedBucketArrays() {
+    void returnsNamedTermBucketArrays() {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("node_count_aggs.json");
 
         Map<String, JsonArray> aggs = service.collectTermAggs(response, new String[] {"race"});
@@ -123,8 +132,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertEquals(2, aggs.get("race").size());
     }
 
+    /** Verifies that named range aggregation objects are preserved in the result map. */
     @Test
-    void collectRangeAggs_returnsAggregationObjects() {
+    void returnsNamedRangeAggregationObjects() {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("range_count_aggs.json");
 
         Map<String, JsonObject> aggs = service.collectRangeAggs(response, new String[] {"age_at_diagnosis"});
@@ -132,8 +142,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertTrue(aggs.get("age_at_diagnosis").has("buckets"));
     }
 
+    /** Verifies that page collection recursively maps scalar and object source values. */
     @Test
-    void collectPage_mapsScalarsAndNestedObjects() throws IOException {
+    void mapsPageScalarsAndNestedObjects() throws IOException {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("search_hits_page.json");
         String[][] properties = {
             {"participant_id", "participant_id"},
@@ -154,8 +165,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertEquals("CCDI Integration Fixture Study", studyMap.get("study_name"));
     }
 
+    /** Verifies that page collection skips the offset and stops at the requested page size. */
     @Test
-    void collectPage_respectsPageSizeAndOffset() throws IOException {
+    void respectsPageSizeAndOffset() throws IOException {
         JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("search_hits_page.json");
         String[][] properties = {{"participant_id", "participant_id"}};
 
@@ -231,8 +243,9 @@ class InventoryESServiceResponseCollectorsTest {
         assertFalse(page.get(2).containsKey("highlight"));
     }
 
+    /** Verifies that getJSonFromResponse reads and parses a normal response entity. */
     @Test
-    void getJSonFromResponse_parsesEntityBody() throws IOException {
+    void parsesResponseEntityBody() throws IOException {
         String body = "{\"count\":42}";
         Response response = mock(Response.class);
         when(response.getEntity()).thenReturn(new StringEntity(body, ContentType.APPLICATION_JSON));
@@ -241,5 +254,43 @@ class InventoryESServiceResponseCollectorsTest {
 
         assertNotNull(parsed);
         assertEquals(42, parsed.get("count").getAsInt());
+    }
+
+    /** Verifies that malformed aggregation envelopes fail instead of yielding misleading data. */
+    @Test
+    void rejectsMissingAggregationEnvelope() {
+        JsonObject malformed = JsonParser.parseString("{}").getAsJsonObject();
+
+        assertThrows(
+                NullPointerException.class,
+                () -> service.collectNodeCountAggs(malformed, "race"));
+        assertThrows(
+                NullPointerException.class,
+                () -> service.collectRangCountAggs(malformed, "age_at_diagnosis"));
+        assertThrows(
+                NullPointerException.class,
+                () -> service.collectRangAggs(malformed, "age_at_diagnosis"));
+        assertThrows(
+                NullPointerException.class,
+                () -> service.collectTerms(malformed, "study_status"));
+        assertThrows(
+                NullPointerException.class,
+                () -> service.collectCustomTerms(malformed, "facetAgg"));
+        assertThrows(
+                NullPointerException.class,
+                () -> service.collectTermAggs(malformed, new String[] {"race"}));
+        assertThrows(
+                NullPointerException.class,
+                () -> service.collectRangeAggs(malformed, new String[] {"age_at_diagnosis"}));
+    }
+
+    /** Verifies that a malformed search response without a hits envelope is rejected. */
+    @Test
+    void rejectsPageWithoutHitsEnvelope() {
+        JsonObject malformed = JsonParser.parseString("{}").getAsJsonObject();
+
+        assertThrows(
+                NullPointerException.class,
+                () -> service.collectPage(malformed, new String[][] {{"id", "id"}}, 10));
     }
 }
