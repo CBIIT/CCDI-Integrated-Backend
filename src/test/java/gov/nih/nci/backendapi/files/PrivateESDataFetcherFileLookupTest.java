@@ -307,18 +307,13 @@ class PrivateESDataFetcherFileLookupTest {
     @Test
     void fallsBackToFilesTableForDiagnosisFileIds() throws Exception {
         List<String> diagnosisIds = List.of("DIAGNOSIS-GUID-1");
-        List<String> participantPids = List.of("PARTICIPANT-GUID-9");
         Map<String, Object> embeddedQuery = Map.of("query", "diagnosis");
         Map<String, Object> filesQuery = Map.of("query", "files");
-        JsonObject response = JsonParser.parseString("""
-                {"hits":{"hits":[{"_source":{
-                  "pid":"PARTICIPANT-GUID-9"
-                }}]}}
-                """).getAsJsonObject();
+        JsonObject response = new JsonObject();
         when(inventoryESService.buildGetFileIDsQuery(diagnosisIds)).thenReturn(embeddedQuery);
         when(inventoryESService.send(any(Request.class))).thenReturn(response);
-        when(inventoryESService.collectFileIDs(response)).thenCallRealMethod();
-        when(inventoryESService.buildFilesTableIDsQuery("pid", participantPids))
+        when(inventoryESService.collectFileIDs(response)).thenReturn(List.of());
+        when(inventoryESService.buildFilesTableIDsQuery("pid", diagnosisIds))
                 .thenReturn(filesQuery);
         when(inventoryESService.collectPage(
                 any(Request.class), eq(filesQuery), any(String[][].class),
@@ -329,11 +324,6 @@ class PrivateESDataFetcherFileLookupTest {
                 "fileIDsFromList", Map.of("diagnosis_ids", diagnosisIds));
 
         assertEquals(List.of("FILE-1"), result);
-        ArgumentCaptor<Request> diagnosisRequestCaptor = ArgumentCaptor.forClass(Request.class);
-        verify(inventoryESService).send(diagnosisRequestCaptor.capture());
-        assertEquals(Set.of("files", "pid"),
-                new com.google.gson.Gson().fromJson(
-                        requestBody(diagnosisRequestCaptor.getValue()).get("_source"), Set.class));
     }
 
     /** Verifies study lookup uses embedded study files when they are available. */

@@ -3742,9 +3742,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         }
 
         if (hasUsableIds(diagnosisIDsSet)) {
-            Map<String, Object> query = new HashMap<>(
-                    inventoryESService.buildGetFileIDsQuery(diagnosisIDsSet));
-            query.put("_source", Set.of("files", "pid"));
+            Map<String, Object> query = inventoryESService.buildGetFileIDsQuery(diagnosisIDsSet);
             Request request = new Request("GET", DIAGNOSIS_END_POINT);
             request.setJsonEntity(gson.toJson(query));
             JsonObject jsonObject = inventoryESService.send(request);
@@ -3753,11 +3751,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 return embedded;
             }
             // diagnoses_table may not embed files; fall back to participant linkage via pid.
-            List<String> diagnosisParticipantPids = collectSourceValues(jsonObject, "pid");
-            if (diagnosisParticipantPids.isEmpty()) {
-                return new ArrayList<>();
-            }
-            return fileIDsFromFilesTableField("pid", diagnosisParticipantPids);
+            return fileIDsFromFilesTableField("pid", diagnosisIDsSet);
         }
 
         if (hasUsableIds(studyIDsSet)) {
@@ -3817,22 +3811,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private boolean hasUsableIds(List<String> ids) {
         return ids != null && !ids.isEmpty() && !(ids.size() == 1 && "".equals(ids.get(0)));
-    }
-
-    private List<String> collectSourceValues(JsonObject response, String fieldName) {
-        LinkedHashSet<String> values = new LinkedHashSet<>();
-        if (response == null || !response.has("hits") || response.get("hits").isJsonNull()) {
-            return new ArrayList<>();
-        }
-        JsonObject hitsObject = response.getAsJsonObject("hits");
-        if (!hitsObject.has("hits") || hitsObject.get("hits").isJsonNull()) {
-            return new ArrayList<>();
-        }
-        for (JsonElement hit : hitsObject.getAsJsonArray("hits")) {
-            JsonObject source = hit.getAsJsonObject().getAsJsonObject("_source");
-            collectJsonValuesAtPath(source, new String[] {fieldName}, 0, values);
-        }
-        return new ArrayList<>(values);
     }
 
     @SuppressWarnings("unchecked")
