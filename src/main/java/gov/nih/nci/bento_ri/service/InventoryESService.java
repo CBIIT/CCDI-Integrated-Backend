@@ -464,7 +464,7 @@ public class InventoryESService extends ESService {
                                                     List.of(Map.of("term",
                                                             Map.of("combined_filters.treatment_response_filters." + key,
                                                                     -999))))));
-                                } else {
+                                } else if (key.equals("age_at_last_known_survival_status")) {
                                     combined_survival_filters.add(Map.of(
                                             "bool", Map.of(
                                                     "must",
@@ -498,7 +498,7 @@ public class InventoryESService extends ESService {
                                     combined_treatment_response_filters.add(Map.of(
                                             "terms", Map.of("combined_filters.treatment_response_filters." + key,
                                                     List.of(-999))));
-                                } else {
+                                } else if (key.equals("age_at_last_known_survival_status")) {
                                     combined_survival_filters.add(Map.of(
                                             "terms",
                                             Map.of("combined_filters.survival_filters." + key, List.of(-999))));
@@ -1081,7 +1081,7 @@ public class InventoryESService extends ESService {
                         } else if (GENETIC_ANALYSIS_PARAMS.contains(key) && indexType.equals("samples_table")) {
                             genetic_analysis_filters.add(Map.of(
                                     "terms", Map.of("genetic_analysis_filters." + key, valueSet)));
-                        } else if (FILE_PARAMS.contains(key)) {
+                        } else if (FILE_PARAMS.contains(key) && indexType.equals("samples_table")) {
                             file_filters.add(Map.of(
                                     "terms", Map.of("file_filters." + key, valueSet)));
                         } else {
