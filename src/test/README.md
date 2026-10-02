@@ -18,7 +18,7 @@ Shared test doubles and fixture loaders live in
 | `studies` | Study details and listings | `PrivateESDataFetcherStudyOperationsTest` |
 | `cohortanalyzer` | Cohort manifests, metadata, charts, and survival analytics | `PrivateESDataFetcherCohortManifestTest`, `PrivateESDataFetcherCohortMetadataTest`, `PrivateESDataFetcherCohortChartsTest`, `PrivateESDataFetcherSurvivalAnalyticsTest` |
 | `overviewtables` | Overview tables | `PrivateESDataFetcherOverviewTablesTest` |
-| `filelookup` | File lookup and export | Supporting coverage currently resides in `opensearchquery` and `opensearchresponse`; endpoint tests not started |
+| `files` | File lookup, cart, and export operations | `PrivateESDataFetcherFileLookupTest`, `InventoryESServiceFileQueryTest` |
 | `opensearchquery` | Shared OpenSearch query engine | `InventoryESServiceBuildListQueryTest`, `InventoryESServiceAggregationBuildersTest`, `PrivateESDataFetcherHelpersTest`, `ValueUtilsTest` |
 | `opensearchresponse` | Shared OpenSearch response handling | `InventoryESServiceHttpMethodsTest`, `InventoryESServiceResponseCollectorsTest` |
 
