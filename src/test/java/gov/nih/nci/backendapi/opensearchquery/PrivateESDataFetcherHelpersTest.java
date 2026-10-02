@@ -44,6 +44,9 @@ class PrivateESDataFetcherHelpersTest {
         assertEquals(List.of(), invoke(
                 "paginate", new Class<?>[] {List.class, int.class, int.class},
                 List.of("a"), 10, 1));
+        assertEquals(List.of("a"), invoke(
+                "paginate", new Class<?>[] {List.class, int.class, int.class},
+                List.of("a", "b", "c"), 1, 0));
     }
 
     @Test
@@ -76,6 +79,25 @@ class PrivateESDataFetcherHelpersTest {
                 "mapSortOrderWithMetadata",
                 new Class<?>[] {String.class, String.class, String.class, Map.class},
                 "diagnosis", "desc", "participant_id", null));
+        assertEquals(Map.of("participant_id", "asc"), invoke(
+                "mapSortOrderWithMetadata",
+                new Class<?>[] {String.class, String.class, String.class, Map.class},
+                "unknown", "desc", "participant_id", mapping));
+        assertEquals(Map.of("nested_filters.diagnosis",
+                Map.of("nested_path", "nested_filters", "order", "asc")), invoke(
+                "mapSortOrderWithMetadata",
+                new Class<?>[] {String.class, String.class, String.class, Map.class},
+                "diagnosis", "asc", "participant_id", mapping));
+        assertEquals(Map.of("nested_filters.diagnosis",
+                Map.of("nested_path", "nested_filters", "order", "asc")), invoke(
+                "mapSortOrderWithMetadata",
+                new Class<?>[] {String.class, String.class, String.class, Map.class},
+                "diagnosis", null, "participant_id", mapping));
+        assertEquals(Map.of("nested_filters.diagnosis",
+                Map.of("nested_path", "nested_filters", "order", "asc")), invoke(
+                "mapSortOrderWithMetadata",
+                new Class<?>[] {String.class, String.class, String.class, Map.class},
+                "diagnosis", "sideways", "participant_id", mapping));
     }
 
     @Test

@@ -213,6 +213,103 @@ class InventoryESServiceAggregationBuildersTest {
         InventoryESServiceTestSupport.assertJsonRoundTrip(query);
     }
 
+    /** Verifies custom terms aggregations restrict buckets to the requested values. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void addCustomAggregations_withIncludesRestrictsTerms() {
+        Map<String, Object> query = service.addCustomAggregations(
+                new HashMap<>(BASE_QUERY),
+                "facetAgg",
+                "diagnosis",
+                "diagnosis_filters",
+                List.of("Neuroblastoma", "Osteosarcoma"));
+
+        Map<String, Object> facetAgg = (Map<String, Object>)
+                ((Map<String, Object>) query.get("aggs")).get("facetAgg");
+        Map<String, Object> buckets = (Map<String, Object>)
+                ((Map<String, Object>) facetAgg.get("aggs")).get("agg_buckets");
+        Map<String, Object> terms = (Map<String, Object>) buckets.get("terms");
+        assertEquals(List.of("Neuroblastoma", "Osteosarcoma"), terms.get("include"));
+    }
+
+    /** Verifies null optional arguments select root aggregation behavior without includes. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void addCustomAggregations_nullOptionsBuildRootTerms() {
+        Map<String, Object> query = service.addCustomAggregations(
+                new HashMap<>(BASE_QUERY), "facetAgg", "study_id", null, null);
+
+        Map<String, Object> facetAgg = (Map<String, Object>)
+                ((Map<String, Object>) query.get("aggs")).get("facetAgg");
+        Map<String, Object> terms = (Map<String, Object>) facetAgg.get("terms");
+        assertEquals("study_id", terms.get("field"));
+        assertEquals(false, terms.containsKey("include"));
+    }
+
+    /** Verifies root custom ranges use the complete age-band contract. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void addCustomRangeAggregations_buildsRootAgeBands() {
+        Map<String, Object> query = service.addCustomRangeAggregations(
+                new HashMap<>(BASE_QUERY), "facetAgg", "age_at_diagnosis", "");
+
+        assertEquals(0, query.get("size"));
+        Map<String, Object> facetAgg = (Map<String, Object>)
+                ((Map<String, Object>) query.get("aggs")).get("facetAgg");
+        Map<String, Object> range = (Map<String, Object>) facetAgg.get("range");
+        assertEquals("age_at_diagnosis", range.get("field"));
+        List<Map<String, Object>> ranges = (List<Map<String, Object>>) range.get("ranges");
+        assertEquals(List.of(
+                Map.of("key", "0 - 4", "from", 0, "to", 5 * 365),
+                Map.of("key", "5 - 9", "from", 5 * 365, "to", 10 * 365),
+                Map.of("key", "10 - 14", "from", 10 * 365, "to", 15 * 365),
+                Map.of("key", "15 - 19", "from", 15 * 365, "to", 20 * 365),
+                Map.of("key", "20 - 29", "from", 20 * 365, "to", 30 * 365),
+                Map.of("key", "> 29", "from", 30 * 365)), ranges);
+        InventoryESServiceTestSupport.assertJsonRoundTrip(query);
+    }
+
+    /** Verifies nested custom ranges count matching parent documents through reverse_nested. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void addCustomRangeAggregations_buildsNestedReverseNestedCounts() {
+        String path = "sample_diagnosis_genetic_analysis_file_filters";
+        Map<String, Object> query = service.addCustomRangeAggregations(
+                new HashMap<>(BASE_QUERY), "facetAgg", "age_at_diagnosis", path);
+
+        Map<String, Object> facetAgg = (Map<String, Object>)
+                ((Map<String, Object>) query.get("aggs")).get("facetAgg");
+        assertEquals(Map.of("path", path), facetAgg.get("nested"));
+        Map<String, Object> buckets = (Map<String, Object>)
+                ((Map<String, Object>) facetAgg.get("aggs")).get("agg_buckets");
+        Map<String, Object> range = (Map<String, Object>) buckets.get("range");
+        assertEquals(path + ".age_at_diagnosis", range.get("field"));
+        assertEquals(Map.of("top_reverse_nested", Map.of("reverse_nested", Map.of())),
+                buckets.get("aggs"));
+        InventoryESServiceTestSupport.assertJsonRoundTrip(query);
+    }
+
+    /** Verifies a null nested path selects the root range aggregation. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void addCustomRangeAggregations_nullPathBuildsRootRange() {
+        Map<String, Object> query = service.addCustomRangeAggregations(
+                new HashMap<>(BASE_QUERY), "facetAgg", "age_at_diagnosis", null);
+
+        Map<String, Object> facetAgg = (Map<String, Object>)
+                ((Map<String, Object>) query.get("aggs")).get("facetAgg");
+        assertEquals("age_at_diagnosis", ((Map<String, Object>) facetAgg.get("range")).get("field"));
+    }
+
+    /** Verifies an empty ID request still uses OpenSearch's minimum page size of one. */
+    @Test
+    void buildGetFileIDsQuery_emptyInputUsesMinimumPageSize() throws IOException {
+        Map<String, Object> query = service.buildGetFileIDsQuery(List.of());
+
+        assertEquals(1, query.get("size"));
+        assertEquals(Map.of("terms", Map.of("id", List.of())), query.get("query"));
+    }
+
     @Test
     @SuppressWarnings("unchecked")
     void addCardinalityHelper_matchesProductionShape() {
