@@ -20,7 +20,7 @@ Shared test doubles and fixture loaders live in
 | `overviewtables` | Overview tables | `PrivateESDataFetcherOverviewTablesTest` |
 | `files` | File lookup, cart, and export operations | `PrivateESDataFetcherFileLookupTest`, `InventoryESServiceFileQueryTest` |
 | `opensearchquery` | Shared OpenSearch query engine | `InventoryESServiceBuildListQueryTest`, `InventoryESServiceFacetFilterQueryTest`, `InventoryESServiceAggregationBuildersTest`, `PrivateESDataFetcherHelpersTest`, `ValueUtilsTest` |
-| `opensearchresponse` | Shared OpenSearch response handling | `InventoryESServiceHttpMethodsTest`, `InventoryESServiceResponseCollectorsTest` |
+| `opensearchresponse` | Shared OpenSearch response handling | `InventoryESServiceHttpMethodsTest`, `InventoryESServiceResponseCollectorsTest`, `InventoryESServiceFileIdCollectorTest` |
 
 Tests under these packages must mock OpenSearch and external services. Tests
 requiring a live service must use the `*IntegrationTest` or `*IT` naming
