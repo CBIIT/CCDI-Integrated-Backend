@@ -32,11 +32,18 @@ public final class InventoryESServiceTestSupport {
     }
 
     public static InventoryESService newService() throws Exception {
+        return newService("localhost", 9200, "http");
+    }
+
+    /**
+     * Creates an InventoryESService whose real client connects to the supplied OpenSearch endpoint.
+     */
+    public static InventoryESService newService(String host, int port, String scheme) throws Exception {
         ConfigurationDAO config = Mockito.mock(ConfigurationDAO.class);
         Mockito.when(config.isEsSignRequests()).thenReturn(false);
-        Mockito.when(config.getEsHost()).thenReturn("localhost");
-        Mockito.when(config.getEsPort()).thenReturn(9200);
-        Mockito.when(config.getEsScheme()).thenReturn("http");
+        Mockito.when(config.getEsHost()).thenReturn(host);
+        Mockito.when(config.getEsPort()).thenReturn(port);
+        Mockito.when(config.getEsScheme()).thenReturn(scheme);
 
         Constructor<InventoryESService> ctor =
                 InventoryESService.class.getDeclaredConstructor(ConfigurationDAO.class);
