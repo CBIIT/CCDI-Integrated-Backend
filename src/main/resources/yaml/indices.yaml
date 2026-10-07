@@ -70,6 +70,33 @@ indices:
         - family_relationships.relationship
         - family_relationships.family_id
         - family_relationships.guid
+        - genetic_analyses.genetic_analysis_id
+        - genetic_analyses.genomic_source_category
+        - genetic_analyses.reported_significance
+        - genetic_analyses.reported_significance_system
+        - genetic_analyses.test
+        - genetic_analyses.method
+        - genetic_analyses.result
+        - genetic_analyses.reference_genome
+        - genetic_analyses.chromosome
+        - genetic_analyses.cytoband
+        - genetic_analyses.gene_symbol
+        - genetic_analyses.transcript
+        - genetic_analyses.exon
+        - genetic_analyses.hgvs_coding
+        - genetic_analyses.hgvs_protein
+        - genetic_analyses.hgvs_genome
+        - genetic_analyses.alteration
+        - genetic_analyses.alteration_type
+        - genetic_analyses.alteration_effect
+        - genetic_analyses.iscn
+        - genetic_analyses.status
+        - genetic_analyses.fusion_partner_gene
+        - genetic_analyses.fusion_partner_transcript
+        - genetic_analyses.fusion_partner_exon
+        - genetic_analyses.translocation_partner_chromosome
+        - genetic_analyses.translocation_partner_cytoband
+        - genetic_analyses.guid
         - laboratory_tests.laboratory_test_id
         - laboratory_tests.laboratory_test_method
         - laboratory_tests.laboratory_test_name
@@ -600,6 +627,10 @@ indices:
         - exposures.years_smoked
         - exposures.alcohol_days_per_week
         - exposures.alcohol_drinks_per_day
+        - genetic_analyses.age_at_genetic_analysis
+        - genetic_analyses.allelic_ratio
+        - genetic_analyses.vaf_numeric
+        - genetic_analyses.dna_index_numeric
         - laboratory_tests.age_at_laboratory_test
         - laboratory_tests.sensitivity
         - radiology_files.participant_age_at_imaging
@@ -803,6 +834,55 @@ indices:
             p,
             [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS family_relationships
           RETURN p.guid AS id, family_relationships
+        page_size: 5000
+      - name: "genetic_analyses"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (p)<-[:of_genetic_analysis]-(child:genetic_analysis)
+          WITH
+            p,
+            child AS item
+          WITH
+            p,
+            CASE WHEN item IS NULL THEN null ELSE {
+              genetic_analysis_id: item.genetic_analysis_id,
+              age_at_genetic_analysis: item.age_at_genetic_analysis,
+              genomic_source_category: item.genomic_source_category,
+              reported_significance: item.reported_significance,
+              reported_significance_system: item.reported_significance_system,
+              test: item.test,
+              method: item.method,
+              result: item.result,
+              reference_genome: item.reference_genome,
+              chromosome: item.chromosome,
+              cytoband: item.cytoband,
+              gene_symbol: item.gene_symbol,
+              transcript: item.transcript,
+              exon: item.exon,
+              hgvs_coding: item.hgvs_coding,
+              hgvs_protein: item.hgvs_protein,
+              hgvs_genome: item.hgvs_genome,
+              allelic_ratio: item.allelic_ratio,
+              vaf_numeric: item.vaf_numeric,
+              alteration: item.alteration,
+              alteration_type: item.alteration_type,
+              alteration_effect: item.alteration_effect,
+              dna_index_numeric: item.dna_index_numeric,
+              iscn: item.iscn,
+              status: item.status,
+              fusion_partner_gene: item.fusion_partner_gene,
+              fusion_partner_transcript: item.fusion_partner_transcript,
+              fusion_partner_exon: item.fusion_partner_exon,
+              translocation_partner_chromosome: item.translocation_partner_chromosome,
+              translocation_partner_cytoband: item.translocation_partner_cytoband,
+              guid: item.guid
+            } END AS projected_item
+          WITH
+            p,
+            [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS genetic_analyses
+          RETURN p.guid AS id, genetic_analyses
         page_size: 5000
       - name: "laboratory_tests"
         query: |
