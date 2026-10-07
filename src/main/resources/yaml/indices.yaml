@@ -392,6 +392,21 @@ indices:
         - samples.cell_lines.samples.laterality
         - samples.cell_lines.samples.guid
         - samples.cell_lines.samples.crdc_id
+        - samples.cell_lines.samples.cytogenomic_files.cytogenomic_file_id
+        - samples.cell_lines.samples.cytogenomic_files.file_name
+        - samples.cell_lines.samples.cytogenomic_files.data_category
+        - samples.cell_lines.samples.cytogenomic_files.file_type
+        - samples.cell_lines.samples.cytogenomic_files.file_description
+        - samples.cell_lines.samples.cytogenomic_files.md5sum
+        - samples.cell_lines.samples.cytogenomic_files.file_mapping_level
+        - samples.cell_lines.samples.cytogenomic_files.file_access
+        - samples.cell_lines.samples.cytogenomic_files.acl
+        - samples.cell_lines.samples.cytogenomic_files.authz
+        - samples.cell_lines.samples.cytogenomic_files.file_url
+        - samples.cell_lines.samples.cytogenomic_files.dcf_indexd_guid
+        - samples.cell_lines.samples.cytogenomic_files.cytogenomic_platform
+        - samples.cell_lines.samples.cytogenomic_files.guid
+        - samples.cell_lines.samples.cytogenomic_files.crdc_id
         - samples.cell_lines.samples.diagnoses.diagnosis_id
         - samples.cell_lines.samples.diagnoses.submitted_diagnosis
         - samples.cell_lines.samples.diagnoses.diagnosis
@@ -413,6 +428,22 @@ indices:
         - samples.cell_lines.samples.diagnoses.year_of_diagnosis
         - samples.cell_lines.samples.diagnoses.laterality
         - samples.cell_lines.samples.diagnoses.guid
+        - samples.cell_lines.samples.methylation_array_files.methylation_array_file_id
+        - samples.cell_lines.samples.methylation_array_files.file_name
+        - samples.cell_lines.samples.methylation_array_files.data_category
+        - samples.cell_lines.samples.methylation_array_files.file_type
+        - samples.cell_lines.samples.methylation_array_files.file_description
+        - samples.cell_lines.samples.methylation_array_files.md5sum
+        - samples.cell_lines.samples.methylation_array_files.file_mapping_level
+        - samples.cell_lines.samples.methylation_array_files.file_access
+        - samples.cell_lines.samples.methylation_array_files.acl
+        - samples.cell_lines.samples.methylation_array_files.authz
+        - samples.cell_lines.samples.methylation_array_files.file_url
+        - samples.cell_lines.samples.methylation_array_files.dcf_indexd_guid
+        - samples.cell_lines.samples.methylation_array_files.methylation_platform
+        - samples.cell_lines.samples.methylation_array_files.reporter_label
+        - samples.cell_lines.samples.methylation_array_files.guid
+        - samples.cell_lines.samples.methylation_array_files.crdc_id
         - samples.cell_lines.samples.sequencing_files.sequencing_file_id
         - samples.cell_lines.samples.sequencing_files.file_name
         - samples.cell_lines.samples.sequencing_files.data_category
@@ -609,6 +640,8 @@ indices:
         - samples.methylation_array_files.file_size
         - samples.pathology_files.file_size
         - samples.sequencing_files.file_size
+        - samples.cell_lines.samples.cytogenomic_files.file_size
+        - samples.cell_lines.samples.methylation_array_files.file_size
         - samples.cell_lines.samples.sequencing_files.file_size
         - samples.pdxes.samples.cytogenomic_files.file_size
         - samples.pdxes.samples.methylation_array_files.file_size
@@ -1448,6 +1481,30 @@ indices:
               CALL { // Collect samples related to each cell line and assemble their child data.
                 WITH cell_line
                 OPTIONAL MATCH (cell_line)<-[:of_sample]-(cell_line_sample:sample)
+                CALL { // Collect cytogenomic files directly related to each cell-line sample.
+                  WITH cell_line_sample
+                  OPTIONAL MATCH (cell_line_sample)<-[:of_cytogenomic_file]-(cell_line_sample_cytogenomic_file:cytogenomic_file)
+                  WITH cell_line_sample_cytogenomic_file AS item
+                  WITH CASE WHEN item IS NULL THEN null ELSE {
+                    cytogenomic_file_id: item.cytogenomic_file_id,
+                    file_name: item.file_name,
+                    data_category: item.data_category,
+                    file_type: item.file_type,
+                    file_description: item.file_description,
+                    file_size: item.file_size,
+                    md5sum: item.md5sum,
+                    file_mapping_level: item.file_mapping_level,
+                    file_access: item.file_access,
+                    acl: item.acl,
+                    authz: item.authz,
+                    file_url: item.file_url,
+                    dcf_indexd_guid: item.dcf_indexd_guid,
+                    cytogenomic_platform: item.cytogenomic_platform,
+                    guid: item.guid,
+                    crdc_id: item.crdc_id
+                  } END AS projected_item
+                  RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS cytogenomic_files
+                }
                 CALL { // Collect diagnoses directly related to each cell-line sample.
                   WITH cell_line_sample
                   OPTIONAL MATCH (cell_line_sample)<-[:of_diagnosis]-(cell_line_sample_diagnosis:diagnosis)
@@ -1477,6 +1534,31 @@ indices:
                     guid: item.guid
                   } END AS projected_item
                   RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS diagnoses
+                }
+                CALL { // Collect methylation array files directly related to each cell-line sample.
+                  WITH cell_line_sample
+                  OPTIONAL MATCH (cell_line_sample)<-[:of_methylation_array_file]-(cell_line_sample_methylation_array_file:methylation_array_file)
+                  WITH cell_line_sample_methylation_array_file AS item
+                  WITH CASE WHEN item IS NULL THEN null ELSE {
+                    methylation_array_file_id: item.methylation_array_file_id,
+                    file_name: item.file_name,
+                    data_category: item.data_category,
+                    file_type: item.file_type,
+                    file_description: item.file_description,
+                    file_size: item.file_size,
+                    md5sum: item.md5sum,
+                    file_mapping_level: item.file_mapping_level,
+                    file_access: item.file_access,
+                    acl: item.acl,
+                    authz: item.authz,
+                    file_url: item.file_url,
+                    dcf_indexd_guid: item.dcf_indexd_guid,
+                    methylation_platform: item.methylation_platform,
+                    reporter_label: item.reporter_label,
+                    guid: item.guid,
+                    crdc_id: item.crdc_id
+                  } END AS projected_item
+                  RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS methylation_array_files
                 }
                 CALL { // Collect sequencing files directly related to each cell-line sample.
                   WITH cell_line_sample
@@ -1537,10 +1619,12 @@ indices:
                   } END AS projected_item
                   RETURN [item IN collect(DISTINCT projected_item) WHERE item IS NOT NULL] AS sequencing_files
                 }
-                WITH cell_line_sample, diagnoses, sequencing_files
+                WITH cell_line_sample, cytogenomic_files, diagnoses, methylation_array_files, sequencing_files
                 RETURN [entry IN collect({
                   sample: cell_line_sample,
+                  cytogenomic_files: cytogenomic_files,
                   diagnoses: diagnoses,
+                  methylation_array_files: methylation_array_files,
                   sequencing_files: sequencing_files
                 }) WHERE entry.sample IS NOT NULL | {
                   sample_id: entry.sample.sample_id,
@@ -1554,7 +1638,9 @@ indices:
                   laterality: entry.sample.laterality,
                   guid: entry.sample.guid,
                   crdc_id: entry.sample.crdc_id,
+                  cytogenomic_files: entry.cytogenomic_files,
                   diagnoses: entry.diagnoses,
+                  methylation_array_files: entry.methylation_array_files,
                   sequencing_files: entry.sequencing_files
                 }] AS samples
               }
