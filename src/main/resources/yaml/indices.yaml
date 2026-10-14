@@ -3022,7 +3022,7 @@ indices:
               library_source_molecule: library_source_molecule,
               library_strategy: library_strategy
             }) AS sample_diagnosis_genetic_analysis_file_filters
-        page_size: 5000
+        page_size: 100
 
   # Data points for KM plot
   # Excludes survival records with bad age_at_last_known_survival_status
@@ -3765,7 +3765,7 @@ indices:
               library_source_molecule: library_source_molecule,
               library_strategy: library_strategy
             }) AS sample_diagnosis_genetic_analysis_file_filters
-        page_size: 1000
+        page_size: 100
       - name: "global_search_properties"
         query: |
           MATCH (p:participant)
