@@ -3765,7 +3765,7 @@ indices:
               library_source_molecule: library_source_molecule,
               library_strategy: library_strategy
             }) AS sample_diagnosis_genetic_analysis_file_filters
-        page_size: 100
+        page_size: 50
       - name: "global_search_properties"
         query: |
           MATCH (p:participant)
