@@ -3464,308 +3464,6 @@ indices:
             END AS treatment_response_filters
           RETURN id, treatment_response_filters
         page_size: 5000
-      - name: "sample_diagnosis_genetic_analysis_file_filters"
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-
-          // Direct participant samples: self-context
-          OPTIONAL MATCH (p)<--(s1:sample)
-          WITH
-            p,
-            collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
-
-          // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
-          OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
-          WHERE model:cell_line OR model:pdx
-
-          WITH
-            p,
-            [ctx IN (
-              direct_contexts
-              + collect(DISTINCT { sm: s1_model, source_sm: s1_model })
-              + collect(DISTINCT { sm: s2, source_sm: s2 })
-              + collect(DISTINCT { sm: s1_model, source_sm: s2 })
-              + collect(DISTINCT { sm: s2, source_sm: s1_model })
-            )
-            WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
-
-          WITH
-            p,
-            CASE
-              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: null }]
-              ELSE sample_contexts
-            END AS sample_contexts
-
-          // Study-level files
-          OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
-          OPTIONAL MATCH (st)<--(study_file)
-          WHERE study_file:clinical_measure_file
-            OR study_file:generic_file
-
-          WITH
-            p,
-            sample_contexts,
-            collect(DISTINCT study_file) AS study_files
-
-          OPTIONAL MATCH (p)<--(participant_file)
-          WHERE participant_file:clinical_measure_file
-            OR participant_file:generic_file
-            OR participant_file:radiology_file
-
-          WITH
-            p,
-            sample_contexts,
-            study_files,
-            collect(DISTINCT participant_file) AS participant_files
-
-          OPTIONAL MATCH (p)<--(participant_dg:diagnosis)
-
-          WITH
-            p,
-            sample_contexts,
-            study_files,
-            participant_files,
-            collect(DISTINCT participant_dg) AS participant_diagnoses
-
-          OPTIONAL MATCH (p)<--(participant_ga:genetic_analysis)
-
-          WITH
-            p,
-            sample_contexts,
-            study_files,
-            participant_files,
-            participant_diagnoses,
-            collect(DISTINCT participant_ga) AS participant_gas
-
-          UNWIND sample_contexts AS ctx
-
-          WITH
-            p,
-            ctx.sm AS sm,
-            ctx.source_sm AS source_sm,
-            study_files,
-            participant_files,
-            participant_diagnoses,
-            participant_gas
-
-          // Source sample-level files
-          OPTIONAL MATCH (source_sm)<--(sample_file)
-          WHERE sample_file:sequencing_file
-            OR sample_file:generic_file
-            OR sample_file:methylation_array_file
-            OR sample_file:pathology_file
-            OR sample_file:cytogenomic_file
-
-          WITH
-            p,
-            sm,
-            source_sm,
-            study_files,
-            participant_files,
-            participant_diagnoses,
-            participant_gas,
-            collect(DISTINCT sample_file) AS sample_files
-
-          // Source sample-level diagnosis
-          OPTIONAL MATCH (source_sm)<--(sample_dg:diagnosis)
-
-          WITH
-            p,
-            sm,
-            source_sm,
-            study_files,
-            participant_files,
-            participant_diagnoses,
-            participant_gas,
-            sample_files,
-            collect(DISTINCT sample_dg) AS sample_diagnoses
-
-          // Source sample-level genetic analysis
-          OPTIONAL MATCH (source_sm)<--(sample_ga:genetic_analysis)
-
-          WITH
-            p,
-            sm,
-            sample_files + participant_files + study_files AS files,
-            sample_diagnoses + participant_diagnoses AS diagnoses,
-            collect(DISTINCT sample_ga) + participant_gas AS gas
-
-          CALL {
-            WITH files
-
-            UNWIND CASE WHEN size(files) = 0 THEN [null] ELSE files END AS file
-
-            WITH DISTINCT
-              file.data_category AS data_category,
-              file.file_type AS file_type,
-              file.file_mapping_level AS file_mapping_level,
-              CASE
-                WHEN file IS NOT NULL AND file:sequencing_file
-                THEN file.library_selection
-                ELSE null
-              END AS library_selection,
-              CASE
-                WHEN file IS NOT NULL AND file:sequencing_file
-                THEN file.library_source_material
-                ELSE null
-              END AS library_source_material,
-              CASE
-                WHEN file IS NOT NULL AND file:sequencing_file
-                THEN file.library_source_molecule
-                ELSE null
-              END AS library_source_molecule,
-              CASE
-                WHEN file IS NOT NULL AND file:sequencing_file
-                THEN file.library_strategy
-                ELSE null
-              END AS library_strategy
-
-            RETURN collect([
-              data_category,
-              file_type,
-              file_mapping_level,
-              library_selection,
-              library_source_material,
-              library_source_molecule,
-              library_strategy
-            ]) AS file_filter_keys
-          }
-
-          CALL {
-            WITH diagnoses
-
-            UNWIND CASE WHEN size(diagnoses) = 0 THEN [null] ELSE diagnoses END AS dg
-
-            WITH DISTINCT
-              dg.age_at_diagnosis AS age_at_diagnosis,
-              dg.anatomic_site AS diagnosis_anatomic_site,
-              dg.disease_phase AS disease_phase,
-              dg.diagnosis_classification_system AS diagnosis_classification_system,
-              dg.diagnosis_category AS diagnosis_category,
-              dg.diagnosis_basis AS diagnosis_basis,
-              dg.diagnosis AS diagnosis
-
-            RETURN collect([
-              age_at_diagnosis,
-              diagnosis_anatomic_site,
-              disease_phase,
-              diagnosis_classification_system,
-              diagnosis_category,
-              diagnosis_basis,
-              diagnosis
-            ]) AS diagnosis_filter_keys
-          }
-
-          CALL {
-            WITH gas
-
-            UNWIND CASE WHEN size(gas) = 0 THEN [null] ELSE gas END AS ga
-
-            // Expand stringified gene lists ("[ABL1, BRD3, ...]") into individual gene symbols
-            // so nested filters/aggs bucket and match one gene at a time.
-            WITH ga,
-              CASE
-                WHEN ga IS NULL OR ga.gene_symbol IS NULL THEN [null]
-                WHEN ga.gene_symbol STARTS WITH '[' AND ga.gene_symbol ENDS WITH ']' THEN
-                  [x IN split(replace(substring(ga.gene_symbol, 1, size(ga.gene_symbol)-2), "'", ""), ",") |
-                    CASE WHEN trim(x) = '' THEN 'Not Reported' ELSE trim(x) END]
-                WHEN trim(toString(ga.gene_symbol)) = '' THEN ['Not Reported']
-                ELSE [trim(toString(ga.gene_symbol))]
-              END AS gene_symbol_arr
-            UNWIND gene_symbol_arr AS gene_symbol
-
-            WITH DISTINCT
-              ga.reported_significance AS reported_significance,
-              ga.reported_significance_system AS reported_significance_system,
-              gene_symbol,
-              ga.alteration AS alteration,
-              ga.fusion_partner_gene AS fusion_partner_gene,
-              ga.alteration_type AS alteration_type,
-              ga.status AS status
-
-            RETURN collect([
-              reported_significance,
-              reported_significance_system,
-              gene_symbol,
-              alteration,
-              fusion_partner_gene,
-              alteration_type,
-              status
-            ]) AS genetic_analysis_filter_keys
-          }
-
-          UNWIND file_filter_keys AS file_filter_key
-          UNWIND diagnosis_filter_keys AS diagnosis_filter_key
-          UNWIND genetic_analysis_filter_keys AS genetic_analysis_filter_key
-
-          WITH DISTINCT
-            p.guid AS id,
-
-            // Sample facets
-            sm.anatomic_site AS sample_anatomic_site,
-            sm.participant_age_at_collection AS participant_age_at_collection,
-            sm.sample_tumor_status AS sample_tumor_status,
-            sm.tumor_spatial_extent AS tumor_spatial_extent,
-
-            // Diagnosis facets
-            diagnosis_filter_key[0] AS age_at_diagnosis,
-            diagnosis_filter_key[1] AS diagnosis_anatomic_site,
-            diagnosis_filter_key[2] AS disease_phase,
-            diagnosis_filter_key[3] AS diagnosis_classification_system,
-            diagnosis_filter_key[4] AS diagnosis_category,
-            diagnosis_filter_key[5] AS diagnosis_basis,
-            diagnosis_filter_key[6] AS diagnosis,
-
-            // Genetic Analysis facets
-            genetic_analysis_filter_key[0] AS reported_significance,
-            genetic_analysis_filter_key[1] AS reported_significance_system,
-            genetic_analysis_filter_key[2] AS gene_symbol,
-            genetic_analysis_filter_key[3] AS alteration,
-            genetic_analysis_filter_key[4] AS fusion_partner_gene,
-            genetic_analysis_filter_key[5] AS alteration_type,
-            genetic_analysis_filter_key[6] AS status,
-
-            // File facets
-            file_filter_key[0] AS data_category,
-            file_filter_key[1] AS file_type,
-            file_filter_key[2] AS file_mapping_level,
-            file_filter_key[3] AS library_selection,
-            file_filter_key[4] AS library_source_material,
-            file_filter_key[5] AS library_source_molecule,
-            file_filter_key[6] AS library_strategy
-
-          RETURN
-            id,
-            collect({
-              sample_anatomic_site: sample_anatomic_site,
-              participant_age_at_collection: participant_age_at_collection,
-              sample_tumor_status: sample_tumor_status,
-              tumor_spatial_extent: tumor_spatial_extent,
-              age_at_diagnosis: age_at_diagnosis,
-              diagnosis_anatomic_site: diagnosis_anatomic_site,
-              disease_phase: disease_phase,
-              diagnosis_classification_system: diagnosis_classification_system,
-              diagnosis_category: diagnosis_category,
-              diagnosis_basis: diagnosis_basis,
-              diagnosis: diagnosis,
-              reported_significance: reported_significance,
-              reported_significance_system: reported_significance_system,
-              gene_symbol: gene_symbol,
-              alteration: alteration,
-              fusion_partner_gene: fusion_partner_gene,
-              alteration_type: alteration_type,
-              status: status,
-              data_category: data_category,
-              file_type: file_type,
-              file_mapping_level: file_mapping_level,
-              library_selection: library_selection,
-              library_source_material: library_source_material,
-              library_source_molecule: library_source_molecule,
-              library_strategy: library_strategy
-            }) AS sample_diagnosis_genetic_analysis_file_filters
-        page_size: 50
       - name: "global_search_properties"
         query: |
           MATCH (p:participant)
@@ -4093,6 +3791,308 @@ indices:
                 END
             ) AS age_at_diagnosis_str_gs
         page_size: 5000
+      - name: "sample_diagnosis_genetic_analysis_file_filters"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          SKIP $skip LIMIT $limit
+
+          // Direct participant samples: self-context
+          OPTIONAL MATCH (p)<--(s1:sample)
+          WITH
+            p,
+            collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
+
+          // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
+          OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
+          WHERE model:cell_line OR model:pdx
+
+          WITH
+            p,
+            [ctx IN (
+              direct_contexts
+              + collect(DISTINCT { sm: s1_model, source_sm: s1_model })
+              + collect(DISTINCT { sm: s2, source_sm: s2 })
+              + collect(DISTINCT { sm: s1_model, source_sm: s2 })
+              + collect(DISTINCT { sm: s2, source_sm: s1_model })
+            )
+            WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
+
+          WITH
+            p,
+            CASE
+              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: null }]
+              ELSE sample_contexts
+            END AS sample_contexts
+
+          // Study-level files
+          OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
+          OPTIONAL MATCH (st)<--(study_file)
+          WHERE study_file:clinical_measure_file
+            OR study_file:generic_file
+
+          WITH
+            p,
+            sample_contexts,
+            collect(DISTINCT study_file) AS study_files
+
+          OPTIONAL MATCH (p)<--(participant_file)
+          WHERE participant_file:clinical_measure_file
+            OR participant_file:generic_file
+            OR participant_file:radiology_file
+
+          WITH
+            p,
+            sample_contexts,
+            study_files,
+            collect(DISTINCT participant_file) AS participant_files
+
+          OPTIONAL MATCH (p)<--(participant_dg:diagnosis)
+
+          WITH
+            p,
+            sample_contexts,
+            study_files,
+            participant_files,
+            collect(DISTINCT participant_dg) AS participant_diagnoses
+
+          OPTIONAL MATCH (p)<--(participant_ga:genetic_analysis)
+
+          WITH
+            p,
+            sample_contexts,
+            study_files,
+            participant_files,
+            participant_diagnoses,
+            collect(DISTINCT participant_ga) AS participant_gas
+
+          UNWIND sample_contexts AS ctx
+
+          WITH
+            p,
+            ctx.sm AS sm,
+            ctx.source_sm AS source_sm,
+            study_files,
+            participant_files,
+            participant_diagnoses,
+            participant_gas
+
+          // Source sample-level files
+          OPTIONAL MATCH (source_sm)<--(sample_file)
+          WHERE sample_file:sequencing_file
+            OR sample_file:generic_file
+            OR sample_file:methylation_array_file
+            OR sample_file:pathology_file
+            OR sample_file:cytogenomic_file
+
+          WITH
+            p,
+            sm,
+            source_sm,
+            study_files,
+            participant_files,
+            participant_diagnoses,
+            participant_gas,
+            collect(DISTINCT sample_file) AS sample_files
+
+          // Source sample-level diagnosis
+          OPTIONAL MATCH (source_sm)<--(sample_dg:diagnosis)
+
+          WITH
+            p,
+            sm,
+            source_sm,
+            study_files,
+            participant_files,
+            participant_diagnoses,
+            participant_gas,
+            sample_files,
+            collect(DISTINCT sample_dg) AS sample_diagnoses
+
+          // Source sample-level genetic analysis
+          OPTIONAL MATCH (source_sm)<--(sample_ga:genetic_analysis)
+
+          WITH
+            p,
+            sm,
+            sample_files + participant_files + study_files AS files,
+            sample_diagnoses + participant_diagnoses AS diagnoses,
+            collect(DISTINCT sample_ga) + participant_gas AS gas
+
+          CALL {
+            WITH files
+
+            UNWIND CASE WHEN size(files) = 0 THEN [null] ELSE files END AS file
+
+            WITH DISTINCT
+              file.data_category AS data_category,
+              file.file_type AS file_type,
+              file.file_mapping_level AS file_mapping_level,
+              CASE
+                WHEN file IS NOT NULL AND file:sequencing_file
+                THEN file.library_selection
+                ELSE null
+              END AS library_selection,
+              CASE
+                WHEN file IS NOT NULL AND file:sequencing_file
+                THEN file.library_source_material
+                ELSE null
+              END AS library_source_material,
+              CASE
+                WHEN file IS NOT NULL AND file:sequencing_file
+                THEN file.library_source_molecule
+                ELSE null
+              END AS library_source_molecule,
+              CASE
+                WHEN file IS NOT NULL AND file:sequencing_file
+                THEN file.library_strategy
+                ELSE null
+              END AS library_strategy
+
+            RETURN collect([
+              data_category,
+              file_type,
+              file_mapping_level,
+              library_selection,
+              library_source_material,
+              library_source_molecule,
+              library_strategy
+            ]) AS file_filter_keys
+          }
+
+          CALL {
+            WITH diagnoses
+
+            UNWIND CASE WHEN size(diagnoses) = 0 THEN [null] ELSE diagnoses END AS dg
+
+            WITH DISTINCT
+              dg.age_at_diagnosis AS age_at_diagnosis,
+              dg.anatomic_site AS diagnosis_anatomic_site,
+              dg.disease_phase AS disease_phase,
+              dg.diagnosis_classification_system AS diagnosis_classification_system,
+              dg.diagnosis_category AS diagnosis_category,
+              dg.diagnosis_basis AS diagnosis_basis,
+              dg.diagnosis AS diagnosis
+
+            RETURN collect([
+              age_at_diagnosis,
+              diagnosis_anatomic_site,
+              disease_phase,
+              diagnosis_classification_system,
+              diagnosis_category,
+              diagnosis_basis,
+              diagnosis
+            ]) AS diagnosis_filter_keys
+          }
+
+          CALL {
+            WITH gas
+
+            UNWIND CASE WHEN size(gas) = 0 THEN [null] ELSE gas END AS ga
+
+            // Expand stringified gene lists ("[ABL1, BRD3, ...]") into individual gene symbols
+            // so nested filters/aggs bucket and match one gene at a time.
+            WITH ga,
+              CASE
+                WHEN ga IS NULL OR ga.gene_symbol IS NULL THEN [null]
+                WHEN ga.gene_symbol STARTS WITH '[' AND ga.gene_symbol ENDS WITH ']' THEN
+                  [x IN split(replace(substring(ga.gene_symbol, 1, size(ga.gene_symbol)-2), "'", ""), ",") |
+                    CASE WHEN trim(x) = '' THEN 'Not Reported' ELSE trim(x) END]
+                WHEN trim(toString(ga.gene_symbol)) = '' THEN ['Not Reported']
+                ELSE [trim(toString(ga.gene_symbol))]
+              END AS gene_symbol_arr
+            UNWIND gene_symbol_arr AS gene_symbol
+
+            WITH DISTINCT
+              ga.reported_significance AS reported_significance,
+              ga.reported_significance_system AS reported_significance_system,
+              gene_symbol,
+              ga.alteration AS alteration,
+              ga.fusion_partner_gene AS fusion_partner_gene,
+              ga.alteration_type AS alteration_type,
+              ga.status AS status
+
+            RETURN collect([
+              reported_significance,
+              reported_significance_system,
+              gene_symbol,
+              alteration,
+              fusion_partner_gene,
+              alteration_type,
+              status
+            ]) AS genetic_analysis_filter_keys
+          }
+
+          UNWIND file_filter_keys AS file_filter_key
+          UNWIND diagnosis_filter_keys AS diagnosis_filter_key
+          UNWIND genetic_analysis_filter_keys AS genetic_analysis_filter_key
+
+          WITH DISTINCT
+            p.guid AS id,
+
+            // Sample facets
+            sm.anatomic_site AS sample_anatomic_site,
+            sm.participant_age_at_collection AS participant_age_at_collection,
+            sm.sample_tumor_status AS sample_tumor_status,
+            sm.tumor_spatial_extent AS tumor_spatial_extent,
+
+            // Diagnosis facets
+            diagnosis_filter_key[0] AS age_at_diagnosis,
+            diagnosis_filter_key[1] AS diagnosis_anatomic_site,
+            diagnosis_filter_key[2] AS disease_phase,
+            diagnosis_filter_key[3] AS diagnosis_classification_system,
+            diagnosis_filter_key[4] AS diagnosis_category,
+            diagnosis_filter_key[5] AS diagnosis_basis,
+            diagnosis_filter_key[6] AS diagnosis,
+
+            // Genetic Analysis facets
+            genetic_analysis_filter_key[0] AS reported_significance,
+            genetic_analysis_filter_key[1] AS reported_significance_system,
+            genetic_analysis_filter_key[2] AS gene_symbol,
+            genetic_analysis_filter_key[3] AS alteration,
+            genetic_analysis_filter_key[4] AS fusion_partner_gene,
+            genetic_analysis_filter_key[5] AS alteration_type,
+            genetic_analysis_filter_key[6] AS status,
+
+            // File facets
+            file_filter_key[0] AS data_category,
+            file_filter_key[1] AS file_type,
+            file_filter_key[2] AS file_mapping_level,
+            file_filter_key[3] AS library_selection,
+            file_filter_key[4] AS library_source_material,
+            file_filter_key[5] AS library_source_molecule,
+            file_filter_key[6] AS library_strategy
+
+          RETURN
+            id,
+            collect({
+              sample_anatomic_site: sample_anatomic_site,
+              participant_age_at_collection: participant_age_at_collection,
+              sample_tumor_status: sample_tumor_status,
+              tumor_spatial_extent: tumor_spatial_extent,
+              age_at_diagnosis: age_at_diagnosis,
+              diagnosis_anatomic_site: diagnosis_anatomic_site,
+              disease_phase: disease_phase,
+              diagnosis_classification_system: diagnosis_classification_system,
+              diagnosis_category: diagnosis_category,
+              diagnosis_basis: diagnosis_basis,
+              diagnosis: diagnosis,
+              reported_significance: reported_significance,
+              reported_significance_system: reported_significance_system,
+              gene_symbol: gene_symbol,
+              alteration: alteration,
+              fusion_partner_gene: fusion_partner_gene,
+              alteration_type: alteration_type,
+              status: status,
+              data_category: data_category,
+              file_type: file_type,
+              file_mapping_level: file_mapping_level,
+              library_selection: library_selection,
+              library_source_material: library_source_material,
+              library_source_molecule: library_source_molecule,
+              library_strategy: library_strategy
+            }) AS sample_diagnosis_genetic_analysis_file_filters
+        page_size: 50
 
   - index_name: survivals_table
     id_field: "id"
