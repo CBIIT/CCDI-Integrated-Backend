@@ -8144,7 +8144,7 @@ indices:
             null AS percent_necrosis,
             [file_guid] AS files,
             combined_filters AS combined_filters
-        page_size: 1000
+        page_size: 100
       - name: "combined_filters_sample_level"
         query: |
           MATCH (f:
@@ -8711,7 +8711,7 @@ indices:
             ) AS percent_necrosis,
             [file_guid] AS files,
             combined_filters AS combined_filters
-        page_size: 1000
+        page_size: 100
       - name: "global_search_study_properties"
         query: |
           MATCH (f:
@@ -8906,7 +8906,7 @@ indices:
                   ELSE result + ';' + trim(toString(value))
                 END
             ) AS participant_id_gs
-        page_size: 5000
+        page_size: 1000
       - name: "global_search_sample_properties"
         query: |
           MATCH (f:
@@ -8989,7 +8989,7 @@ indices:
                   ELSE result + ';' + value
                 END
             ) AS sample_id_gs
-        page_size: 5000
+        page_size: 1000
 
   # Model nodes index
   - index_name: model_nodes
