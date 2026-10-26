@@ -3211,8 +3211,6 @@ indices:
         - treatment_filters.treatment_type
         - treatment_filters.treatment_agent
         - treatment_response_filters.response
-        - treatment_response_filters.response_category
-        - treatment_response_filters.response_system
         - sample_diagnosis_genetic_analysis_file_filters.sample_anatomic_site
         - sample_diagnosis_genetic_analysis_file_filters.sample_tumor_status
         - sample_diagnosis_genetic_analysis_file_filters.tumor_spatial_extent
@@ -3442,17 +3440,17 @@ indices:
         query: |
           MATCH (p:participant)
           WITH p
+          ORDER BY p.guid
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
+          ORDER BY tresp.guid
           WITH
             p.guid AS id,
             count(tresp) AS treatment_response_count,
             [item IN collect(
               DISTINCT {
                 age_at_response: tresp.age_at_response,
-                response: tresp.response,
-                response_category: tresp.response_category,
-                response_system: tresp.response_system
+                response: tresp.response
               }
             ) WHERE item IS NOT NULL] AS treatment_response_filters
           WITH
@@ -3462,7 +3460,9 @@ indices:
               THEN treatment_response_filters
               ELSE []
             END AS treatment_response_filters
-          RETURN id, treatment_response_filters
+          RETURN
+            id,
+            treatment_response_filters
         page_size: 5000
       - name: "global_search_properties"
         query: |
