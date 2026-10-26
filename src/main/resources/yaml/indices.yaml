@@ -3205,6 +3205,10 @@ indices:
         - study_phase
         - study_acronym
         - study_name
+        - last_known_survival_status
+        - event_free_survival_status
+        - first_event
+        - cause_of_death
         - survival_filters.last_known_survival_status
         - survival_filters.cause_of_death
         - survival_filters.first_event
@@ -3247,6 +3251,8 @@ indices:
         - diagnosis_category_str_gs
         - age_at_diagnosis_str_gs
       integer:
+        - age_at_last_known_survival_status
+        - age_at_event_free_survival_status
         - survival_filters.age_at_last_known_survival_status
         - treatment_filters.age_at_treatment_start
         - treatment_filters.age_at_treatment_end
@@ -3297,15 +3303,19 @@ indices:
             p.sex_at_birth AS sex_at_birth,
             p.occupation AS occupation
         page_size: 5000
-      - name: "survival_filters"
+      - name: "survivals"
         query: |
           MATCH (p:participant)
           WITH p
+          ORDER BY p.guid, id(p)
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
+          WITH DISTINCT p, sur
+          ORDER BY sur.guid, sur.survival_id, id(sur)
           WITH
             p.guid AS id,
             count(sur) AS survival_count,
+            collect(sur) AS survivals,
             [item IN collect(
               DISTINCT {
                 last_known_survival_status: sur.last_known_survival_status,
@@ -3316,12 +3326,23 @@ indices:
             ) WHERE item IS NOT NULL] AS survival_filters
           WITH
             id,
+            survivals,
             CASE
               WHEN survival_count >0
               THEN survival_filters
               ELSE []
             END AS survival_filters
-          RETURN id, survival_filters
+          // Keep nulls and repeated values in these parallel lists so each
+          // position refers to the same survival record; no records yields [].
+          RETURN
+            id,
+            survival_filters,
+            [sur IN survivals | sur.last_known_survival_status] AS last_known_survival_status,
+            [sur IN survivals | sur.age_at_last_known_survival_status] AS age_at_last_known_survival_status,
+            [sur IN survivals | sur.event_free_survival_status] AS event_free_survival_status,
+            [sur IN survivals | sur.age_at_event_free_survival_status] AS age_at_event_free_survival_status,
+            [sur IN survivals | sur.first_event] AS first_event,
+            [sur IN survivals | sur.cause_of_death] AS cause_of_death
         page_size: 5000
       - name: "treatment_filters"
         query: |
