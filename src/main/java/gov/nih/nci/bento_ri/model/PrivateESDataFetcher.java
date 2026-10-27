@@ -1259,7 +1259,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         List<Map<String, Object>> data = new ArrayList<>();
 
         JsonObject aggs = jsonObject.getAsJsonObject("aggregations").getAsJsonObject(aggName);
-        JsonArray buckets = aggs.getAsJsonObject("agg_buckets") != null ? aggs.getAsJsonObject("agg_buckets").getAsJsonArray("buckets") : aggs.getAsJsonArray("buckets");
+        JsonArray buckets = InventoryESService.getCustomAggregationBuckets(aggs);
         for (JsonElement bucketEl : buckets) {
             JsonObject bucketObj = bucketEl.getAsJsonObject();
             if (!bucketObj.has("key") || bucketObj.get("key").isJsonNull()) {
@@ -1285,7 +1285,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         List<Map<String, Object>> data = new ArrayList<>();
 
         JsonObject aggs = jsonObject.getAsJsonObject("aggregations").getAsJsonObject(aggName);
-        JsonArray buckets = aggs.getAsJsonObject("agg_buckets") != null ? aggs.getAsJsonObject("agg_buckets").getAsJsonArray("buckets") : aggs.getAsJsonArray("buckets");
+        JsonArray buckets = InventoryESService.getCustomAggregationBuckets(aggs);
         for (JsonElement bucketEl : buckets) {
             JsonObject bucketObj = bucketEl.getAsJsonObject();
             String key;

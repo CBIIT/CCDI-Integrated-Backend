@@ -5,6 +5,8 @@ import gov.nih.nci.bento_ri.service.InventoryESService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,6 +25,73 @@ class InventoryESServiceAggregationBuildersTest {
 
     private static final Map<String, Object> BASE_QUERY = Map.of(
             "query", Map.of("match_all", Map.of()));
+
+
+    /** A facet value and the remaining relationship filters must match the same nested record. */
+    @ParameterizedTest
+    @CsvSource({
+            "gene_symbol,TP53,status,Present,sample_diagnosis_genetic_analysis_file_filters",
+            "status,Present,gene_symbol,TP53,sample_diagnosis_genetic_analysis_file_filters",
+            "diagnosis,Neuroblastoma,diagnosis_basis,Clinical,sample_diagnosis_genetic_analysis_file_filters",
+            "sample_anatomic_site,Bone,sample_tumor_status,Tumor,sample_diagnosis_genetic_analysis_file_filters",
+            "data_category,Genomics,file_type,BAM,sample_diagnosis_genetic_analysis_file_filters",
+            "treatment_agent,Drug A,treatment_type,Chemotherapy,treatment_filters",
+            "response,Complete Response,response_category,Response,treatment_response_filters",
+            "cause_of_death,Disease,last_known_survival_status,Dead,survival_filters"
+    })
+    void nestedFacetBucketsRetainOtherFiltersInTheSameRecord(
+            String field, String selected, String otherField, String otherValue, String path) throws IOException {
+        Map<String, Object> params = Map.of(
+                "sex_at_birth", List.of("Female"),
+                "race", List.of("Black or African American"),
+                field, List.of(selected),
+                otherField, List.of(otherValue));
+        Map<String, Object> query = service.buildFacetFilterQuery(
+                params, Set.of(), Set.of("first", field), Set.of(), "nested_filters", "participants_table");
+        Map<String, Object> originalQuery = new HashMap<>(query);
+        Map<String, Object> result = service.addCustomAggregations(query, "facetAgg", field, path);
+        var facet = InventoryESServiceTestSupport.GSON.toJsonTree(result).getAsJsonObject()
+                .getAsJsonObject("aggs").getAsJsonObject("facetAgg");
+        var filtered = facet.getAsJsonObject("aggs").getAsJsonObject("filtered_records");
+        assertTrue(filtered != null, "Nested buckets must be filtered before counting participants");
+        assertEquals(InventoryESServiceTestSupport.GSON.toJsonTree(Map.of("bool", Map.of("filter", List.of(
+                Map.of("terms", Map.of(path + "." + otherField, List.of(otherValue))))))),
+                filtered.get("filter"));
+        assertEquals(path + "." + field, filtered.getAsJsonObject("aggs")
+                .getAsJsonObject("agg_buckets").getAsJsonObject("terms").get("field").getAsString());
+        assertTrue(filtered.getAsJsonObject("aggs").getAsJsonObject("agg_buckets")
+                .getAsJsonObject("aggs").getAsJsonObject("top_reverse_nested").has("reverse_nested"));
+        assertEquals(query.get("query"), result.get("query"));
+        assertEquals(originalQuery, query, "Aggregation building must not mutate the supplied query");
+    }
+
+    /** Only conditions for the aggregation's nested path belong inside that aggregation. */
+    @Test
+    void rangeBucketsRetainRangeAndUnknownAgeRulesWithoutUnrelatedFilters() throws IOException {
+        String path = "sample_diagnosis_genetic_analysis_file_filters";
+        Map<String, Object> query = service.buildFacetFilterQuery(Map.of(
+                "age_at_diagnosis", List.of(0, 3650),
+                "age_at_diagnosis_unknownAges", List.of("exclude"),
+                "gene_symbol", List.of("TP53"),
+                "treatment_type", List.of("Chemotherapy"),
+                "race", List.of("Asian")),
+                Set.of("age_at_diagnosis"), Set.of(), Set.of(), "nested_filters", "participants_table");
+        var original = InventoryESServiceTestSupport.GSON.toJsonTree(query).getAsJsonObject();
+        var expected = original.getAsJsonObject("query").getAsJsonObject("bool")
+                .getAsJsonArray("filter").asList().stream()
+                .map(element -> element.getAsJsonObject().getAsJsonObject("nested"))
+                .filter(nested -> nested != null && path.equals(nested.get("path").getAsString()))
+                .findFirst().orElseThrow().get("query");
+        var result = InventoryESServiceTestSupport.GSON.toJsonTree(service.addCustomRangeAggregations(
+                query, "facetAgg", "age_at_diagnosis", path)).getAsJsonObject();
+        var filtered = result.getAsJsonObject("aggs").getAsJsonObject("facetAgg")
+                .getAsJsonObject("aggs").getAsJsonObject("filtered_records");
+        assertTrue(filtered != null, "Range buckets must use the matching nested records");
+        assertEquals(expected, filtered.get("filter"));
+        assertTrue(filtered.getAsJsonObject("aggs").getAsJsonObject("agg_buckets").has("range"));
+        assertFalse(filtered.get("filter").toString().contains("treatment_filters"));
+        assertEquals(original.get("query"), result.get("query"));
+    }
 
     private InventoryESService service;
 
