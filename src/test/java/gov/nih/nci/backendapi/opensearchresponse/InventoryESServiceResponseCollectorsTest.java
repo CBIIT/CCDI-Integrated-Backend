@@ -67,6 +67,19 @@ class InventoryESServiceResponseCollectorsTest {
         assertEquals(4100, terms.get("White"));
     }
 
+    @Test
+    void usesReverseNestedCountsForFilteredCustomTerms() {
+        JsonObject response = InventoryESServiceTestSupport.loadResponseFixture("custom_terms_nested.json");
+        JsonObject aggregation = response.getAsJsonObject("aggregations").getAsJsonObject("facetAgg");
+        JsonObject filtered = new JsonObject();
+        filtered.addProperty("doc_count", 100000);
+        filtered.add("agg_buckets", aggregation.remove("agg_buckets"));
+        aggregation.add("filtered_records", filtered);
+
+        assertEquals(Map.of("Asian", 6374, "White", 4100),
+                service.collectCustomTerms(response, "facetAgg"));
+    }
+
     /** Verifies that embedded file arrays from every hit are flattened into one ID list. */
     @Test
     void flattensEmbeddedFileIdsFromAllHits() {

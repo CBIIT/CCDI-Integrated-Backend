@@ -525,6 +525,26 @@ class PrivateESDataFetcherFacetCountsTest {
                 Map.of("group", "zero", "subjects", 0)), counts);
     }
 
+    /** Filtered buckets still report unique participants rather than nested record counts. */
+    @Test
+    void readsFilteredNestedTermAndRangeParticipantCounts() throws Exception {
+        for (String method : List.of("collectCustomTermBuckets", "collectCustomRangeBuckets")) {
+            JsonObject response = method.equals("collectCustomTermBuckets")
+                    ? customTermResponse() : customRangeResponse();
+            List<Map<String, Object>> expected = invokePrivate(
+                    method, new Class<?>[]{JsonObject.class, String.class}, response, "facetAgg");
+            JsonObject aggregation = response.getAsJsonObject("aggregations").getAsJsonObject("facetAgg");
+            JsonObject filtered = new JsonObject();
+            filtered.addProperty("doc_count", 100);
+            filtered.add("agg_buckets", aggregation.remove("agg_buckets"));
+            aggregation.add("filtered_records", filtered);
+
+            List<Map<String, Object>> actual = invokePrivate(
+                    method, new Class<?>[]{JsonObject.class, String.class}, response, "facetAgg");
+            assertEquals(expected, actual);
+        }
+    }
+
     private void stubSummaryCountQueries() throws IOException {
         when(inventoryESService.buildFacetFilterQuery(
                 anyMap(), anySet(), anySet(), anySet(), eq("nested_filters"), anyString()))

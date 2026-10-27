@@ -1328,7 +1328,7 @@ public class InventoryESService extends ESService {
             aggSubSection.put("agg_buckets", Map.of(
                     "terms", terms,
                     "aggs", Map.of("top_reverse_nested", Map.of("reverse_nested", Map.of()))));
-            aggSection.put(aggName, Map.of("nested", Map.of("path", nestedProperty), "aggs", aggSubSection));
+            aggSection.put(aggName, buildNestedFacetAggregation(query, nestedProperty, aggSubSection));
         }
 
         newQuery.put("aggs", aggSection);
@@ -1370,11 +1370,46 @@ public class InventoryESService extends ESService {
             Map<String, Object> innerAggs = new HashMap<>();
             innerAggs.put("agg_buckets", rangeAggSubSection);
 
-            aggSection.put(aggName, Map.of("nested", Map.of("path", nestedProperty), "aggs", innerAggs));
+            aggSection.put(aggName, buildNestedFacetAggregation(query, nestedProperty, innerAggs));
         }
 
         newQuery.put("aggs", aggSection);
         return newQuery;
+    }
+
+    /**
+     * A nested query selects parent participants, but a nested aggregation visits all of their
+     * children again. Reapply that path's query before bucketing so values and remaining filters
+     * refer to the same record. The caller has already excluded the facet's own filter when needed.
+     */
+    private Map<String, Object> buildNestedFacetAggregation(
+            Map<String, Object> query, String nestedPath, Map<String, Object> bucketAggregations) {
+        if (query.get("query") instanceof Map<?, ?> root
+                && root.get("bool") instanceof Map<?, ?> bool
+                && bool.get("filter") instanceof List<?> filters) {
+            for (Object clause : filters) {
+                if (clause instanceof Map<?, ?> filter
+                        && filter.get("nested") instanceof Map<?, ?> nested
+                        && nestedPath.equals(nested.get("path"))) {
+                    return Map.of(
+                            "nested", Map.of("path", nestedPath),
+                            "aggs", Map.of("filtered_records", Map.of(
+                                    "filter", nested.get("query"),
+                                    "aggs", bucketAggregations)));
+                }
+            }
+        }
+        return Map.of("nested", Map.of("path", nestedPath), "aggs", bucketAggregations);
+    }
+
+    /** Read root, nested, and filtered nested facet buckets using the same response contract. */
+    public static JsonArray getCustomAggregationBuckets(JsonObject aggregation) {
+        if (aggregation.has("filtered_records")) {
+            aggregation = aggregation.getAsJsonObject("filtered_records");
+        }
+        return aggregation.has("agg_buckets")
+                ? aggregation.getAsJsonObject("agg_buckets").getAsJsonArray("buckets")
+                : aggregation.getAsJsonArray("buckets");
     }
 
     public Map<String, Object> addCardinalityHelper(String cardinalityAggName) {
@@ -1483,7 +1518,7 @@ public class InventoryESService extends ESService {
 
         Map<String, Integer> data = new HashMap<>();
         JsonObject aggs = jsonObject.getAsJsonObject("aggregations").getAsJsonObject(aggName);
-        JsonArray buckets = aggs.getAsJsonObject("agg_buckets") != null ? aggs.getAsJsonObject("agg_buckets").getAsJsonArray("buckets") : aggs.getAsJsonArray("buckets");
+        JsonArray buckets = getCustomAggregationBuckets(aggs);
         for (var bucket : buckets) {
             JsonObject bucketObj = bucket.getAsJsonObject();
             String key = bucketObj.get("key").getAsString();
