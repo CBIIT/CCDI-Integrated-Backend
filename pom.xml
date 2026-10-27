@@ -27,6 +27,9 @@
         <spring.restdocs.version>4.0.0</spring.restdocs.version>
         <netty.version>4.1.137.Final</netty.version>
         <opensearch.version>2.19.4</opensearch.version> 
+        <!-- Pin patched Jackson BOMs via Spring Boot parent-managed properties (CVE-2026-91777/91776/89425/89407/68497) -->
+        <jackson-2-bom.version>2.21.7</jackson-2-bom.version>
+        <jackson-bom.version>3.1.7</jackson-bom.version>
     </properties>
 
     <!-- Use dependencyManagement to enforce patched protobuf across transitive pulls -->
@@ -51,11 +54,6 @@
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-jul</artifactId>
                 <version>2.25.4</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>2.21.5</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
