@@ -3311,7 +3311,10 @@ indices:
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
           WITH DISTINCT p, sur
-          ORDER BY sur.guid, sur.survival_id, id(sur)
+          // Known ages sort before null ages; identifiers break age ties.
+          ORDER BY sur.age_at_last_known_survival_status IS NULL,
+            sur.age_at_last_known_survival_status DESC,
+            sur.guid, sur.survival_id, id(sur)
           WITH
             p.guid AS id,
             count(sur) AS survival_count,
@@ -3332,17 +3335,28 @@ indices:
               THEN survival_filters
               ELSE []
             END AS survival_filters
-          // Keep nulls and repeated values in these parallel lists so each
-          // position refers to the same survival record; no records yields [].
+          WITH
+            id,
+            survival_filters,
+            CASE
+              WHEN any(sur IN survivals WHERE sur.last_known_survival_status = 'Dead')
+              THEN head([sur IN survivals WHERE sur.last_known_survival_status = 'Dead'])
+              WHEN size(survivals) > 0
+                AND all(sur IN survivals WHERE sur.last_known_survival_status = 'Alive')
+              THEN head(survivals)
+              ELSE null
+            END AS selected_survival
+          // All six scalar properties come from the same selected record.
+          // No selected record yields null for every top-level property.
           RETURN
             id,
             survival_filters,
-            [sur IN survivals | sur.last_known_survival_status] AS last_known_survival_status,
-            [sur IN survivals | sur.age_at_last_known_survival_status] AS age_at_last_known_survival_status,
-            [sur IN survivals | sur.event_free_survival_status] AS event_free_survival_status,
-            [sur IN survivals | sur.age_at_event_free_survival_status] AS age_at_event_free_survival_status,
-            [sur IN survivals | sur.first_event] AS first_event,
-            [sur IN survivals | sur.cause_of_death] AS cause_of_death
+            selected_survival.last_known_survival_status AS last_known_survival_status,
+            selected_survival.age_at_last_known_survival_status AS age_at_last_known_survival_status,
+            selected_survival.event_free_survival_status AS event_free_survival_status,
+            selected_survival.age_at_event_free_survival_status AS age_at_event_free_survival_status,
+            selected_survival.first_event AS first_event,
+            selected_survival.cause_of_death AS cause_of_death
         page_size: 5000
       - name: "treatment_filters"
         query: |
