@@ -3205,6 +3205,10 @@ indices:
         - study_phase
         - study_acronym
         - study_name
+        - last_known_survival_status
+        - event_free_survival_status
+        - first_event
+        - cause_of_death
         - survival_filters.last_known_survival_status
         - survival_filters.cause_of_death
         - survival_filters.first_event
@@ -3245,6 +3249,8 @@ indices:
         - diagnosis_category_str_gs
         - age_at_diagnosis_str_gs
       integer:
+        - age_at_last_known_survival_status
+        - age_at_event_free_survival_status
         - survival_filters.age_at_last_known_survival_status
         - treatment_filters.age_at_treatment_start
         - treatment_filters.age_at_treatment_end
@@ -3295,15 +3301,22 @@ indices:
             p.sex_at_birth AS sex_at_birth,
             p.occupation AS occupation
         page_size: 5000
-      - name: "survival_filters"
+      - name: "survivals"
         query: |
           MATCH (p:participant)
           WITH p
+          ORDER BY p.guid
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
+          WITH DISTINCT p, sur
+          // Known ages sort before null ages; identifiers break age ties.
+          ORDER BY sur.age_at_last_known_survival_status IS NULL,
+            sur.age_at_last_known_survival_status DESC,
+            sur.guid, sur.survival_id, id(sur)
           WITH
             p.guid AS id,
             count(sur) AS survival_count,
+            collect(sur) AS survivals,
             [item IN collect(
               DISTINCT {
                 last_known_survival_status: sur.last_known_survival_status,
@@ -3314,12 +3327,34 @@ indices:
             ) WHERE item IS NOT NULL] AS survival_filters
           WITH
             id,
+            survivals,
             CASE
               WHEN survival_count >0
               THEN survival_filters
               ELSE []
             END AS survival_filters
-          RETURN id, survival_filters
+          WITH
+            id,
+            survival_filters,
+            CASE
+              WHEN any(sur IN survivals WHERE sur.last_known_survival_status = 'Dead')
+              THEN head([sur IN survivals WHERE sur.last_known_survival_status = 'Dead'])
+              WHEN size(survivals) > 0
+                AND all(sur IN survivals WHERE sur.last_known_survival_status = 'Alive')
+              THEN head(survivals)
+              ELSE null
+            END AS selected_survival
+          // All six scalar properties come from the same selected record.
+          // No selected record yields null for every top-level property.
+          RETURN
+            id,
+            survival_filters,
+            selected_survival.last_known_survival_status AS last_known_survival_status,
+            selected_survival.age_at_last_known_survival_status AS age_at_last_known_survival_status,
+            selected_survival.event_free_survival_status AS event_free_survival_status,
+            selected_survival.age_at_event_free_survival_status AS age_at_event_free_survival_status,
+            selected_survival.first_event AS first_event,
+            selected_survival.cause_of_death AS cause_of_death
         page_size: 5000
       - name: "treatment_filters"
         query: |
