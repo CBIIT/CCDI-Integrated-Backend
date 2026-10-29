@@ -9033,6 +9033,240 @@ indices:
             combined_filters AS combined_filters
         page_size: 1000
 
+  # Derived from File data
+  - index_name: idc_table
+    id_field: "id"
+    mapping:
+      keyword:
+        - id # slim_url
+        - file_id
+        - pid
+        - participant_id
+        - sample_id
+        # Study properties
+        - study_id
+        - dbgap_accession
+        - study_phase
+        - study_acronym
+        - study_name
+        - anatomic_site
+        - sample_tumor_status
+        - tumor_spatial_extent
+        - sample_description
+        - file_name
+        - data_category
+        - file_type
+        - file_description
+        - consent_codes
+        - md5sum
+        - file_mapping_level
+        - file_access
+        - datamodel_dcf_indexd_guid
+        - datamodel_guid
+        - datamodel_file_id
+        - library_selection
+        - library_strategy
+        - library_source_material
+        - library_source_molecule
+        # IDC fields
+        - study_uid
+        - series_uid
+        - image_modality
+        - magnification
+        - fixation_embedding_method
+        - staining_method
+        # Participant filters
+        - combined_filters.participant_id
+        - combined_filters.race
+        - combined_filters.sex_at_birth
+        # Survival filters
+        - combined_filters.survival_filters.last_known_survival_status
+        - combined_filters.survival_filters.cause_of_death
+        - combined_filters.survival_filters.first_event
+        # Treatment filters
+        - combined_filters.treatment_filters.treatment_type
+        # Treatment Response filters
+        - combined_filters.treatment_response_filters.response
+        # (Sample, Diagnosis, Genetic Analysis) filters
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.sample_anatomic_site
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.sample_tumor_status
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.tumor_spatial_extent
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_anatomic_site
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.disease_phase
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_classification_system
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_basis
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.diagnosis_category
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.reported_significance
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.reported_significance_system
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.gene_symbol
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.alteration
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.fusion_partner_gene
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.alteration_type
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.status
+        # Global search fields
+        - participant_id_gs
+        - sample_id_gs
+        - study_id_gs
+        - file_description_gs
+        - file_type_gs
+        - file_name_gs
+        - data_category_gs
+        - files
+      integer:
+        # Participant numerical filters
+        - participant_age_at_collection
+        # Survival numerical filters
+        - combined_filters.survival_filters.age_at_last_known_survival_status
+        # Treatment numerical filters
+        - combined_filters.treatment_filters.age_at_treatment_start
+        - combined_filters.treatment_filters.age_at_treatment_end
+        # Treatment Response numerical filters
+        - combined_filters.treatment_response_filters.age_at_response
+        # (Sample, Diagnosis, Genetic Analysis) numerical filters
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.participant_age_at_collection
+        - combined_filters.sample_diagnosis_genetic_analysis_filters.age_at_diagnosis
+      float:
+        - percent_tumor
+        - percent_necrosis
+      long:
+        - file_size
+    initial_query:
+      query: |
+        MATCH (f:pathology_file)
+        WHERE f.slim_url CONTAINS '/studies/'
+          AND f.slim_url CONTAINS '/series/'
+
+        WITH DISTINCT f.slim_url AS slim_url
+
+        ORDER BY slim_url
+        SKIP $skip
+        LIMIT $limit
+
+        RETURN
+          slim_url AS id,
+          slim_url,
+          split(split(slim_url, '/studies/')[1], '/')[0] AS study_uid,
+          split(split(slim_url, '/series/')[1], '/')[0] AS series_uid
+        ORDER BY slim_url
+      page_size: 5000
+    update_queries:
+      - name: "study_properties"
+        query: |
+          MATCH (f:pathology_file)
+          WHERE f.slim_url CONTAINS '/studies/'
+            AND f.slim_url CONTAINS '/series/'
+
+          // Group files before applying pagination.
+          WITH
+            f.slim_url AS slim_url,
+            collect(f) AS files
+
+          ORDER BY slim_url
+          SKIP $skip
+          LIMIT $limit
+
+          UNWIND files AS f
+
+          // BFS finds the shortest directed path to each reachable study.
+          OPTIONAL MATCH p = (f)-[
+            :of_pathology_file
+            |of_sample
+            |of_pdx
+            |of_cell_line
+            |of_participant
+            |of_consent_group
+            *BFS
+          ]->(s:study)
+
+          // Rank candidates across every file in the URL group.
+          WITH
+            slim_url,
+            s,
+            length(p) AS hops
+          ORDER BY slim_url, hops, s.study_id, s.guid, id(s)
+
+          WITH
+            slim_url,
+            head(collect(s)) AS study
+
+          RETURN
+            slim_url AS id,
+            slim_url,
+            split(split(slim_url, '/studies/')[1], '/')[0] AS study_uid,
+            split(split(slim_url, '/series/')[1], '/')[0] AS series_uid,
+            study.study_id AS study_id,
+            study.dbgap_accession AS dbgap_accession,
+            study.study_phase AS study_phase,
+            study.study_acronym AS study_acronym,
+            study.study_name AS study_name
+          ORDER BY slim_url
+        page_size: 5000
+      - name: "idc_properties"
+        query: |
+          MATCH (f:pathology_file)
+          WHERE f.slim_url CONTAINS '/studies/'
+            AND f.slim_url CONTAINS '/series/'
+
+          // Group files before applying pagination.
+          // For Dec 2026 release, all files for the same slim_url have the same
+          //   properties returned below, so only need head()
+          WITH
+            f.slim_url AS slim_url,
+            head(collect(f)) AS file
+
+          ORDER BY slim_url
+          SKIP $skip
+          LIMIT $limit
+
+          RETURN
+            slim_url AS id,
+            slim_url,
+            split(split(slim_url, '/studies/')[1], '/')[0] AS study_uid,
+            split(split(slim_url, '/series/')[1], '/')[0] AS series_uid,
+            file.image_modality AS image_modality,
+            file.magnification AS magnification,
+            file.fixation_embedding_method AS fixation_embedding_method,
+            file.staining_method AS staining_method
+          ORDER BY slim_url
+      - name: "file_properties"
+        query: |
+          MATCH (f:pathology_file)
+          WHERE f.slim_url CONTAINS '/studies/'
+            AND f.slim_url CONTAINS '/series/'
+
+          // Group files before applying pagination.
+          WITH
+            f.slim_url AS slim_url,
+            collect(f) AS files
+
+          ORDER BY slim_url
+          SKIP $skip
+          LIMIT $limit
+
+          UNWIND files AS f
+
+          RETURN
+            slim_url AS id,
+            collect(DISTINCT f.dcf_indexd_guid) AS datamodel_dcf_indexd_guid,
+            collect(DISTINCT f.guid) AS datamodel_guid,
+            collect(DISTINCT f.pathology_file_id) AS datamodel_file_id,
+            collect(DISTINCT f.file_name) AS file_name,
+            collect(DISTINCT f.data_category) AS data_category,
+            collect(DISTINCT f.file_type) AS file_type,
+            collect(DISTINCT f.file_description) AS file_description,
+            collect(DISTINCT f.file_size) AS file_size,
+            collect(DISTINCT f.md5sum) AS md5sum,
+            collect(DISTINCT f.file_mapping_level) AS file_mapping_level,
+            collect(DISTINCT f.file_access) AS file_access,
+            collect(DISTINCT f.library_selection) AS library_selection,
+            collect(DISTINCT f.library_source_material) AS library_source_material,
+            collect(DISTINCT f.library_source_molecule) AS library_source_molecule,
+            collect(DISTINCT f.library_strategy) AS library_strategy,
+            collect(DISTINCT f.dcf_indexd_guid) AS files
+          ORDER BY id
+        page_size: 5000
+
   # Model nodes index
   - index_name: model_nodes
     type: model
