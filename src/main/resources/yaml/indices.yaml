@@ -3205,16 +3205,21 @@ indices:
         - study_phase
         - study_acronym
         - study_name
+        # Survival fields
         - last_known_survival_status
         - event_free_survival_status
         - first_event
         - cause_of_death
+        # Survival filters
         - survival_filters.last_known_survival_status
         - survival_filters.cause_of_death
         - survival_filters.first_event
+        # Treatment filters
         - treatment_filters.treatment_type
         - treatment_filters.treatment_agent
+        # Treatment Response filters
         - treatment_response_filters.response
+        # (Sample, Diagnosis, Genetic Analysis, File) filters
         - sample_diagnosis_genetic_analysis_file_filters.sample_anatomic_site
         - sample_diagnosis_genetic_analysis_file_filters.sample_tumor_status
         - sample_diagnosis_genetic_analysis_file_filters.tumor_spatial_extent
@@ -3238,6 +3243,7 @@ indices:
         - sample_diagnosis_genetic_analysis_file_filters.library_source_material
         - sample_diagnosis_genetic_analysis_file_filters.library_source_molecule
         - sample_diagnosis_genetic_analysis_file_filters.library_strategy
+        # Global Search fields
         - participant_id_gs
         - study_id_gs
         - sex_at_birth_gs
@@ -3249,12 +3255,17 @@ indices:
         - diagnosis_category_str_gs
         - age_at_diagnosis_str_gs
       integer:
+        # Survival numerical fields
         - age_at_last_known_survival_status
         - age_at_event_free_survival_status
+        # Survival numerical filters
         - survival_filters.age_at_last_known_survival_status
+        # Treatment numerical filters
         - treatment_filters.age_at_treatment_start
         - treatment_filters.age_at_treatment_end
+        # Treatment Response numerical filters
         - treatment_response_filters.age_at_response
+        # (Sample, Diagnosis, Genetic Analysis, File) numerical filters
         - sample_diagnosis_genetic_analysis_file_filters.participant_age_at_collection
         - sample_diagnosis_genetic_analysis_file_filters.age_at_diagnosis
     # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
@@ -3471,7 +3482,7 @@ indices:
             reduce(all_filters = [], filters IN treatment_filters_superlist | all_filters + filters) AS treatment_filters
           RETURN id, treatment_filters
         page_size: 5000
-      - name: "treatment_response_filters"
+      - name: "treatment_responses"
         query: |
           MATCH (p:participant)
           WITH p
