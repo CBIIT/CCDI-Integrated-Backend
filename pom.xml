@@ -29,6 +29,7 @@
         <opensearch.version>2.19.4</opensearch.version> 
         <jackson2.version>2.21.7</jackson2.version>
         <jackson3.version>3.1.7</jackson3.version>
+        <guava.version>33.7.2-jre</guava.version>
     </properties>
 
     <!-- Use dependencyManagement to enforce patched versions across transitive pulls -->
@@ -233,7 +234,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.1.0-jre</version>
+            <version>${guava.version}</version>
         </dependency>
 
         <!-- Unirest Java -->
