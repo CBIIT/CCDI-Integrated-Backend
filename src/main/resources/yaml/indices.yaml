@@ -9040,6 +9040,7 @@ indices:
     mapping:
       keyword:
         - id # slim_url
+        - slim_url
         - file_id
         - pid
         - participant_id
@@ -9086,8 +9087,11 @@ indices:
         - combined_filters.survival_filters.first_event
         # Treatment filters
         - combined_filters.treatment_filters.treatment_type
+        - combined_filters.treatment_filters.treatment_agent
         # Treatment Response filters
         - combined_filters.treatment_response_filters.response
+        - combined_filters.treatment_response_filters.response_category
+        - combined_filters.treatment_response_filters.response_system
         # (Sample, Diagnosis, Genetic Analysis) filters
         - combined_filters.sample_diagnosis_genetic_analysis_filters.sample_anatomic_site
         - combined_filters.sample_diagnosis_genetic_analysis_filters.sample_tumor_status
@@ -9105,14 +9109,7 @@ indices:
         - combined_filters.sample_diagnosis_genetic_analysis_filters.fusion_partner_gene
         - combined_filters.sample_diagnosis_genetic_analysis_filters.alteration_type
         - combined_filters.sample_diagnosis_genetic_analysis_filters.status
-        # Global search fields
-        - participant_id_gs
-        - sample_id_gs
-        - study_id_gs
-        - file_description_gs
-        - file_type_gs
-        - file_name_gs
-        - data_category_gs
+        # Associated file GUIDs
         - files
       integer:
         # Participant numerical filters
