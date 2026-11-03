@@ -2925,7 +2925,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> geneticAnalysisOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
-            new String[]{"ga_id", "id"},
+            new String[]{"id", "id"},
             new String[]{"pid", "pid"},
             new String[]{"genetic_analysis_id", "genetic_analysis_id"},
             new String[]{"participant_id", "participant_id"},
@@ -2983,7 +2983,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> treatmentOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
-            new String[]{"t_id", "id"},
+            new String[]{"id", "id"},
             new String[]{"pid", "pid"},
             new String[]{"treatment_id", "treatment_id"},
             new String[]{"participant_id", "participant_id"},
@@ -3013,7 +3013,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> treatmentResponseOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
-            new String[]{"tr_id", "id"},
+            new String[]{"id", "id"},
             new String[]{"pid", "pid"},
             new String[]{"treatment_response_id", "treatment_response_id"},
             new String[]{"participant_id", "participant_id"},
@@ -3043,7 +3043,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> survivalOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
-            new String[]{"s_id", "id"},
+            new String[]{"id", "id"},
             new String[]{"pid", "pid"},
             new String[]{"survival_id", "survival_id"},
             new String[]{"participant_id", "participant_id"},
