@@ -9034,6 +9034,7 @@ indices:
         page_size: 1000
 
   # Derived from File data
+  # Only pathology_files are involved, which are all sample-level
   - index_name: idc_table
     id_field: "id"
     mapping:
