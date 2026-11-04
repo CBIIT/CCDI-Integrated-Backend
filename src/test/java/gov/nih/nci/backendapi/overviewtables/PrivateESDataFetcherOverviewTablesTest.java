@@ -84,7 +84,7 @@ class PrivateESDataFetcherOverviewTablesTest {
             "tumor_stage_clinical_o", "tumor_stage_clinical_o");
 
     private static final List<List<String>> GENETIC_ANALYSIS_PROPERTIES = pairs(
-            "ga_id", "id",
+            "id", "id",
             "pid", "pid",
             "genetic_analysis_id", "genetic_analysis_id",
             "participant_id", "participant_id",
@@ -110,7 +110,7 @@ class PrivateESDataFetcherOverviewTablesTest {
             "hgvs_protein", "hgvs_protein");
 
     private static final List<List<String>> TREATMENT_PROPERTIES = pairs(
-            "t_id", "id",
+            "id", "id",
             "pid", "pid",
             "treatment_id", "treatment_id",
             "participant_id", "participant_id",
@@ -122,7 +122,7 @@ class PrivateESDataFetcherOverviewTablesTest {
             "age_at_treatment_end", "age_at_treatment_end");
 
     private static final List<List<String>> TREATMENT_RESPONSE_PROPERTIES = pairs(
-            "tr_id", "id",
+            "id", "id",
             "pid", "pid",
             "treatment_response_id", "treatment_response_id",
             "participant_id", "participant_id",
@@ -134,7 +134,7 @@ class PrivateESDataFetcherOverviewTablesTest {
             "age_at_response", "age_at_response");
 
     private static final List<List<String>> SURVIVAL_PROPERTIES = pairs(
-            "s_id", "id",
+            "id", "id",
             "pid", "pid",
             "survival_id", "survival_id",
             "participant_id", "participant_id",
