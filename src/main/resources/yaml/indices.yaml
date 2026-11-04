@@ -9166,7 +9166,7 @@ indices:
 
           UNWIND files AS f
 
-          // BFS finds the shortest directed path to each reachable study.
+          // BFS finds the shortest directed path to each study within six hops.
           OPTIONAL MATCH p = (f)-[
             :of_pathology_file
             |of_sample
@@ -9174,7 +9174,7 @@ indices:
             |of_cell_line
             |of_participant
             |of_consent_group
-            *BFS
+            *BFS ..6
           ]->(s:study)
 
           // Rank candidates across every file in the URL group.
