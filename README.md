@@ -74,6 +74,25 @@ docker run --rm \
 On the NIH network, Maven dependency downloads may fail inside Docker with a Java certificate error like ````PKIX path building failed````. This means the container JVM does not trust the local NIH certificate chain. For a disposable test container, extract the certificate chain and import it into the container truststore before running Maven.
 
 
+## OpenSearch client recovery
+
+`InventoryESService.send` replaces its HTTP client before a request when
+`RestClient.isRunning()` reports that the previous client has stopped. This
+works with both the default and AWS signing connectors and addresses the
+persistent cancellation failure described in
+[opensearch-java #545](https://github.com/opensearch-project/opensearch-java/issues/545),
+which remains open as of November 4, 2026. The workaround lives in this backend;
+it does not change OpenSearch dependencies or the Bento core submodule.
+
+The request that encounters a transport failure still fails. Later requests can
+use a new client without restarting the backend. Failed requests are not replayed,
+since a scroll or write may already have reached OpenSearch. A cancellation,
+timeout, or HTTP error on a running client does not cause replacement. Concurrent
+callers share one replacement, and shutdown prevents further client creation.
+This recovers from a stopped transport; it does not resolve the underlying cause
+of a reactor failure, such as memory exhaustion. The inherited Bento core
+`elasticMultiSend` client is outside this workaround's scope.
+
 ## Configuration
 The following file will need to be edited to configure the Bento Backend Code to work within a Bento based application:
 

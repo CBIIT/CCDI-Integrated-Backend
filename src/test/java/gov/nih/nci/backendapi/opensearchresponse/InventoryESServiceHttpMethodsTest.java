@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import gov.nih.nci.backendapi.support.InventoryESServiceTestSupport;
 import gov.nih.nci.bento_ri.service.InventoryESService;
+import gov.nih.nci.bento_ri.service.connector.RecoveringOpenSearchClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -26,6 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -60,6 +65,43 @@ class InventoryESServiceHttpMethodsTest {
         JsonObject result = service.send(new Request("GET", "/participants/_count"));
 
         assertEquals(42, result.get("count").getAsInt());
+    }
+
+    @Test
+    void recoversOnNextRequestAfterTransportStopsWithoutReplayingScroll() throws Exception {
+        RestClient stopped = mock(RestClient.class);
+        RestClient replacement = mock(RestClient.class);
+        when(stopped.isRunning()).thenReturn(false);
+        RuntimeException cancelled = new RuntimeException("Request execution cancelled",
+                new CancellationException("Request execution cancelled"));
+        when(stopped.performRequest(any(Request.class))).thenThrow(cancelled);
+        Response response = InventoryESServiceTestSupport.mockJsonResponse(200, "{\"count\":42}");
+        when(replacement.performRequest(any(Request.class))).thenReturn(response);
+        Supplier<RestClient> factory = mock(Supplier.class);
+        when(factory.get()).thenReturn(stopped, replacement);
+        InventoryESServiceTestSupport.setClientForTest(service,
+                new RecoveringOpenSearchClient(factory));
+
+        Request scroll = new Request("POST", "/_search/scroll");
+        assertEquals(cancelled, assertThrows(RuntimeException.class, () -> service.send(scroll)));
+        assertEquals(42, service.send(new Request("GET", "/participants/_count")).get("count").getAsInt());
+        verify(stopped).performRequest(scroll);
+        verify(stopped).close();
+        verify(replacement, never()).performRequest(scroll);
+        verify(factory, times(2)).get();
+    }
+
+    @Test
+    void cancellationOnRunningTransportDoesNotReplaceClient() throws Exception {
+        RuntimeException cancelled = new RuntimeException("Request execution cancelled",
+                new CancellationException());
+        Response response = InventoryESServiceTestSupport.mockJsonResponse(200, "{\"count\":42}");
+        when(mockClient.performRequest(any(Request.class))).thenThrow(cancelled).thenReturn(response);
+        Request request = new Request("GET", "/participants/_count");
+        assertEquals(cancelled, assertThrows(RuntimeException.class, () -> service.send(request)));
+        assertEquals(42, service.send(request).get("count").getAsInt());
+        verify(mockClient, times(2)).performRequest(request);
+        verify(mockClient, never()).close();
     }
 
     /** Verifies that a non-200 OpenSearch status becomes an IOException containing the status. */

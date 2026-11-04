@@ -7,6 +7,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import gov.nih.nci.bento.model.ConfigurationDAO;
+import gov.nih.nci.bento_ri.service.connector.RecoveringOpenSearchClient;
 import gov.nih.nci.bento_ri.service.InventoryESService;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -52,24 +53,28 @@ public final class InventoryESServiceTestSupport {
     }
 
     public static void closeClient(InventoryESService service) throws Exception {
-        Field clientField = InventoryESService.class.getDeclaredField("client");
-        clientField.setAccessible(true);
-        RestClient client = (RestClient) clientField.get(service);
-        if (client != null) {
-            client.close();
+        var close = InventoryESService.class.getDeclaredMethod("close");
+        close.setAccessible(true);
+        close.invoke(service);
+        // The inherited service owns two additional clients, unused by most tests.
+        for (String fieldName : new String[]{"client", "restHighLevelClient"}) {
+            Field field = gov.nih.nci.bento.service.ESService.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            ((java.io.Closeable) field.get(service)).close();
         }
     }
 
-    /**
-     * Replaces the OpenSearch client with a test double (closes any existing client first).
-     */
+    /** Replaces the managed client with a running test double. */
     public static void setClientForTest(InventoryESService service, RestClient client) throws Exception {
+        Mockito.lenient().when(client.isRunning()).thenReturn(true);
+        setClientForTest(service, new RecoveringOpenSearchClient(() -> client));
+    }
+
+    public static void setClientForTest(InventoryESService service,
+                                       RecoveringOpenSearchClient client) throws Exception {
         Field clientField = InventoryESService.class.getDeclaredField("client");
         clientField.setAccessible(true);
-        RestClient existing = (RestClient) clientField.get(service);
-        if (existing != null) {
-            existing.close();
-        }
+        ((RecoveringOpenSearchClient) clientField.get(service)).close();
         clientField.set(service, client);
     }
 

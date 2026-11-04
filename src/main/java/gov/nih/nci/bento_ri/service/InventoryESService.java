@@ -7,6 +7,7 @@ import gov.nih.nci.bento.service.RedisService;
 import gov.nih.nci.bento.service.connector.AWSClient;
 import gov.nih.nci.bento.service.connector.AbstractClient;
 import gov.nih.nci.bento.service.connector.DefaultClient;
+import gov.nih.nci.bento_ri.service.connector.RecoveringOpenSearchClient;
 
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
@@ -17,7 +18,7 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.*;
 
@@ -44,7 +45,7 @@ public class InventoryESService extends ESService {
     @Autowired
     private ConfigurationDAO config;
 
-    private RestClient client;
+    private RecoveringOpenSearchClient client;
 
     private Gson gson = new GsonBuilder().serializeNulls().create();
 
@@ -54,7 +55,7 @@ public class InventoryESService extends ESService {
         logger.info("Initializing Elasticsearch client");
         // Base on host name to use signed request (AWS) or not (local)
         AbstractClient abstractClient = config.isEsSignRequests() ? new AWSClient(config) : new DefaultClient(config);
-        client = abstractClient.getLowLevelElasticClient();
+        client = new RecoveringOpenSearchClient(abstractClient::getLowLevelElasticClient);
     }
 
     @PreDestroy
@@ -63,7 +64,7 @@ public class InventoryESService extends ESService {
     }
 
     public JsonObject send(Request request) throws IOException{
-        Response response = client.performRequest(request);
+        Response response = client.get().performRequest(request);
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode != 200) {
             String msg = "Elasticsearch returned code: " + statusCode;
