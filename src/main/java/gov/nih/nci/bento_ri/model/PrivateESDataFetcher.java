@@ -242,9 +242,9 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                             Map<String, Object> args = env.getArguments();
                             return fileOverview(args);
                         })
-                        .dataFetcher("idcTableOverview", env -> {
+                        .dataFetcher("idcOverview", env -> {
                             Map<String, Object> args = env.getArguments();
-                            return idcTableOverview(args);
+                            return idcOverview(args);
                         })
                         .dataFetcher("numberOfDiseases", env -> {
                             Map<String, Object> args = env.getArguments();
@@ -3261,7 +3261,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         return overview(FILES_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "files_table");
     }
 
-    private List<Map<String, Object>> idcTableOverview(Map<String, Object> params) throws IOException {
+    private List<Map<String, Object>> idcOverview(Map<String, Object> params) throws IOException {
         final String[][] properties = new String[][]{
             new String[]{"id", "id"},
             new String[]{"slim_url", "slim_url"},

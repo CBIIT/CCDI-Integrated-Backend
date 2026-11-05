@@ -1403,7 +1403,7 @@ type FileOverViewResult {
     files: [String]
 }
 
-type IDCTableOverviewResult {
+type IDCOverviewResult {
     id: String
     slim_url: String
     study_uid: String
@@ -2408,7 +2408,7 @@ type QueryType {
         sort_direction: String = ""
     ): [FileOverViewResult]
 
-    idcTableOverview (
+    idcOverview (
         import_data: [String] = [""],
 
         # Demographics
@@ -2495,7 +2495,7 @@ type QueryType {
         offset: Int = 0,
         order_by: String = "",
         sort_direction: String = ""
-    ): [IDCTableOverviewResult]
+    ): [IDCOverviewResult]
 
     getFilenames (
         filename: String,
