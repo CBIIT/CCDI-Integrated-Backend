@@ -65,7 +65,7 @@ class PrivateESDataFetcherIDCOverviewTest {
                 .thenReturn(List.of(row));
 
         ExecutionResult result = graphQL.execute("""
-                { idcTableOverview(race: ["White"], sex_at_birth: ["Female"],
+                { idcOverview(race: ["White"], sex_at_birth: ["Female"],
                     diagnosis: ["Neuroblastoma"], first: 2, offset: 3,
                     order_by: "study_uid", sort_direction: "DESC") {
                     id slim_url study_uid series_uid study_id participant_id sample_id
@@ -75,7 +75,7 @@ class PrivateESDataFetcherIDCOverviewTest {
 
         assertTrue(result.getErrors().isEmpty(), result.getErrors().toString());
         Map<String, Object> data = result.getData();
-        List<Map<String, Object>> records = (List<Map<String, Object>>) data.get("idcTableOverview");
+        List<Map<String, Object>> records = (List<Map<String, Object>>) data.get("idcOverview");
         Map<String, Object> actual = records.get(0);
         assertEquals(11, actual.size());
         assertEquals("1", actual.get("study_uid"));
@@ -108,14 +108,14 @@ class PrivateESDataFetcherIDCOverviewTest {
                 .thenReturn(List.of(row));
 
         ExecutionResult result = graphQL.execute("""
-                { idcTableOverview {
+                { idcOverview {
                     image_modality magnification fixation_embedding_method staining_method
                 } }
                 """);
 
         assertTrue(result.getErrors().isEmpty(), result.getErrors().toString());
         Map<String, Object> data = result.getData();
-        Map<String, Object> actual = ((List<Map<String, Object>>) data.get("idcTableOverview")).get(0);
+        Map<String, Object> actual = ((List<Map<String, Object>>) data.get("idcOverview")).get(0);
         assertEquals("SM", actual.get("image_modality"));
         assertNull(actual.get("magnification"));
         assertNull(actual.get("fixation_embedding_method"));
