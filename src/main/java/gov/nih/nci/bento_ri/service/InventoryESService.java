@@ -164,8 +164,8 @@ public class InventoryESService extends ESService {
             }
         }
 
-        if (indexType.startsWith("files")) {
-            // regular files query
+        if (indexType.startsWith("files") || indexType.equals("idc_table")) {
+            // File and IDC documents share the combined_filters hierarchy.
             List<Object> filter_1 = new ArrayList<>();
             List<Object> combined_filters = new ArrayList<>();
             List<Object> combined_participant_filters = new ArrayList<>();
