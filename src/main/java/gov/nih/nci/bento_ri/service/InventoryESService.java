@@ -416,11 +416,11 @@ public class InventoryESService extends ESService {
                                                     "must",
                                                     List.of(Map.of("exists",
                                                             Map.of("field",
-                                                                    "combined_filters.sample_diagnosis_filters."
+                                                                    "combined_filters.sample_diagnosis_genetic_analysis_filters."
                                                                             + key))),
                                                     "must_not",
                                                     List.of(Map.of("term",
-                                                            Map.of("combined_filters.sample_diagnosis_filters." + key,
+                                                            Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters." + key,
                                                                     -999))))));
                                 } else if (key.equals("participant_age_at_collection")) {
                                     combined_sample_diagnosis_genetic_analysis_filters.add(Map.of(
@@ -428,11 +428,11 @@ public class InventoryESService extends ESService {
                                                     "must",
                                                     List.of(Map.of("exists",
                                                             Map.of("field",
-                                                                    "combined_filters.sample_diagnosis_filters."
+                                                                    "combined_filters.sample_diagnosis_genetic_analysis_filters."
                                                                             + key))),
                                                     "must_not",
                                                     List.of(Map.of("term",
-                                                            Map.of("combined_filters.sample_diagnosis_filters." + key,
+                                                            Map.of("combined_filters.sample_diagnosis_genetic_analysis_filters." + key,
                                                                     -999))))));
                                 } else if (key.equals("age_at_treatment_start")) {
                                     combined_treatment_filters.add(Map.of(

@@ -72,6 +72,23 @@ class InventoryESServiceFacetFilterQueryTest {
                 buildQuery(Map.of(), Set.of(), Set.of(), "idc_table").get("query"));
     }
 
+    /** Known-age exclusions must reference the mapped SDGA fields, not an obsolete path. */
+    @Test
+    void fileAndIDCAgeExclusionsUseMappedSampleDiagnosisGeneticAnalysisFields() throws IOException {
+        String nestedPath = "combined_filters.sample_diagnosis_genetic_analysis_filters";
+        for (String index : List.of("files_table", "idc_table")) {
+            for (String field : List.of("age_at_diagnosis", "participant_age_at_collection")) {
+                Map<String, Object> query = buildQuery(
+                        Map.of(field, List.of(365, 730), field + "_unknownAges", List.of("exclude")),
+                        Set.of(field), Set.of(), index);
+
+                assertContains(query, range(nestedPath + "." + field));
+                assertContains(query, excludesUnknown(nestedPath + "." + field));
+                assertEquals(Set.of("combined_filters", nestedPath), nestedPaths(query));
+            }
+        }
+    }
+
     /** Verifies participant filters are routed to their root and nested document families. */
     @Test
     void participantFiltersUseTheirExpectedNestedFamilies() throws IOException {
@@ -261,7 +278,7 @@ class InventoryESServiceFacetFilterQueryTest {
         for (AgeRoute route : fileAgeRoutes()) {
             Map<String, Object> query = buildAgeQuery(route, "exclude");
 
-            assertContains(query, excludesUnknown(fileUnknownExclusionPath(route)));
+            assertContains(query, excludesUnknown(route.expectedPath()));
         }
     }
 
@@ -613,14 +630,6 @@ class InventoryESServiceFacetFilterQueryTest {
 
     private static List<Object> blankUnknownControls() {
         return Arrays.asList(null, List.of(), List.of(""));
-    }
-
-    private static String fileUnknownExclusionPath(AgeRoute route) {
-        if (route.field().equals("age_at_diagnosis")
-                || route.field().equals("participant_age_at_collection")) {
-            return "combined_filters.sample_diagnosis_filters." + route.field();
-        }
-        return route.expectedPath();
     }
 
     private static boolean includesUnknownByDefault(AgeRoute route) {

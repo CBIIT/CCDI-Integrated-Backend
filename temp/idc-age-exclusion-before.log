@@ -1,0 +1,153 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------< gov.nih.nci.bento:Bento >-----------------------
+[INFO] Building Bento 0.0.1
+[INFO]   from pom.xml
+[INFO] --------------------------------[ war ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.0.0-M2:enforce (enforce) @ Bento ---
+[WARNING] 
+Dependency convergence error for jakarta.servlet:jakarta.servlet-api:6.1.0 paths to dependency are:
++-gov.nih.nci.bento:Bento:0.0.1
+  +-org.springframework.restdocs:spring-restdocs-mockmvc:4.0.0
+    +-jakarta.servlet:jakarta.servlet-api:6.1.0
+and
++-gov.nih.nci.bento:Bento:0.0.1
+  +-jakarta.servlet:jakarta.servlet-api:6.0.0
+
+[WARNING] 
+Dependency convergence error for com.google.errorprone:error_prone_annotations:2.41.0 paths to dependency are:
++-gov.nih.nci.bento:Bento:0.0.1
+  +-com.google.code.gson:gson:2.13.2
+    +-com.google.errorprone:error_prone_annotations:2.41.0
+and
++-gov.nih.nci.bento:Bento:0.0.1
+  +-com.google.guava:guava:33.1.0-jre
+    +-com.google.errorprone:error_prone_annotations:2.26.1
+
+[WARNING] 
+Dependency convergence error for commons-logging:commons-logging:1.3.6 paths to dependency are:
++-gov.nih.nci.bento:Bento:0.0.1
+  +-org.springframework:spring-core:7.0.9
+    +-commons-logging:commons-logging:1.3.6
+and
++-gov.nih.nci.bento:Bento:0.0.1
+  +-commons-logging:commons-logging:1.3.5
+and
++-gov.nih.nci.bento:Bento:0.0.1
+  +-com.konghq:unirest-java:3.14.5
+    +-org.apache.httpcomponents:httpasyncclient:4.1.5
+      +-commons-logging:commons-logging:1.3.6
+
+[WARNING] 
+Dependency convergence error for org.springframework.restdocs:spring-restdocs-core:4.0.0 paths to dependency are:
++-gov.nih.nci.bento:Bento:0.0.1
+  +-org.springframework.restdocs:spring-restdocs-core:4.0.0
+and
++-gov.nih.nci.bento:Bento:0.0.1
+  +-org.springframework.restdocs:spring-restdocs-mockmvc:4.0.0
+    +-org.springframework.restdocs:spring-restdocs-core:4.0.1
+
+[WARNING] 
+Dependency convergence error for org.apache.tomcat.embed:tomcat-embed-core:11.0.24 paths to dependency are:
++-gov.nih.nci.bento:Bento:0.0.1
+  +-org.springframework.boot:spring-boot-starter-webmvc:4.0.8
+    +-org.springframework.boot:spring-boot-starter-tomcat:4.0.8
+      +-org.springframework.boot:spring-boot-starter-tomcat-runtime:4.0.8
+        +-org.apache.tomcat.embed:tomcat-embed-core:11.0.24
+and
++-gov.nih.nci.bento:Bento:0.0.1
+  +-org.springframework.boot:spring-boot-starter-webmvc:4.0.8
+    +-org.springframework.boot:spring-boot-starter-tomcat:4.0.8
+      +-org.springframework.boot:spring-boot-starter-tomcat-runtime:4.0.8
+        +-org.apache.tomcat.embed:tomcat-embed-websocket:11.0.24
+          +-org.apache.tomcat.embed:tomcat-embed-core:11.0.24
+and
++-gov.nih.nci.bento:Bento:0.0.1
+  +-org.springframework.boot:spring-boot-starter-webmvc:4.0.8
+    +-org.springframework.boot:spring-boot-starter-tomcat:4.0.8
+      +-org.springframework.boot:spring-boot-tomcat:4.0.8
+        +-org.apache.tomcat.embed:tomcat-embed-core:11.0.24
+and
++-gov.nih.nci.bento:Bento:0.0.1
+  +-org.apache.tomcat.embed:tomcat-embed-core:11.0.25
+
+[WARNING] 
+Dependency convergence error for org.mockito:mockito-core:5.14.2 paths to dependency are:
++-gov.nih.nci.bento:Bento:0.0.1
+  +-org.mockito:mockito-core:5.14.2
+and
++-gov.nih.nci.bento:Bento:0.0.1
+  +-org.mockito:mockito-junit-jupiter:5.14.2
+    +-org.mockito:mockito-core:5.20.0
+
+[WARNING] Rule 0: org.apache.maven.plugins.enforcer.DependencyConvergence failed with message:
+Failed while enforcing releasability. See above detailed error message.
+[INFO] 
+[INFO] --- jacoco:0.8.12:prepare-agent (default) @ Bento ---
+[INFO] argLine set to -javaagent:/root/.m2/repository/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.12-runtime.jar=destfile=/workspace/target/jacoco.exec
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ Bento ---
+[INFO] Copying 3 resources from src/main/resources to target/classes
+[INFO] Copying 10 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ Bento ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ Bento ---
+[INFO] Copying 13 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ Bento ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.1:test (default-test) @ Bento ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running gov.nih.nci.backendapi.opensearchquery.InventoryESServiceFacetFilterQueryTest
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.17.8/byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+20:25:45.733 [main] INFO  gov.nih.nci.bento.service.RedisService - Initializing Elasticsearch client
+20:25:46.029 [main] INFO  gov.nih.nci.bento.service.RedisService - Initializing Elasticsearch client
+[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 2.059 s <<< FAILURE! -- in gov.nih.nci.backendapi.opensearchquery.InventoryESServiceFacetFilterQueryTest
+[ERROR] gov.nih.nci.backendapi.opensearchquery.InventoryESServiceFacetFilterQueryTest.fileAndIDCAgeExclusionsUseMappedSampleDiagnosisGeneticAnalysisFields -- Time elapsed: 2.033 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: Expected clause {bool={must=[{exists={field=combined_filters.sample_diagnosis_genetic_analysis_filters.age_at_diagnosis}}], must_not=[{term={combined_filters.sample_diagnosis_genetic_analysis_filters.age_at_diagnosis=-999}}]}} in {query={bool={should=[{bool={filter=[{nested={query={bool={filter=[{nested={query={bool={filter=[{range={combined_filters.sample_diagnosis_genetic_analysis_filters.age_at_diagnosis={gte=365, lte=730}}}, {bool={must=[{exists={field=combined_filters.sample_diagnosis_filters.age_at_diagnosis}}], must_not=[{term={combined_filters.sample_diagnosis_filters.age_at_diagnosis=-999}}]}}]}}, path=combined_filters.sample_diagnosis_genetic_analysis_filters}}]}}, path=combined_filters}}]}}]}}} ==> expected: <true> but was: <false>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:158)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:139)
+	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:69)
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:48)
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:204)
+	at gov.nih.nci.backendapi.opensearchquery.InventoryESServiceFacetFilterQueryTest.assertContains(InventoryESServiceFacetFilterQueryTest.java:656)
+	at gov.nih.nci.backendapi.opensearchquery.InventoryESServiceFacetFilterQueryTest.fileAndIDCAgeExclusionsUseMappedSampleDiagnosisGeneticAnalysisFields(InventoryESServiceFacetFilterQueryTest.java:86)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   InventoryESServiceFacetFilterQueryTest.fileAndIDCAgeExclusionsUseMappedSampleDiagnosisGeneticAnalysisFields:86->assertContains:656 Expected clause {bool={must=[{exists={field=combined_filters.sample_diagnosis_genetic_analysis_filters.age_at_diagnosis}}], must_not=[{term={combined_filters.sample_diagnosis_genetic_analysis_filters.age_at_diagnosis=-999}}]}} in {query={bool={should=[{bool={filter=[{nested={query={bool={filter=[{nested={query={bool={filter=[{range={combined_filters.sample_diagnosis_genetic_analysis_filters.age_at_diagnosis={gte=365, lte=730}}}, {bool={must=[{exists={field=combined_filters.sample_diagnosis_filters.age_at_diagnosis}}], must_not=[{term={combined_filters.sample_diagnosis_filters.age_at_diagnosis=-999}}]}}]}}, path=combined_filters.sample_diagnosis_genetic_analysis_filters}}]}}, path=combined_filters}}]}}]}}} ==> expected: <true> but was: <false>
+[INFO] 
+[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  9.093 s
+[INFO] Finished at: 2026-11-05T20:25:47Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.1:test (default-test) on project Bento: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /workspace/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
