@@ -1236,6 +1236,7 @@ type ParticipantOverViewResult {
     treatment_agent: String
     treatment_type: String
     age_at_treatment_start: String
+    age_at_treatment_end: String
     first_event: String
     last_known_survival_status: String
     age_at_last_known_survival_status: String

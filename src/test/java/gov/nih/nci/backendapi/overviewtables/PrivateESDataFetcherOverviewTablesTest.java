@@ -57,6 +57,7 @@ class PrivateESDataFetcherOverviewTablesTest {
             "treatment_agent", "treatment_agent_str",
             "treatment_type", "treatment_type_str",
             "age_at_treatment_start", "age_at_treatment_start_str",
+            "age_at_treatment_end", "age_at_treatment_end_str",
             "first_event", "first_event_str",
             "last_known_survival_status", "last_known_survival_status_str",
             "age_at_last_known_survival_status", "age_at_last_known_survival_status_str");

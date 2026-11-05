@@ -1819,6 +1819,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"treatment_agent", "treatment_agent_str"},
             new String[]{"treatment_type", "treatment_type_str"},
             new String[]{"age_at_treatment_start", "age_at_treatment_start_str"},
+            new String[]{"age_at_treatment_end", "age_at_treatment_end_str"},
             new String[]{"first_event", "first_event_str"},
             new String[]{"last_known_survival_status", "last_known_survival_status_str"},
             new String[]{"age_at_last_known_survival_status", "age_at_last_known_survival_status_str"},
@@ -1841,6 +1842,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 Map.entry("treatment_agent", "treatment_agent_str"),
                 Map.entry("treatment_type", "treatment_type_str"),
                 Map.entry("age_at_treatment_start", "age_at_treatment_start_str"),
+                Map.entry("age_at_treatment_end", "age_at_treatment_end_str"),
                 Map.entry("first_event", "first_event_str"),
                 Map.entry("last_known_survival_status", "last_known_survival_status_str"),
                 Map.entry("age_at_last_known_survival_status", "age_at_last_known_survival_status_str")
