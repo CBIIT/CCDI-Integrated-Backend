@@ -3214,7 +3214,13 @@ indices:
         - survival_filters.last_known_survival_status
         - survival_filters.cause_of_death
         - survival_filters.first_event
+        # Consolidated treatment display fields
+        - treatment_type_str
+        - age_at_treatment_start_str
+        - age_at_treatment_end_str
         # Treatment filters
+        - treatment_filters.guid
+        - treatment_filters.treatment_id
         - treatment_filters.treatment_type
         - treatment_filters.treatment_agent
         # Treatment Response filters
@@ -3371,116 +3377,88 @@ indices:
         query: |
           MATCH (p:participant)
           WITH p
+          ORDER BY p.guid
           SKIP $skip LIMIT $limit
 
-          // Build a superlist of treatment filters
           CALL {
-            // treatment_chemotherapy
             WITH p
-            OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
-            WITH
-              p.guid AS id,
-              count(tchemo) AS tchemo_count,
-              collect(DISTINCT {
-                treatment_type: CASE
-                  WHEN tchemo.chemotherapy_type IS NULL OR size(tchemo.chemotherapy_type) = 0 THEN ['chemotherapy']
-                  ELSE [x IN tchemo.chemotherapy_type WHERE x IS NOT NULL | trim(x)]
-                END,
-                treatment_agent: tchemo.chemotherapy_agent,
-                age_at_treatment_start: tchemo.age_at_treatment_start,
-                age_at_treatment_end: tchemo.age_at_treatment_end
-              }) AS treatment_filters
-            WITH
-              id,
-              CASE
-                WHEN tchemo_count > 0
-                THEN treatment_filters
-                ELSE []
-              END AS treatment_filters
-            RETURN id, treatment_filters
+            OPTIONAL MATCH (record:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
+            RETURN collect(DISTINCT record) AS records
 
-            UNION
+            UNION ALL
 
-            // treatment_radiation
             WITH p
-            OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
-            WITH
-              p.guid AS id,
-              count(trad) AS trad_count,
-              [item in collect(
-                DISTINCT {
-                  treatment_type: trad.treatment_type,
-                  treatment_agent: trad.radiation_therapy_type,
-                  age_at_treatment_start: trad.age_at_treatment_start,
-                  age_at_treatment_end: trad.age_at_treatment_end
-                }
-              ) WHERE item IS NOT NULL] AS treatment_filters
-            WITH
-              id,
-              CASE
-                WHEN trad_count > 0
-                THEN treatment_filters
-                ELSE []
-              END AS treatment_filters
-            RETURN id, treatment_filters
+            OPTIONAL MATCH (record:treatment_radiation)-[:of_treatment_radiation]->(p)
+            RETURN collect(DISTINCT record) AS records
 
-            UNION
+            UNION ALL
 
-            // treatment_surgery
             WITH p
-            OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
-            WITH
-              p.guid AS id,
-              count(tsurg) AS tsurg_count,
-              [item in collect(
-                DISTINCT {
-                  treatment_type: tsurg.treatment_type,
-                  treatment_agent: tsurg.surgery_type,
-                  age_at_treatment_start: tsurg.age_at_treatment_start,
-                  age_at_treatment_end: tsurg.age_at_treatment_end
-                }
-              ) WHERE item IS NOT NULL] AS treatment_filters
-            WITH
-              id,
-              CASE
-                WHEN tsurg_count > 0
-                THEN treatment_filters
-                ELSE []
-              END AS treatment_filters
-            RETURN id, treatment_filters
+            OPTIONAL MATCH (record:treatment_surgery)-[:of_treatment_surgery]->(p)
+            RETURN collect(DISTINCT record) AS records
 
-            UNION
+            UNION ALL
 
-            // treatment_other
             WITH p
-            OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
-            WITH
-              p.guid AS id,
-              count(toth) AS toth_count,
-              [item in collect(
-                DISTINCT {
-                  treatment_type: toth.treatment_type,
-                  treatment_agent: toth.other_treatment_type,
-                  age_at_treatment_start: toth.age_at_treatment_start,
-                  age_at_treatment_end: toth.age_at_treatment_end
-                }
-              ) WHERE item IS NOT NULL] AS treatment_filters
-            WITH
-              id,
-              CASE
-                WHEN toth_count > 0
-                THEN treatment_filters
-                ELSE []
-              END AS treatment_filters
-            RETURN id, treatment_filters
+            OPTIONAL MATCH (record:treatment_other)-[:of_treatment_other]->(p)
+            RETURN collect(DISTINCT record) AS records
           }
-          WITH
-            id,
-            collect(treatment_filters) AS treatment_filters_superlist
-          WITH
-            id,
-            reduce(all_filters = [], filters IN treatment_filters_superlist | all_filters + filters) AS treatment_filters
-          RETURN id, treatment_filters
+          WITH p, collect(records) AS treatment_lists
+          WITH p, reduce(records = [], items IN treatment_lists | records + items) AS records
+          CALL {
+            WITH records
+            UNWIND records AS record
+            WITH record,
+              CASE WHEN toFloat(record.age_at_treatment_start) IS NOT NULL
+                AND toFloat(record.age_at_treatment_start) <> -999
+                THEN toFloat(record.age_at_treatment_start) ELSE null END AS start_age
+            // Sort whole instances so type, start age and end age stay aligned.
+            // Unknown ages follow valid ages, ordered by descending GUID.
+            ORDER BY start_age IS NULL, start_age, record.guid DESC,
+              coalesce(record.treatment_chemotherapy_id, record.treatment_radiation_id,
+                record.treatment_surgery_id, record.treatment_other_id) DESC
+            RETURN collect({
+              treatment_id: coalesce(record.treatment_chemotherapy_id, record.treatment_radiation_id,
+                record.treatment_surgery_id, record.treatment_other_id),
+              guid: record.guid,
+              treatment_type: record.treatment_type,
+              treatment_agent: coalesce(record.chemotherapy_agent, record.radiation_therapy_type,
+                record.surgery_type, record.other_treatment_type),
+              age_at_treatment_start: record.age_at_treatment_start,
+              age_at_treatment_end: record.age_at_treatment_end
+            }) AS treatment_filters
+          }
+          CALL {
+            WITH treatment_filters
+            UNWIND range(0, size(treatment_filters) - 1) AS instance_index
+            WITH instance_index, treatment_filters[instance_index] AS treatment
+            // Each type value retains its own instance's ages, including missing values.
+            WITH instance_index, treatment,
+              CASE WHEN size(coalesce(treatment.treatment_type, [])) = 0
+                THEN [null] ELSE treatment.treatment_type END AS types
+            UNWIND range(0, size(types) - 1) AS type_index
+            WITH treatment, types[type_index] AS treatment_type, instance_index, type_index
+            ORDER BY instance_index, type_index
+            RETURN collect({
+              treatment_type: coalesce(treatment_type, 'Not Reported'),
+              start_age: CASE WHEN toFloat(treatment.age_at_treatment_start) IS NOT NULL
+                AND toFloat(treatment.age_at_treatment_start) <> -999
+                THEN toString(treatment.age_at_treatment_start) ELSE 'Not Reported' END,
+              end_age: CASE WHEN toFloat(treatment.age_at_treatment_end) IS NOT NULL
+                AND toFloat(treatment.age_at_treatment_end) <> -999
+                THEN toString(treatment.age_at_treatment_end) ELSE 'Not Reported' END
+            }) AS display_values
+          }
+          RETURN p.guid AS id, treatment_filters,
+            reduce(result = '', i IN range(0, size(display_values) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE ';' END
+                + display_values[i].treatment_type) AS treatment_type_str,
+            reduce(result = '', i IN range(0, size(display_values) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE ';' END
+                + display_values[i].start_age) AS age_at_treatment_start_str,
+            reduce(result = '', i IN range(0, size(display_values) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE ';' END
+                + display_values[i].end_age) AS age_at_treatment_end_str
         page_size: 5000
       - name: "treatment_responses"
         query: |
