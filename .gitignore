@@ -11,9 +11,7 @@
 .project
 .settings/
 .sts4-cache/*
-.vscode/*
-!.vscode/extensions.json
-!.vscode/tasks.json
+.vscode
 logs/
 src/main/resources/application.properties
 target/
