@@ -23,10 +23,14 @@
 
     <properties>
         <java.version>21</java.version>
+        <graphql-java.version>21.5</graphql-java.version>
         <snakeyaml.version>2.3</snakeyaml.version>
         <spring.restdocs.version>4.0.0</spring.restdocs.version>
         <netty.version>4.1.137.Final</netty.version>
         <opensearch.version>2.19.4</opensearch.version> 
+        <!-- Pin patched Jackson BOMs via Spring Boot parent-managed properties (CVE-2026-91777/91776/89425/89407/68497) -->
+        <jackson-2-bom.version>2.21.7</jackson-2-bom.version>
+        <jackson-bom.version>3.1.7</jackson-bom.version>
     </properties>
 
     <!-- Use dependencyManagement to enforce patched protobuf across transitive pulls -->
@@ -51,11 +55,6 @@
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-jul</artifactId>
                 <version>2.25.4</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>2.21.5</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -189,7 +188,7 @@
         <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java</artifactId>
-            <version>21.5</version>
+            <version>${graphql-java.version}</version>
         </dependency>
 
         <!-- GSON -->
@@ -213,7 +212,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.1.0-jre</version>
+            <version>33.8.0-jre</version>
         </dependency>
 
         <!-- Unirest Java -->
@@ -517,12 +516,66 @@
                 </configuration>
             </plugin>
 
+            <!--
+                graphql-java bundles a relocated copy of Guava 32.1.2-jre, and its
+                META-INF/maven/com.google.guava metadata makes image scanners report
+                CVE-2026-102554 / CVE-2026-118042. This strips ONLY that metadata from
+                the packaged jar; the relocated classes under graphql/com/google/common
+                (including MapMakerInternalMap) are unchanged and still vulnerable.
+                Remove once a graphql-java release bundles a patched Guava
+                (graphql-java/graphql-java#4498, #4530, #4536).
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>strip-graphql-java-guava-metadata</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <zip destfile="${project.build.directory}/${project.build.finalName}/WEB-INF/lib/graphql-java-${graphql-java.version}-stripped.jar">
+                                    <zipfileset src="${settings.localRepository}/com/graphql-java/graphql-java/${graphql-java.version}/graphql-java-${graphql-java.version}.jar"
+                                                excludes="META-INF/maven/com.google.guava/**"/>
+                                </zip>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <packagingExcludes>WEB-INF/lib/graphql-java-${graphql-java.version}.jar</packagingExcludes>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <jvmArguments>-Xms1g -Xmx2g</jvmArguments>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <configuration>
+                            <excludes>
+                                <!-- Packaged as graphql-java-*-stripped.jar instead; see antrun above -->
+                                <exclude>
+                                    <groupId>com.graphql-java</groupId>
+                                    <artifactId>graphql-java</artifactId>
+                                </exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Maven Failsafe Plugin - for Integration Tests -->
