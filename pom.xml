@@ -56,29 +56,6 @@
                 <artifactId>log4j-jul</artifactId>
                 <version>2.25.4</version>
             </dependency>
-            <!-- Jackson dependencies are managed by Spring Boot. Ideally we should avoid explicitly updating these versions. Since the 
-            latest version of Spring Boot is still using Jackson 2.21.5 and 3.1.5, we need to explicitly update the dependencies to fix CVEs. 
-            TODO: Remove these dependencies once Spring Boot is updated to use higher versions of Jackson. -->
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${jackson2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${jackson3.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>tools.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson3.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
