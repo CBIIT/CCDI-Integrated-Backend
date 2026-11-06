@@ -42,6 +42,7 @@ class PrivateESDataFetcherOverviewTablesTest {
 
     private static final List<List<String>> PARTICIPANT_PROPERTIES = pairs(
             "id", "id",
+            "pid", "id",
             "participant_id", "participant_id",
             "dbgap_accession", "dbgap_accession",
             "study_id", "study_id",
@@ -166,6 +167,7 @@ class PrivateESDataFetcherOverviewTablesTest {
 
     private static final List<List<String>> SAMPLE_PROPERTIES = pairs(
             "id", "id",
+            "pid", "pid",
             "sample_id", "sample_id",
             "participant_id", "participant_id",
             "study_id", "study_id",
@@ -185,6 +187,7 @@ class PrivateESDataFetcherOverviewTablesTest {
 
     private static final List<List<String>> FILE_PROPERTIES = pairs(
             "id", "id",
+            "pid", "pid",
             "file_id", "file_id",
             "guid", "datamodel_dcf_indexd_guid",
             "datamodel_dcf_indexd_guid", "datamodel_dcf_indexd_guid",
@@ -369,7 +372,7 @@ class PrivateESDataFetcherOverviewTablesTest {
     @Test
     void returnsFileOverview() throws Exception {
         Set<String> includedFields = Set.of(
-                "id", "file_id", "guid", "file_name", "data_category", "file_description",
+                "id", "pid", "file_id", "guid", "file_name", "data_category", "file_description",
                 "file_type", "file_size", "library_selection", "library_source_material",
                 "library_source_molecule", "library_strategy", "file_mapping_level", "file_access",
                 "anatomic_site", "participant_age_at_collection", "sample_tumor_status",
