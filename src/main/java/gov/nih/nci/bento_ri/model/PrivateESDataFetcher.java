@@ -1791,6 +1791,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         // System.out.println(params);
         final String[][] PROPERTIES = new String[][]{
             new String[]{"id", "id"},
+            new String[]{"pid", "id"},
             new String[]{"participant_id", "participant_id"},
             new String[]{"dbgap_accession", "dbgap_accession"},
                 new String[]{"study_id", "study_id"},
@@ -3149,6 +3150,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     private List<Map<String, Object>> sampleOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
             new String[]{"id", "id"},
+            new String[]{"pid", "pid"},
             new String[]{"sample_id", "sample_id"},
             new String[]{"participant_id", "participant_id"},
             new String[]{"study_id", "study_id"},
@@ -3193,6 +3195,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     private List<Map<String, Object>> fileOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
             new String[]{"id", "id"},
+            new String[]{"pid", "pid"},
             new String[]{"file_id", "file_id"},
             new String[]{"guid", "datamodel_dcf_indexd_guid"},
             new String[]{"datamodel_dcf_indexd_guid", "datamodel_dcf_indexd_guid"},
@@ -3264,6 +3267,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     private List<Map<String, Object>> idcOverview(Map<String, Object> params) throws IOException {
         final String[][] properties = new String[][]{
             new String[]{"id", "id"},
+            new String[]{"pid", "pid"},
             new String[]{"slim_url", "slim_url"},
             new String[]{"study_uid", "study_uid"},
             new String[]{"series_uid", "series_uid"},
@@ -3567,7 +3571,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         }
         if (overviewType.equals("files_table")) {
             query.put("_source", Map.of("includes", Set.of(
-                    "id", "file_id", "guid", "file_name", "data_category", "file_description", "file_type", "file_size",
+                    "id", "pid", "file_id", "guid", "file_name", "data_category", "file_description", "file_type", "file_size",
                     "library_selection", "library_source_material", "library_source_molecule", "library_strategy",
                     "file_mapping_level", "file_access", "anatomic_site", "participant_age_at_collection",
                     "sample_tumor_status", "tumor_spatial_extent", "sample_description", "percent_tumor",
@@ -3578,7 +3582,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         }
         if (overviewType.equals("idc_table")) {
             query.put("_source", Map.of("includes", Set.of(
-                    "id", "slim_url", "study_uid", "series_uid", "study_id", "participant_id", "sample_id",
+                    "id", "pid", "slim_url", "study_uid", "series_uid", "study_id", "participant_id", "sample_id",
                     "image_modality", "magnification", "fixation_embedding_method", "staining_method")));
         }
         int pageSize = (int) params.get(PAGE_SIZE);

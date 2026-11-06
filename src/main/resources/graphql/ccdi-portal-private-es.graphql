@@ -1219,6 +1219,7 @@ type CPIOverViewResult {
 }
 
 type ParticipantOverViewResult {
+    pid: String
     id: String
     participant_id: String
     dbgap_accession: String
@@ -1241,6 +1242,7 @@ type ParticipantOverViewResult {
 }
 
 type DiagnosisOverViewResult {
+    pid: String
     id: String
     diagnosis_id: String
     participant_id: String
@@ -1265,6 +1267,7 @@ type DiagnosisOverViewResult {
 }
 
 type GeneticAnalysisOverviewResult {
+    pid: String
     dbgap_accession: String
     participant_id: String
     study_id: String
@@ -1311,6 +1314,7 @@ type StudyOverViewResult {
 }
 
 type SampleOverViewResult {
+    pid: String
     id: String
     sample_id: String
     participant_id: String
@@ -1331,6 +1335,7 @@ type SampleOverViewResult {
 }
 
 type SurvivalOverViewResult {
+    pid: String
     id: String
     dbgap_accession: String
     participant_id: String
@@ -1345,6 +1350,7 @@ type SurvivalOverViewResult {
 }
 
 type TreatmentOverViewResult {
+    pid: String
     id: String
     dbgap_accession: String
     participant_id: String
@@ -1357,6 +1363,7 @@ type TreatmentOverViewResult {
 }
 
 type TreatmentResponseOverViewResult {
+    pid: String
     id: String
     dbgap_accession: String
     participant_id: String
@@ -1369,6 +1376,7 @@ type TreatmentResponseOverViewResult {
 }
 
 type FileOverViewResult {
+    pid: [String]
     id: String
     file_name: String
     data_category: [String]
@@ -1404,6 +1412,7 @@ type FileOverViewResult {
 }
 
 type IDCOverviewResult {
+    pid: [String]
     id: String
     slim_url: String
     study_uid: String

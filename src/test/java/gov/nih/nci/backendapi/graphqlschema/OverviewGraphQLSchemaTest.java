@@ -3,12 +3,14 @@ package gov.nih.nci.backendapi.graphqlschema;
 import graphql.language.FieldDefinition;
 import graphql.language.ListType;
 import graphql.language.ObjectTypeDefinition;
+import graphql.language.TypeName;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -44,6 +46,29 @@ class OverviewGraphQLSchemaTest {
         assertListField(registry, "FileOverViewResult", "participant_age_at_collection");
         assertListField(registry, "FileOverViewResult", "datamodel_guid");
         assertListField(registry, "FileOverViewResult", "datamodel_file_id");
+    }
+
+    @Test
+    void participantLinkedOverviewsExposeParticipantGuidsWithMatchingCardinality() {
+        TypeDefinitionRegistry registry = new SchemaParser().parse(
+            getClass().getResourceAsStream("/graphql/ccdi-portal-private-es.graphql")
+        );
+        for (String typeName : new String[] {
+            "ParticipantOverViewResult", "DiagnosisOverViewResult", "GeneticAnalysisOverviewResult",
+            "SampleOverViewResult", "SurvivalOverViewResult", "TreatmentOverViewResult",
+            "TreatmentResponseOverViewResult", "FileOverViewResult", "IDCOverviewResult"
+        }) {
+            ObjectTypeDefinition type = (ObjectTypeDefinition) registry.getType(typeName).orElseThrow();
+            FieldDefinition pid = type.getFieldDefinitions().stream()
+                .filter(field -> field.getName().equals("pid"))
+                .findFirst().orElseThrow();
+            if (typeName.equals("FileOverViewResult") || typeName.equals("IDCOverviewResult")) {
+                ListType list = assertInstanceOf(ListType.class, pid.getType(), typeName);
+                assertEquals("String", assertInstanceOf(TypeName.class, list.getType()).getName());
+            } else {
+                assertEquals("String", assertInstanceOf(TypeName.class, pid.getType(), typeName).getName());
+            }
+        }
     }
 
     private static void assertListField(

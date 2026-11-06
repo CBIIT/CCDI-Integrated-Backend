@@ -61,6 +61,7 @@ class PrivateESDataFetcherIDCOverviewTest {
                 "magnification", List.of("40"),
                 "fixation_embedding_method", List.of("FFPE")));
         row.put("staining_method", List.of("H&E"));
+        row.put("pid", List.of("guid-1", "guid-2"));
         when(service.collectPage(any(Request.class), eq(searchQuery), any(String[][].class), eq(2), eq(3)))
                 .thenReturn(List.of(row));
 
@@ -68,7 +69,7 @@ class PrivateESDataFetcherIDCOverviewTest {
                 { idcOverview(race: ["White"], sex_at_birth: ["Female"],
                     diagnosis: ["Neuroblastoma"], first: 2, offset: 3,
                     order_by: "study_uid", sort_direction: "DESC") {
-                    id slim_url study_uid series_uid study_id participant_id sample_id
+                    id pid slim_url study_uid series_uid study_id participant_id sample_id
                     image_modality magnification fixation_embedding_method staining_method
                 } }
                 """);
@@ -77,7 +78,8 @@ class PrivateESDataFetcherIDCOverviewTest {
         Map<String, Object> data = result.getData();
         List<Map<String, Object>> records = (List<Map<String, Object>>) data.get("idcOverview");
         Map<String, Object> actual = records.get(0);
-        assertEquals(11, actual.size());
+        assertEquals(12, actual.size());
+        assertEquals(List.of("guid-1", "guid-2"), actual.get("pid"));
         assertEquals("1", actual.get("study_uid"));
         assertEquals(List.of("P-1", "P-2"), actual.get("participant_id"));
         assertEquals(List.of("S-1", "S-2"), actual.get("sample_id"));
