@@ -76,6 +76,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String STUDIES_FOR_COHORTS_END_POINT = "/studies_for_cohorts/_search";
     final String SAMPLES_END_POINT = "/samples_table/_search";
     final String FILES_END_POINT = "/files_table/_search";
+    final String IDC_END_POINT = "/idc_table/_search";
     // Matches indices.yaml index_name for type: about_file (searchablePagesContent.yaml)
     final String GS_ABOUT_END_POINT = "/about_page/_search";
     final String NODES_END_POINT = "/model_nodes/_search";
@@ -240,6 +241,10 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         .dataFetcher("fileOverview", env -> {
                             Map<String, Object> args = env.getArguments();
                             return fileOverview(args);
+                        })
+                        .dataFetcher("idcOverview", env -> {
+                            Map<String, Object> args = env.getArguments();
+                            return idcOverview(args);
                         })
                         .dataFetcher("numberOfDiseases", env -> {
                             Map<String, Object> args = env.getArguments();
@@ -703,12 +708,12 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 object.put(GS_CATEGORY_TYPE, category.get(GS_CATEGORY_TYPE));
             }
 
-            if (resultFieldName.equals("samples") && objects != null && !objects.isEmpty()) {
+            if (resultFieldName.equals("samples") && !objects.isEmpty()) {
                 enrichGlobalSearchSamplesFromNestedFilters(objects);
             }
 
             // Add CPI data enrichment for participants
-            if (resultFieldName.equals("participants") && objects != null && !objects.isEmpty()) {
+            if (resultFieldName.equals("participants") && !objects.isEmpty()) {
                 enrichGlobalSearchParticipantsFromNestedFilters(objects);
                 enrichGlobalSearchParticipantsWithConsentCodes(objects);
                 // Check if CPIFetcherService is properly injected
@@ -719,7 +724,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                         
                         // Fetch CPI data
                         List<FormattedCPIResponse> cpi_data = cpiFetcherService.fetchAssociatedParticipantIds(extracted_ids);
-                        logger.info("GlobalSearch CPI data received: " + cpi_data.size() + " records");
+                        logger.info("GlobalSearch CPI data received: " + (cpi_data == null ? 0 : cpi_data.size()) + " records");
                         
                         if (cpi_data != null && !cpi_data.isEmpty()) {
                             // Enrich CPI data with additional participant information
@@ -739,7 +744,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 }
             }
 
-            if (resultFieldName.equals("studies") && objects != null && !objects.isEmpty()) {
+            if (resultFieldName.equals("studies") && !objects.isEmpty()) {
                 normalizeGlobalSearchConsentCodes(objects);
             }
 
@@ -1259,7 +1264,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         List<Map<String, Object>> data = new ArrayList<>();
 
         JsonObject aggs = jsonObject.getAsJsonObject("aggregations").getAsJsonObject(aggName);
-        JsonArray buckets = aggs.getAsJsonObject("agg_buckets") != null ? aggs.getAsJsonObject("agg_buckets").getAsJsonArray("buckets") : aggs.getAsJsonArray("buckets");
+        JsonArray buckets = InventoryESService.getCustomAggregationBuckets(aggs);
         for (JsonElement bucketEl : buckets) {
             JsonObject bucketObj = bucketEl.getAsJsonObject();
             if (!bucketObj.has("key") || bucketObj.get("key").isJsonNull()) {
@@ -1285,7 +1290,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         List<Map<String, Object>> data = new ArrayList<>();
 
         JsonObject aggs = jsonObject.getAsJsonObject("aggregations").getAsJsonObject(aggName);
-        JsonArray buckets = aggs.getAsJsonObject("agg_buckets") != null ? aggs.getAsJsonObject("agg_buckets").getAsJsonArray("buckets") : aggs.getAsJsonArray("buckets");
+        JsonArray buckets = InventoryESService.getCustomAggregationBuckets(aggs);
         for (JsonElement bucketEl : buckets) {
             JsonObject bucketObj = bucketEl.getAsJsonObject();
             String key;
@@ -2925,7 +2930,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> geneticAnalysisOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
-            new String[]{"ga_id", "id"},
+            new String[]{"id", "id"},
             new String[]{"pid", "pid"},
             new String[]{"genetic_analysis_id", "genetic_analysis_id"},
             new String[]{"participant_id", "participant_id"},
@@ -2983,7 +2988,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> treatmentOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
-            new String[]{"t_id", "id"},
+            new String[]{"id", "id"},
             new String[]{"pid", "pid"},
             new String[]{"treatment_id", "treatment_id"},
             new String[]{"participant_id", "participant_id"},
@@ -3013,7 +3018,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> treatmentResponseOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
-            new String[]{"tr_id", "id"},
+            new String[]{"id", "id"},
             new String[]{"pid", "pid"},
             new String[]{"treatment_response_id", "treatment_response_id"},
             new String[]{"participant_id", "participant_id"},
@@ -3043,7 +3048,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
 
     private List<Map<String, Object>> survivalOverview(Map<String, Object> params) throws IOException {
         final String[][] PROPERTIES = new String[][]{
-            new String[]{"s_id", "id"},
+            new String[]{"id", "id"},
             new String[]{"pid", "pid"},
             new String[]{"survival_id", "survival_id"},
             new String[]{"participant_id", "participant_id"},
@@ -3254,6 +3259,39 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         );
 
         return overview(FILES_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "files_table");
+    }
+
+    private List<Map<String, Object>> idcOverview(Map<String, Object> params) throws IOException {
+        final String[][] properties = new String[][]{
+            new String[]{"id", "id"},
+            new String[]{"slim_url", "slim_url"},
+            new String[]{"study_uid", "study_uid"},
+            new String[]{"series_uid", "series_uid"},
+            new String[]{"study_id", "study_id"},
+            new String[]{"participant_id", "participant_id"},
+            new String[]{"sample_id", "sample_id"},
+            new String[]{"image_modality", "image_modality"},
+            new String[]{"magnification", "magnification"},
+            new String[]{"fixation_embedding_method", "fixation_embedding_method"},
+            new String[]{"staining_method", "staining_method"}
+        };
+
+        Map<String, String> sortFields = new HashMap<>();
+        for (String[] property : properties) {
+            sortFields.put(property[0], property[1]);
+        }
+
+        List<Map<String, Object>> page = overview(
+                IDC_END_POINT, params, properties, "slim_url", sortFields,
+                Set.of(), "nested_filters", "idc_table");
+        // IDC loaders may store these consistent per-URL values as singleton arrays.
+        for (Map<String, Object> row : page) {
+            for (String field : List.of(
+                    "image_modality", "magnification", "fixation_embedding_method", "staining_method")) {
+                row.put(field, extractStringValue(row, field));
+            }
+        }
+        return page;
     }
 
     private Map<String, Object> getFilenames(Map<String, Object> params) throws IOException {
@@ -3537,6 +3575,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     "study_id", "participant_id", "sample_id", "md5sum", "files",
                     "datamodel_dcf_indexd_guid", "datamodel_guid", "datamodel_file_id")));
             //query.put("_source", Map.of("exclude", Set.of("combined_filters", "participant_filters", "sample_diagnosis_filters", "survival_filters", "treatment_filters", "treatment_response_filters")));
+        }
+        if (overviewType.equals("idc_table")) {
+            query.put("_source", Map.of("includes", Set.of(
+                    "id", "slim_url", "study_uid", "series_uid", "study_id", "participant_id", "sample_id",
+                    "image_modality", "magnification", "fixation_embedding_method", "staining_method")));
         }
         int pageSize = (int) params.get(PAGE_SIZE);
         int offset = (int) params.get(OFFSET);
@@ -3888,13 +3931,13 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
 
     private String generateCacheKey(Map<String, Object> params) throws IOException {
-        List<String> keys = new ArrayList<>();
-        for (String key: params.keySet()) {
+        Map<String, Object> normalizedParams = new TreeMap<>();
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            String key = entry.getKey();
+            Object rawValue = entry.getValue();
             if (RANGE_PARAMS.contains(key)) {
                 List<Integer> bounds = null;
-                Object boundsRaw = params.get(key);
-
-                if (boundsRaw instanceof List<?> rawBounds) {
+                if (rawValue instanceof List<?> rawBounds) {
                     List<Integer> casted = new ArrayList<>();
                     for (Object o : rawBounds) {
                         if (o instanceof Number) {
@@ -3912,39 +3955,25 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     if (lower == null && higher == null) {
                         throw new IOException("Lower bound and Upper bound can't be both null!");
                     }
-                    keys.add(key.concat(String.valueOf(lower)).concat(String.valueOf(higher)));
+                    normalizedParams.put(key, Arrays.asList(lower, higher));
                 }
             } else {
-                List<String> valueSet = null;
-                Object valueSetRaw = params.get(key);
-
-                if (valueSetRaw instanceof List<?> rawList) {
-                    List<String> asStrings = new ArrayList<>();
-                    for (Object o : rawList) {
-                        asStrings.add(o != null ? o.toString() : "null");
+                if (rawValue instanceof List<?> rawList) {
+                    if (!rawList.isEmpty()
+                            && !(rawList.size() == 1 && "".equals(rawList.get(0)))) {
+                        normalizedParams.put(key, new ArrayList<>(rawList));
                     }
-                    valueSet = asStrings;
-                } else if (valueSetRaw instanceof String s) {
-                    valueSet = List.of(s);
-                } else if (valueSetRaw instanceof Number n) {
-                    valueSet = List.of(n.toString());
-                } else if (valueSetRaw instanceof Boolean b) {
-                    valueSet = List.of(b.toString());
-                }
-
-                if (valueSet != null) {
-                    if (valueSet.size() > 0 && !(valueSet.size() == 1 && valueSet.get(0).equals(""))) {
-                        keys.add(key.concat(valueSet.toString()));
+                } else if (rawValue instanceof String value) {
+                    if (!value.isEmpty()) {
+                        normalizedParams.put(key, value);
                     }
+                } else if (rawValue instanceof Number || rawValue instanceof Boolean) {
+                    normalizedParams.put(key, rawValue);
                 }
             }
         }
 
-        if (keys.isEmpty()) {
-            return "all";
-        } else {
-            return keys.toString();
-        }
+        return normalizedParams.isEmpty() ? "all" : gson.toJson(normalizedParams);
     }
 
     /**

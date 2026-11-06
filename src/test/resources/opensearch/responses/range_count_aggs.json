@@ -1,0 +1,11 @@
+{
+  "aggregations": {
+    "age_at_diagnosis": {
+      "buckets": [
+        {"key": "0 - 4", "doc_count": 3},
+        {"key": "5 - 9", "doc_count": 7}
+      ]
+    }
+  }
+}
+

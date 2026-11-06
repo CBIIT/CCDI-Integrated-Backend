@@ -1,14 +1,10 @@
 name: Run Tests
 
-on:
-  pull_request:
-    branches:
-      - main
-      - '*.*.*'
-  push:
-    branches:
-      - main
-      - '*.*.*'
+on: [push, pull_request]
+
+permissions:
+  contents: read
+  checks: write
 
 jobs:
   unit-tests:
@@ -22,12 +18,19 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
+
+      - name: Show tested revision and tool versions
+        run: |
+          echo "Testing commit $(git rev-parse HEAD)"
+          echo "GitHub event commit $GITHUB_SHA"
+          java -version
+          mvn --version
 
       - name: Run unit tests with coverage
         run: mvn clean test jacoco:report -Dspring.profiles.active=test
@@ -56,10 +59,11 @@ jobs:
     # Docker service container for OpenSearch
     services:
       opensearch:
-        image: opensearchproject/opensearch:2.11.1
+        image: opensearchproject/opensearch:2.19.4
         env:
           discovery.type: single-node
-          plugins.security.disabled: 'true'
+          DISABLE_INSTALL_DEMO_CONFIG: 'true'
+          DISABLE_SECURITY_PLUGIN: 'true'
           OPENSEARCH_JAVA_OPTS: '-Xms512m -Xmx512m'
         ports:
           - 9200:9200
@@ -77,12 +81,19 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
+
+      - name: Show tested revision and tool versions
+        run: |
+          echo "Testing commit $(git rev-parse HEAD)"
+          echo "GitHub event commit $GITHUB_SHA"
+          java -version
+          mvn --version
 
       - name: Wait for OpenSearch to be ready
         run: |
@@ -101,18 +112,7 @@ jobs:
           find src/test/java -name '*IntegrationTest.java' -o -name '*IT.java' || echo "No integration test files found"
 
       - name: Run integration tests
-        run: |
-          echo "Running integration tests..."
-          mvn verify -Dspring.profiles.active=integration || echo "Tests completed with exit code $?"
-          echo ""
-          echo "Checking for test execution..."
-          if [ -d "target/failsafe-reports" ]; then
-            echo "Failsafe reports directory exists"
-            ls -la target/failsafe-reports/ || echo "Directory is empty"
-          else
-            echo "Failsafe reports directory does not exist"
-          fi
-        continue-on-error: true
+        run: mvn clean test-compile failsafe:integration-test failsafe:verify -Dspring.profiles.active=integration
         env:
           ES_HOST: localhost
           ES_PORT: 9200
@@ -173,4 +173,3 @@ jobs:
             target/surefire-reports/
             target/failsafe-reports/
             *.log
-
