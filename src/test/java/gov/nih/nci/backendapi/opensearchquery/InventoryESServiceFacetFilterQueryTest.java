@@ -43,6 +43,52 @@ class InventoryESServiceFacetFilterQueryTest {
                 buildQuery(Map.of(), Set.of(), Set.of(), "files_table").get("query"));
     }
 
+    /** IDC must retain the file index's nested correlation and unknown-age behavior. */
+    @Test
+    void idcAndFileQueriesUseIdenticalFacetSemantics() throws IOException {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("race", List.of("White"));
+        params.put("sex_at_birth", List.of("Female"));
+        params.put("participant_ids", List.of("P-1", "P-2"));
+        params.put("diagnosis", List.of("Neuroblastoma"));
+        params.put("gene_symbol", List.of("ALK"));
+        params.put("sample_tumor_status", List.of("Tumor"));
+        params.put("last_known_survival_status", List.of("Alive"));
+        params.put("treatment_type", List.of("Chemotherapy"));
+        params.put("response", List.of("Complete Response"));
+        params.put("file_type", List.of("dicom"));
+        params.put("participant_age_at_collection", List.of(0, 3650));
+        for (String unknownMode : List.of("", "exclude", "only")) {
+            params.put("participant_age_at_collection_unknownAges", List.of(unknownMode));
+            Map<String, Object> fileQuery = buildQuery(
+                    params, Set.of("participant_age_at_collection"), Set.of(), "files_table");
+            Map<String, Object> idcQuery = buildQuery(
+                    params, Set.of("participant_age_at_collection"), Set.of(), "idc_table");
+            assertEquals(fileQuery, idcQuery);
+            assertTrue(nestedPaths(idcQuery).contains("combined_filters"));
+            InventoryESServiceTestSupport.assertJsonRoundTrip(idcQuery);
+        }
+        assertEquals(Map.of("match_all", Map.of()),
+                buildQuery(Map.of(), Set.of(), Set.of(), "idc_table").get("query"));
+    }
+
+    /** Known-age exclusions must reference the mapped SDGA fields, not an obsolete path. */
+    @Test
+    void fileAndIDCAgeExclusionsUseMappedSampleDiagnosisGeneticAnalysisFields() throws IOException {
+        String nestedPath = "combined_filters.sample_diagnosis_genetic_analysis_filters";
+        for (String index : List.of("files_table", "idc_table")) {
+            for (String field : List.of("age_at_diagnosis", "participant_age_at_collection")) {
+                Map<String, Object> query = buildQuery(
+                        Map.of(field, List.of(365, 730), field + "_unknownAges", List.of("exclude")),
+                        Set.of(field), Set.of(), index);
+
+                assertContains(query, range(nestedPath + "." + field));
+                assertContains(query, excludesUnknown(nestedPath + "." + field));
+                assertEquals(Set.of("combined_filters", nestedPath), nestedPaths(query));
+            }
+        }
+    }
+
     /** Verifies participant filters are routed to their root and nested document families. */
     @Test
     void participantFiltersUseTheirExpectedNestedFamilies() throws IOException {
@@ -232,7 +278,7 @@ class InventoryESServiceFacetFilterQueryTest {
         for (AgeRoute route : fileAgeRoutes()) {
             Map<String, Object> query = buildAgeQuery(route, "exclude");
 
-            assertContains(query, excludesUnknown(fileUnknownExclusionPath(route)));
+            assertContains(query, excludesUnknown(route.expectedPath()));
         }
     }
 
@@ -584,14 +630,6 @@ class InventoryESServiceFacetFilterQueryTest {
 
     private static List<Object> blankUnknownControls() {
         return Arrays.asList(null, List.of(), List.of(""));
-    }
-
-    private static String fileUnknownExclusionPath(AgeRoute route) {
-        if (route.field().equals("age_at_diagnosis")
-                || route.field().equals("participant_age_at_collection")) {
-            return "combined_filters.sample_diagnosis_filters." + route.field();
-        }
-        return route.expectedPath();
     }
 
     private static boolean includesUnknownByDefault(AgeRoute route) {

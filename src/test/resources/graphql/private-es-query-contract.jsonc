@@ -123,6 +123,7 @@
     "treatmentResponseOverview": ["$participantFilters", "$table", "pid"],
     "sampleOverview": ["$participantFilters", "$table", "pid"],
     "fileOverview": ["$participantFilters", "$table", "pid"],
+    "idcOverview": ["$participantFilters", "$table", "pid"],
     "getFilenames": ["$participantFilters", "$table", "pid", "filename"],
     "numberOfMCICount": [],
     "fileIDsFromList": [
