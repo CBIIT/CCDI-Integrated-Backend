@@ -3367,10 +3367,8 @@ indices:
             CASE
               WHEN any(sur IN survivals WHERE sur.last_known_survival_status = 'Dead')
               THEN head([sur IN survivals WHERE sur.last_known_survival_status = 'Dead'])
-              WHEN size(survivals) > 0
-                AND all(sur IN survivals WHERE sur.last_known_survival_status = 'Alive')
-              THEN head(survivals)
-              ELSE null
+              // Without a Dead record, use the latest record regardless of status.
+              ELSE head(survivals)
             END AS selected_survival
           // All six scalar properties come from the same selected record.
           // No selected record yields null for every top-level property.
