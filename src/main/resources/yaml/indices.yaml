@@ -3979,6 +3979,7 @@ indices:
             sm,
             sample_files + participant_files + study_files AS files,
             sample_diagnoses + participant_diagnoses AS diagnoses,
+            participant_diagnoses,
             collect(DISTINCT sample_ga) + participant_gas AS gas
 
           CALL {
@@ -4023,7 +4024,7 @@ indices:
           }
 
           CALL {
-            WITH diagnoses
+            WITH diagnoses, participant_diagnoses
 
             UNWIND CASE WHEN size(diagnoses) = 0 THEN [null] ELSE diagnoses END AS dg
 
@@ -4036,7 +4037,9 @@ indices:
               dg.diagnosis_basis AS diagnosis_basis,
               dg.diagnosis AS diagnosis,
               dg.diagnosis_id AS diagnosis_id,
-              dg.guid AS diagnosis_guid
+              dg.guid AS diagnosis_guid,
+              // Filters include both sources; displays prefer participant diagnoses.
+              (size(participant_diagnoses) = 0 OR dg IN participant_diagnoses) AS include_in_display
 
             RETURN collect([
               age_at_diagnosis,
@@ -4047,7 +4050,8 @@ indices:
               diagnosis_basis,
               diagnosis,
               diagnosis_id,
-              diagnosis_guid
+              diagnosis_guid,
+              include_in_display
             ]) AS diagnosis_filter_keys
           }
 
@@ -4095,7 +4099,8 @@ indices:
 
           WITH DISTINCT
             p.guid AS id,
-            diagnosis_filter_key AS diagnosis_display_key,
+            CASE WHEN diagnosis_filter_key[9]
+              THEN diagnosis_filter_key ELSE null END AS diagnosis_display_key,
 
             // Sample facets
             sm.anatomic_site AS sample_anatomic_site,
