@@ -3223,6 +3223,9 @@ indices:
         - treatment_filters.treatment_id
         - treatment_filters.treatment_type
         - treatment_filters.treatment_agent
+        # Treatment Response display fields
+        - response
+        - age_at_response
         # Treatment Response filters
         - treatment_response_filters.response
         # (Sample, Diagnosis, Genetic Analysis, File) filters
@@ -3467,9 +3470,17 @@ indices:
           ORDER BY p.guid
           SKIP $skip LIMIT $limit
           OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
-          ORDER BY tresp.guid
+          WITH p, tresp,
+            CASE WHEN toFloat(tresp.age_at_response) IS NOT NULL
+              AND toFloat(tresp.age_at_response) <> -999
+              THEN toFloat(tresp.age_at_response) ELSE null END AS response_age
+          // Sort whole instances using the treatment start age ordering.
+          // Unknown ages follow valid ages, ordered by descending GUID.
+          ORDER BY response_age IS NULL, response_age, tresp.guid DESC,
+            tresp.treatment_response_id DESC
           WITH
             p.guid AS id,
+            collect(tresp) AS treatment_responses,
             count(tresp) AS treatment_response_count,
             [item IN collect(
               DISTINCT {
@@ -3479,14 +3490,36 @@ indices:
             ) WHERE item IS NOT NULL] AS treatment_response_filters
           WITH
             id,
+            treatment_responses,
             CASE
               WHEN treatment_response_count > 0
               THEN treatment_response_filters
               ELSE []
             END AS treatment_response_filters
+          CALL {
+            WITH treatment_responses
+            UNWIND range(0, size(treatment_responses) - 1) AS instance_index
+            WITH instance_index, treatment_responses[instance_index] AS treatment_response
+            // Repeat each instance's age for every response value to keep lists aligned.
+            WITH instance_index, treatment_response,
+              CASE WHEN size(coalesce(treatment_response.response, [])) = 0
+                THEN [null] ELSE treatment_response.response END AS responses
+            UNWIND range(0, size(responses) - 1) AS response_index
+            WITH treatment_response, responses[response_index] AS response,
+              instance_index, response_index
+            ORDER BY instance_index, response_index
+            RETURN collect({
+              response: coalesce(response, 'Not Reported'),
+              age_at_response: CASE WHEN toFloat(treatment_response.age_at_response) IS NOT NULL
+                AND toFloat(treatment_response.age_at_response) <> -999
+                THEN toString(treatment_response.age_at_response) ELSE 'Not Reported' END
+            }) AS display_values
+          }
           RETURN
             id,
-            treatment_response_filters
+            treatment_response_filters,
+            [item IN display_values | item.response] AS response,
+            [item IN display_values | item.age_at_response] AS age_at_response
         page_size: 5000
       - name: "global_search_properties"
         query: |
