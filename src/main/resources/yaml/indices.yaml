@@ -3214,7 +3214,7 @@ indices:
         - survival_filters.last_known_survival_status
         - survival_filters.cause_of_death
         - survival_filters.first_event
-        # Consolidated treatment display fields
+        # Treatment display fields
         - treatment_type_str
         - age_at_treatment_start_str
         - age_at_treatment_end_str
@@ -3382,7 +3382,7 @@ indices:
             selected_survival.first_event AS first_event,
             selected_survival.cause_of_death AS cause_of_death
         page_size: 5000
-      - name: "treatment_filters"
+      - name: "treatments"
         query: |
           MATCH (p:participant)
           WITH p
@@ -3458,16 +3458,11 @@ indices:
                 THEN toString(treatment.age_at_treatment_end) ELSE 'Not Reported' END
             }) AS display_values
           }
+          // Preserve aligned lists; the frontend adds display delimiters.
           RETURN p.guid AS id, treatment_filters,
-            reduce(result = '', i IN range(0, size(display_values) - 1) |
-              result + CASE WHEN i = 0 THEN '' ELSE ';' END
-                + display_values[i].treatment_type) AS treatment_type_str,
-            reduce(result = '', i IN range(0, size(display_values) - 1) |
-              result + CASE WHEN i = 0 THEN '' ELSE ';' END
-                + display_values[i].start_age) AS age_at_treatment_start_str,
-            reduce(result = '', i IN range(0, size(display_values) - 1) |
-              result + CASE WHEN i = 0 THEN '' ELSE ';' END
-                + display_values[i].end_age) AS age_at_treatment_end_str
+            [item IN display_values | item.treatment_type] AS treatment_type_str,
+            [item IN display_values | item.start_age] AS age_at_treatment_start_str,
+            [item IN display_values | item.end_age] AS age_at_treatment_end_str
         page_size: 5000
       - name: "treatment_responses"
         query: |
