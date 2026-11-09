@@ -3223,9 +3223,14 @@ indices:
         - treatment_filters.treatment_id
         - treatment_filters.treatment_type
         - treatment_filters.treatment_agent
+        # Diagnosis display fields
+        - diagnosis
+        - age_at_diagnosis_str
+        - diagnosis_anatomic_site
+        - disease_phase
         # Treatment Response display fields
         - response
-        - age_at_response
+        - age_at_response_str
         # Treatment Response filters
         - treatment_response_filters.response
         # (Sample, Diagnosis, Genetic Analysis, File) filters
@@ -3264,6 +3269,9 @@ indices:
         - diagnosis_category_str_gs
         - age_at_diagnosis_str_gs
       integer:
+        # Diagnosis and Treatment Response ages in days (including aligned lists)
+        - age_at_diagnosis
+        - age_at_response
         # Survival numerical fields
         - age_at_last_known_survival_status
         - age_at_event_free_survival_status
@@ -3501,6 +3509,7 @@ indices:
             UNWIND range(0, size(treatment_responses) - 1) AS instance_index
             WITH instance_index, treatment_responses[instance_index] AS treatment_response
             // Repeat each instance's age for every response value to keep lists aligned.
+            // Unknown ages use the numeric -999 sentinel.
             WITH instance_index, treatment_response,
               CASE WHEN size(coalesce(treatment_response.response, [])) = 0
                 THEN [null] ELSE treatment_response.response END AS responses
@@ -3512,14 +3521,17 @@ indices:
               response: coalesce(response, 'Not Reported'),
               age_at_response: CASE WHEN toFloat(treatment_response.age_at_response) IS NOT NULL
                 AND toFloat(treatment_response.age_at_response) <> -999
-                THEN toString(treatment_response.age_at_response) ELSE 'Not Reported' END
+                THEN toInteger(toFloat(treatment_response.age_at_response)) ELSE -999 END
             }) AS display_values
           }
           RETURN
             id,
             treatment_response_filters,
             [item IN display_values | item.response] AS response,
-            [item IN display_values | item.age_at_response] AS age_at_response
+            [item IN display_values | item.age_at_response] AS age_at_response,
+            [item IN display_values |
+              CASE WHEN item.age_at_response = -999 THEN 'Not Reported'
+                ELSE toString(item.age_at_response) END] AS age_at_response_str
         page_size: 5000
       - name: "global_search_properties"
         query: |
@@ -4029,7 +4041,9 @@ indices:
               dg.diagnosis_classification_system AS diagnosis_classification_system,
               dg.diagnosis_category AS diagnosis_category,
               dg.diagnosis_basis AS diagnosis_basis,
-              dg.diagnosis AS diagnosis
+              dg.diagnosis AS diagnosis,
+              dg.diagnosis_id AS diagnosis_id,
+              dg.guid AS diagnosis_guid
 
             RETURN collect([
               age_at_diagnosis,
@@ -4038,7 +4052,9 @@ indices:
               diagnosis_classification_system,
               diagnosis_category,
               diagnosis_basis,
-              diagnosis
+              diagnosis,
+              diagnosis_id,
+              diagnosis_guid
             ]) AS diagnosis_filter_keys
           }
 
@@ -4086,6 +4102,7 @@ indices:
 
           WITH DISTINCT
             p.guid AS id,
+            diagnosis_filter_key AS diagnosis_display_key,
 
             // Sample facets
             sm.anatomic_site AS sample_anatomic_site,
@@ -4120,9 +4137,10 @@ indices:
             file_filter_key[5] AS library_source_molecule,
             file_filter_key[6] AS library_strategy
 
-          RETURN
+          WITH
             id,
-            collect({
+            collect(DISTINCT diagnosis_display_key) AS diagnosis_display_keys,
+            collect(DISTINCT {
               sample_anatomic_site: sample_anatomic_site,
               participant_age_at_collection: participant_age_at_collection,
               sample_tumor_status: sample_tumor_status,
@@ -4149,6 +4167,47 @@ indices:
               library_source_molecule: library_source_molecule,
               library_strategy: library_strategy
             }) AS sample_diagnosis_genetic_analysis_file_filters
+
+          CALL {
+            WITH diagnosis_display_keys
+            UNWIND diagnosis_display_keys AS dg
+            // Empty diagnosis contexts contribute filters but no display values.
+            WITH dg
+            WHERE dg[7] IS NOT NULL OR dg[8] IS NOT NULL
+            WITH dg,
+              CASE WHEN toFloat(dg[0]) IS NOT NULL AND toFloat(dg[0]) <> -999
+                THEN toFloat(dg[0]) ELSE null END AS diagnosis_age
+            // Sort diagnosis instances before expanding their anatomic sites.
+            // Unknown display ages use -999 to preserve numeric list alignment.
+            // Unknown ages sort last, alphanumerically by diagnosis_id.
+            ORDER BY diagnosis_age IS NULL, diagnosis_age, dg[7], dg[8]
+            WITH collect(dg) AS diagnoses
+            UNWIND range(0, size(diagnoses) - 1) AS diagnosis_index
+            WITH diagnosis_index, diagnoses[diagnosis_index] AS dg
+            WITH diagnosis_index, dg,
+              CASE WHEN size(coalesce(dg[1], [])) = 0
+                THEN [null] ELSE dg[1] END AS sites
+            UNWIND range(0, size(sites) - 1) AS site_index
+            WITH dg, sites[site_index] AS site, diagnosis_index, site_index
+            ORDER BY diagnosis_index, site_index
+            RETURN collect({
+              diagnosis: coalesce(dg[6], 'Not Reported'),
+              age_at_diagnosis: CASE WHEN toFloat(dg[0]) IS NOT NULL AND toFloat(dg[0]) <> -999
+                THEN toInteger(toFloat(dg[0])) ELSE -999 END,
+              diagnosis_anatomic_site: coalesce(site, 'Not Reported'),
+              disease_phase: coalesce(dg[2], 'Not Reported')
+            }) AS diagnosis_display_values
+          }
+          RETURN
+            id,
+            sample_diagnosis_genetic_analysis_file_filters,
+            [item IN diagnosis_display_values | item.diagnosis] AS diagnosis,
+            [item IN diagnosis_display_values | item.age_at_diagnosis] AS age_at_diagnosis,
+            [item IN diagnosis_display_values |
+              CASE WHEN item.age_at_diagnosis = -999 THEN 'Not Reported'
+                ELSE toString(item.age_at_diagnosis) END] AS age_at_diagnosis_str,
+            [item IN diagnosis_display_values | item.diagnosis_anatomic_site] AS diagnosis_anatomic_site,
+            [item IN diagnosis_display_values | item.disease_phase] AS disease_phase
         page_size: 50
 
   - index_name: diagnoses_table
