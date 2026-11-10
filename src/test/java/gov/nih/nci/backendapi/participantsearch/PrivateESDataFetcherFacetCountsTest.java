@@ -88,9 +88,12 @@ class PrivateESDataFetcherFacetCountsTest {
         assertEquals(16, firstResult.get("numberOfSurvivals"));
         assertEquals(17, firstResult.get("numberOfSamples"));
         assertEquals(18, firstResult.get("numberOfFiles"));
+        assertEquals(20, firstResult.get("numberOfIDC"));
         assertEquals(19, firstResult.get("participantsFileCount"));
-        verify(inventoryESService, times(9)).buildFacetFilterQuery(
+        verify(inventoryESService, times(10)).buildFacetFilterQuery(
                 eq(params), anySet(), eq(Set.of()), eq(Set.of()), eq("nested_filters"), anyString());
+        verify(inventoryESService).buildFacetFilterQuery(
+                eq(params), anySet(), eq(Set.of()), eq(Set.of()), eq("nested_filters"), eq("idc_table"));
 
         clearInvocations(inventoryESService);
         Map<String, Object> cachedResult = invokeSearchParticipants(params);
@@ -131,7 +134,7 @@ class PrivateESDataFetcherFacetCountsTest {
         assertEquals(11, result.get("numberOfParticipants"));
         assertSame(sentinel, cache.getIfPresent(cacheKey));
         assertEquals(1, cache.estimatedSize());
-        verify(inventoryESService, times(9)).send(any(Request.class));
+        verify(inventoryESService, times(10)).send(any(Request.class));
     }
 
     /** Verifies that failures raised by a parallel facet job become the API's checked I/O error. */
@@ -566,6 +569,7 @@ class PrivateESDataFetcherFacetCountsTest {
                 case "/survivals_table/_count" -> countResponse(16);
                 case "/samples_table/_count" -> countResponse(17);
                 case "/files_table/_count" -> countResponse(18);
+                case "/idc_table/_count" -> countResponse(20);
                 default -> participantSummaryResponse(11, 19);
             };
         });

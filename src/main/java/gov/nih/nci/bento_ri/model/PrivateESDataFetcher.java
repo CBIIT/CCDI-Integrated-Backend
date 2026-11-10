@@ -92,6 +92,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String STUDIES_COUNT_END_POINT = "/studies_table/_count";
     final String SAMPLES_COUNT_END_POINT = "/samples_table/_count";
     final String FILES_COUNT_END_POINT = "/files_table/_count";
+    final String IDC_COUNT_END_POINT = "/idc_table/_count";
     final String NODES_COUNT_END_POINT = "/model_nodes/_count";
     final String PROPERTIES_COUNT_END_POINT = "/model_properties/_count";
     final String VALUES_COUNT_END_POINT = "/model_values/_count";
@@ -1694,6 +1695,12 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         JsonObject filesCountResult = inventoryESService.send(filesCountRequest);
         int numberOfFiles = filesCountResult.get("count").getAsInt();
 
+        Map<String, Object> query_idc = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "idc_table");
+        Request idcCountRequest = new Request("GET", IDC_COUNT_END_POINT);
+        idcCountRequest.setJsonEntity(gson.toJson(query_idc));
+        JsonObject idcCountResult = inventoryESService.send(idcCountRequest);
+        int numberOfIDC = idcCountResult.get("count").getAsInt();
+
         data.put("numberOfStudies", numberOfStudies);
         data.put("numberOfParticipants", numberOfParticipants);
         data.put("numberOfDiagnosis", numberOfDiagnosis);
@@ -1703,6 +1710,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         data.put("numberOfSurvivals", numberOfSurvivals);
         data.put("numberOfSamples", numberOfSamples);
         data.put("numberOfFiles", numberOfFiles);
+        data.put("numberOfIDC", numberOfIDC);
         data.put("participantsFileCount", participants_file_count);
 
         // Facet filter/widget counts: run in parallel. Unique-participant facets use nested +
