@@ -102,6 +102,30 @@ class PrivateESDataFetcherFacetCountsTest {
         verifyNoInteractions(inventoryESService);
     }
 
+    /** Participant GUIDs must target IDC's pid field without changing other summary queries. */
+    @Test
+    void countsIDCByParticipantGuidWithoutMutatingSearchParams() throws Exception {
+        stubSummaryCountQueries();
+        Map<String, Object> params = Map.of(
+                "id", List.of("participant-guid-1", "participant-guid-2"),
+                "race", List.of("Asian"));
+        Map<String, Object> expectedIDCParams = Map.of(
+                "pid", List.of("participant-guid-1", "participant-guid-2"),
+                "race", List.of("Asian"));
+
+        Map<String, Object> result = invokeSearchParticipants(params);
+
+        assertEquals(20, result.get("numberOfIDC"));
+        verify(inventoryESService).buildFacetFilterQuery(
+                eq(expectedIDCParams), anySet(), eq(Set.of()), eq(Set.of()),
+                eq("nested_filters"), eq("idc_table"));
+        verify(inventoryESService, times(9)).buildFacetFilterQuery(
+                eq(params), anySet(), eq(Set.of()), eq(Set.of()), eq("nested_filters"), anyString());
+        assertEquals(Map.of(
+                "id", List.of("participant-guid-1", "participant-guid-2"),
+                "race", List.of("Asian")), params);
+    }
+
     /** Verifies that each accepted empty import-data shape still permits a cached response. */
     @Test
     void usesCacheWhenImportDataIsAbsentEmptyOrBlank() throws Exception {

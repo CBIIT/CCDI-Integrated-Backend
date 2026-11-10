@@ -1695,7 +1695,12 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         JsonObject filesCountResult = inventoryESService.send(filesCountRequest);
         int numberOfFiles = filesCountResult.get("count").getAsInt();
 
-        Map<String, Object> query_idc = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "idc_table");
+        Map<String, Object> idcParams = new HashMap<>(params);
+        // Participant search IDs are GUIDs; IDC document IDs are viewer URLs.
+        if (idcParams.containsKey("id")) {
+            idcParams.put("pid", idcParams.remove("id"));
+        }
+        Map<String, Object> query_idc = inventoryESService.buildFacetFilterQuery(idcParams, RANGE_PARAMS, Set.of(), Set.of(), "nested_filters", "idc_table");
         Request idcCountRequest = new Request("GET", IDC_COUNT_END_POINT);
         idcCountRequest.setJsonEntity(gson.toJson(query_idc));
         JsonObject idcCountResult = inventoryESService.send(idcCountRequest);
