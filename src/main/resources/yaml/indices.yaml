@@ -4175,7 +4175,7 @@ indices:
             WITH dg,
               CASE WHEN toFloat(dg[0]) IS NOT NULL AND toFloat(dg[0]) <> -999
                 THEN toFloat(dg[0]) ELSE null END AS diagnosis_age
-            // Sort diagnosis instances before expanding their anatomic sites.
+            // Sort diagnosis instances before joining each instance's anatomic sites.
             // Unknown display ages use -999 to preserve numeric list alignment.
             // Unknown ages sort last, alphanumerically by diagnosis_id.
             ORDER BY diagnosis_age IS NULL, diagnosis_age, dg[7], dg[8]
@@ -4185,9 +4185,12 @@ indices:
             WITH diagnosis_index, dg,
               CASE WHEN size(coalesce(dg[1], [])) = 0
                 THEN [null] ELSE dg[1] END AS sites
-            UNWIND range(0, size(sites) - 1) AS site_index
-            WITH dg, sites[site_index] AS site, diagnosis_index, site_index
-            ORDER BY diagnosis_index, site_index
+            // Keep one display entry per diagnosis, joining its sites in source order.
+            WITH dg, diagnosis_index,
+              reduce(result = '', site_index IN range(0, size(sites) - 1) |
+                result + CASE WHEN site_index = 0 THEN '' ELSE ', ' END
+                  + coalesce(sites[site_index], 'Not Reported')) AS site
+            ORDER BY diagnosis_index
             RETURN collect({
               diagnosis: coalesce(dg[6], 'Not Reported'),
               age_at_diagnosis: CASE WHEN toFloat(dg[0]) IS NOT NULL AND toFloat(dg[0]) <> -999
