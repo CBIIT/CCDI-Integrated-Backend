@@ -24,4 +24,4 @@ EXPOSE 8080
 COPY --from=build /usr/src/app/extracted/WEB-INF/classes /app/classes
 COPY --from=build /usr/src/app/extracted/WEB-INF/lib /app/lib
 
-ENTRYPOINT ["java", "-cp", "/app/classes:/app/lib/*", "gov.nih.nci.bento.BentoApplication"]
+ENTRYPOINT ["java", "-XX:+ExitOnOutOfMemoryError", "-cp", "/app/classes:/app/lib/*", "gov.nih.nci.bento.BentoApplication"]
