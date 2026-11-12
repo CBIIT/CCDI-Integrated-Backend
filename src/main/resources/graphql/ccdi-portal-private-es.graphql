@@ -1179,6 +1179,7 @@ type SearchParticipantsResult {
     numberOfParticipants: Int
     numberOfSamples: Int
     numberOfFiles: Int
+    numberOfIDC: Int
     numberOfDiagnosis: Int
     numberOfGeneticAnalyses: Int
     numberOfSurvivals: Int
