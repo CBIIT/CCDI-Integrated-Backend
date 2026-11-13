@@ -1232,7 +1232,6 @@ type ParticipantOverViewResult {
     files: [String]
     diagnosis: [String]
     diagnosis_category: [String]
-    anatomic_site: [String]
     diagnosis_anatomic_site: [String]
     age_at_diagnosis: [String]
     disease_phase: [String]

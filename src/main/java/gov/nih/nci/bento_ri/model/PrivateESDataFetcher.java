@@ -1838,7 +1838,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             new String[]{"surgery_type", "surgery_type"},
             new String[]{"other_treatment_type", "other_treatment_type"},
             new String[]{"response", "response"},
-            new String[]{"age_at_response", "age_at_response"},
+            new String[]{"age_at_response", "age_at_response_str"},
             new String[]{"first_event", "first_event"},
             new String[]{"last_known_survival_status", "last_known_survival_status"},
             new String[]{"age_at_last_known_survival_status", "age_at_last_known_survival_status"},
