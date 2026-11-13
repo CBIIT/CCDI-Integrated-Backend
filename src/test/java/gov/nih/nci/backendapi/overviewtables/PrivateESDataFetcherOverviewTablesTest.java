@@ -76,7 +76,7 @@ class PrivateESDataFetcherOverviewTablesTest {
             "surgery_type", "surgery_type",
             "other_treatment_type", "other_treatment_type",
             "response", "response",
-            "age_at_response", "age_at_response",
+            "age_at_response", "age_at_response_str",
             "first_event", "first_event",
             "last_known_survival_status", "last_known_survival_status",
             "age_at_last_known_survival_status", "age_at_last_known_survival_status",

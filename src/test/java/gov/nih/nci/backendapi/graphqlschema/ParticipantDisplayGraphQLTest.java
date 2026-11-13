@@ -64,7 +64,8 @@ class ParticipantDisplayGraphQLTest {
         // Diagnosis ages use the display source, including the unknown-age label.
         source.put("age_at_diagnosis", List.of(10, -999));
         source.put("age_at_diagnosis_str", List.of("10", "Not Reported"));
-        source.put("age_at_response", List.of(30, 40));
+        source.put("age_at_response", List.of(30, -999));
+        source.put("age_at_response_str", List.of("30", "Not Reported"));
         source.put("event_free_survival_status", "Event-free");
         source.put("age_at_event_free_survival_status", 50);
         source.put("cause_of_death", "Not Reported");
@@ -94,7 +95,7 @@ class ParticipantDisplayGraphQLTest {
             var row = ((List<Map<String, Object>>) data.get("participantOverview")).get(0);
             DISPLAY_LISTS.forEach(field -> assertEquals(List.of("first", "second"), row.get(field), field));
             assertEquals(List.of("10", "Not Reported"), row.get("age_at_diagnosis"));
-            assertEquals(List.of("30", "40"), row.get("age_at_response"));
+            assertEquals(List.of("30", "Not Reported"), row.get("age_at_response"));
             assertEquals("50", row.get("age_at_event_free_survival_status"));
             assertEquals("Event-free", row.get("event_free_survival_status"));
             assertEquals("Not Reported", row.get("cause_of_death"));
