@@ -3201,6 +3201,8 @@ indices:
         - sex_at_birth
         - occupation
         - study_id
+        - consent_group_id
+        - consent_group_name
         - dbgap_accession
         - study_phase
         - study_acronym
@@ -3215,15 +3217,29 @@ indices:
         - survival_filters.cause_of_death
         - survival_filters.first_event
         # Treatment display fields
+        - chemotherapy_agent
+        - radiation_therapy_type
+        - beam_radiation_type
+        - surgery_type
+        - other_treatment_type
         - treatment_type_str
         - age_at_treatment_start_str
         - age_at_treatment_end_str
         # Treatment filters
         - treatment_filters.guid
-        - treatment_filters.treatment_id
         - treatment_filters.treatment_type
-        - treatment_filters.treatment_agent
         # Diagnosis display fields
+        - diagnosis_classification_system
+        - diagnosis_basis
+        - diagnosis_comment
+        - tumor_classification
+        - toronto_childhood_cancer_staging
+        - tumor_grade
+        - tumor_stage_clinical_t
+        - tumor_stage_clinical_n
+        - tumor_stage_clinical_m
+        - diagnosis_category
+        - tumor_spatial_extent
         - diagnosis
         - age_at_diagnosis_str
         - diagnosis_anatomic_site
@@ -3311,6 +3327,19 @@ indices:
             stu.study_acronym AS study_acronym,
             stu.study_name AS study_name
         page_size: 1000
+      - name: "consent_group_properties"
+        query: |
+          MATCH (p:participant)
+          WITH p
+          ORDER BY p.guid
+          SKIP $skip LIMIT $limit
+          OPTIONAL MATCH (p)-[:of_participant]->(cg:consent_group)
+          WITH p, cg
+          ORDER BY cg.consent_group_id, cg.consent_group_name
+          RETURN p.guid AS id,
+            collect(DISTINCT cg.consent_group_id) AS consent_group_id,
+            collect(DISTINCT cg.consent_group_name) AS consent_group_name
+        page_size: 5000
       - name: "participant_properties"
         query: |
           MATCH (p:participant)
@@ -3427,15 +3456,23 @@ indices:
               coalesce(record.treatment_chemotherapy_id, record.treatment_radiation_id,
                 record.treatment_surgery_id, record.treatment_other_id) DESC
             RETURN collect({
-              treatment_id: coalesce(record.treatment_chemotherapy_id, record.treatment_radiation_id,
-                record.treatment_surgery_id, record.treatment_other_id),
               guid: record.guid,
               treatment_type: record.treatment_type,
-              treatment_agent: coalesce(record.chemotherapy_agent, record.radiation_therapy_type,
-                record.surgery_type, record.other_treatment_type),
               age_at_treatment_start: record.age_at_treatment_start,
               age_at_treatment_end: record.age_at_treatment_end
             }) AS treatment_filters
+          }
+          // Reuse the fetched records for the treatment-specific display columns.
+          CALL {
+            WITH records
+            UNWIND records AS record
+            WITH record
+            ORDER BY record.age_at_treatment_start IS NULL, record.age_at_treatment_start, record.guid
+            RETURN collect(CASE WHEN record:treatment_chemotherapy THEN record.chemotherapy_agent ELSE null END) AS chemotherapy_agent_lists,
+              collect(CASE WHEN record:treatment_radiation THEN record.radiation_therapy_type ELSE null END) AS radiation_therapy_type_lists,
+              collect(CASE WHEN record:treatment_radiation THEN record.beam_radiation_type ELSE null END) AS beam_radiation_type_lists,
+              collect(CASE WHEN record:treatment_surgery THEN record.surgery_type ELSE null END) AS surgery_type_lists,
+              collect(CASE WHEN record:treatment_other THEN record.other_treatment_type ELSE null END) AS other_treatment_type_lists
           }
           CALL {
             WITH treatment_filters
@@ -3462,7 +3499,27 @@ indices:
           RETURN p.guid AS id, treatment_filters,
             [item IN display_values | item.treatment_type] AS treatment_type_str,
             [item IN display_values | item.start_age] AS age_at_treatment_start_str,
-            [item IN display_values | item.end_age] AS age_at_treatment_end_str
+            [item IN display_values | item.end_age] AS age_at_treatment_end_str,
+            reduce(values = [], items IN chemotherapy_agent_lists |
+              reduce(result = values, value IN items |
+                CASE WHEN value IS NULL OR value IN result THEN result
+                  ELSE result + [value] END)) AS chemotherapy_agent,
+            reduce(values = [], items IN radiation_therapy_type_lists |
+              reduce(result = values, value IN items |
+                CASE WHEN value IS NULL OR value IN result THEN result
+                  ELSE result + [value] END)) AS radiation_therapy_type,
+            reduce(values = [], items IN beam_radiation_type_lists |
+              reduce(result = values, value IN items |
+                CASE WHEN value IS NULL OR value IN result THEN result
+                  ELSE result + [value] END)) AS beam_radiation_type,
+            reduce(values = [], items IN surgery_type_lists |
+              reduce(result = values, value IN items |
+                CASE WHEN value IS NULL OR value IN result THEN result
+                  ELSE result + [value] END)) AS surgery_type,
+            reduce(values = [], items IN other_treatment_type_lists |
+              reduce(result = values, value IN items |
+                CASE WHEN value IS NULL OR value IN result THEN result
+                  ELSE result + [value] END)) AS other_treatment_type
         page_size: 5000
       - name: "treatment_responses"
         query: |
@@ -4036,8 +4093,15 @@ indices:
               dg.diagnosis_category AS diagnosis_category,
               dg.diagnosis_basis AS diagnosis_basis,
               dg.diagnosis AS diagnosis,
-              dg.diagnosis_id AS diagnosis_id,
               dg.guid AS diagnosis_guid,
+              dg.diagnosis_comment AS diagnosis_comment,
+              // Diagnosis tumor classification uses tumor_spatial_extent in the current model.
+              coalesce(dg.tumor_classification, dg.tumor_spatial_extent) AS tumor_classification,
+              dg.toronto_childhood_cancer_staging AS toronto_childhood_cancer_staging,
+              dg.tumor_grade AS tumor_grade,
+              dg.tumor_stage_clinical_t AS tumor_stage_clinical_t,
+              dg.tumor_stage_clinical_n AS tumor_stage_clinical_n,
+              dg.tumor_stage_clinical_m AS tumor_stage_clinical_m,
               // Filters include both sources; displays prefer participant diagnoses.
               (size(participant_diagnoses) = 0 OR dg IN participant_diagnoses) AS include_in_display
 
@@ -4049,9 +4113,15 @@ indices:
               diagnosis_category,
               diagnosis_basis,
               diagnosis,
-              diagnosis_id,
               diagnosis_guid,
-              include_in_display
+              include_in_display,
+              diagnosis_comment,
+              tumor_classification,
+              toronto_childhood_cancer_staging,
+              tumor_grade,
+              tumor_stage_clinical_t,
+              tumor_stage_clinical_n,
+              tumor_stage_clinical_m
             ]) AS diagnosis_filter_keys
           }
 
@@ -4099,7 +4169,7 @@ indices:
 
           WITH DISTINCT
             p.guid AS id,
-            CASE WHEN diagnosis_filter_key[9]
+            CASE WHEN diagnosis_filter_key[8]
               THEN diagnosis_filter_key ELSE null END AS diagnosis_display_key,
 
             // Sample facets
@@ -4171,14 +4241,14 @@ indices:
             UNWIND diagnosis_display_keys AS dg
             // Empty diagnosis contexts contribute filters but no display values.
             WITH dg
-            WHERE dg[7] IS NOT NULL OR dg[8] IS NOT NULL
+            WHERE dg[7] IS NOT NULL
             WITH dg,
               CASE WHEN toFloat(dg[0]) IS NOT NULL AND toFloat(dg[0]) <> -999
                 THEN toFloat(dg[0]) ELSE null END AS diagnosis_age
             // Sort diagnosis instances before joining each instance's anatomic sites.
             // Unknown display ages use -999 to preserve numeric list alignment.
-            // Unknown ages sort last, alphanumerically by diagnosis_id.
-            ORDER BY diagnosis_age IS NULL, diagnosis_age, dg[7], dg[8]
+            // Unknown ages sort last, alphanumerically by diagnosis GUID.
+            ORDER BY diagnosis_age IS NULL, diagnosis_age, dg[7]
             WITH collect(dg) AS diagnoses
             UNWIND range(0, size(diagnoses) - 1) AS diagnosis_index
             WITH diagnosis_index, diagnoses[diagnosis_index] AS dg
@@ -4196,19 +4266,55 @@ indices:
               age_at_diagnosis: CASE WHEN toFloat(dg[0]) IS NOT NULL AND toFloat(dg[0]) <> -999
                 THEN toInteger(toFloat(dg[0])) ELSE -999 END,
               diagnosis_anatomic_site: coalesce(site, 'Not Reported'),
-              disease_phase: coalesce(dg[2], 'Not Reported')
+              disease_phase: coalesce(dg[2], 'Not Reported'),
+              // Join each diagnosis's list-valued properties without changing row alignment.
+              diagnosis_classification_system: CASE WHEN size(coalesce(dg[3], [])) = 0
+                THEN 'Not Reported'
+                ELSE reduce(result = '', value IN dg[3] |
+                  result + CASE WHEN result = '' THEN '' ELSE ', ' END
+                    + coalesce(value, 'Not Reported')) END,
+              diagnosis_basis: CASE WHEN size(coalesce(dg[5], [])) = 0
+                THEN 'Not Reported'
+                ELSE reduce(result = '', value IN dg[5] |
+                  result + CASE WHEN result = '' THEN '' ELSE ', ' END
+                    + coalesce(value, 'Not Reported')) END,
+              diagnosis_comment: coalesce(dg[9], 'Not Reported'),
+              tumor_classification: coalesce(dg[10], 'Not Reported'),
+              toronto_childhood_cancer_staging: coalesce(dg[11], 'Not Reported'),
+              tumor_grade: coalesce(dg[12], 'Not Reported'),
+              tumor_stage_clinical_t: coalesce(dg[13], 'Not Reported'),
+              tumor_stage_clinical_n: coalesce(dg[14], 'Not Reported'),
+              tumor_stage_clinical_m: coalesce(dg[15], 'Not Reported')
             }) AS diagnosis_display_values
           }
           RETURN
             id,
             sample_diagnosis_genetic_analysis_file_filters,
+            // Table columns reuse the existing facet values without new nested fields.
+            reduce(values = [], item IN sample_diagnosis_genetic_analysis_file_filters |
+              reduce(result = values, category IN coalesce(item.diagnosis_category, []) |
+                CASE WHEN category IS NULL OR category IN result THEN result
+                  ELSE result + [category] END)) AS diagnosis_category,
+            reduce(values = [], item IN sample_diagnosis_genetic_analysis_file_filters |
+              CASE WHEN item.tumor_spatial_extent IS NULL
+                OR item.tumor_spatial_extent IN values THEN values
+                ELSE values + [item.tumor_spatial_extent] END) AS tumor_spatial_extent,
             [item IN diagnosis_display_values | item.diagnosis] AS diagnosis,
             [item IN diagnosis_display_values | item.age_at_diagnosis] AS age_at_diagnosis,
             [item IN diagnosis_display_values |
               CASE WHEN item.age_at_diagnosis = -999 THEN 'Not Reported'
                 ELSE toString(item.age_at_diagnosis) END] AS age_at_diagnosis_str,
             [item IN diagnosis_display_values | item.diagnosis_anatomic_site] AS diagnosis_anatomic_site,
-            [item IN diagnosis_display_values | item.disease_phase] AS disease_phase
+            [item IN diagnosis_display_values | item.disease_phase] AS disease_phase,
+            [item IN diagnosis_display_values | item.diagnosis_classification_system] AS diagnosis_classification_system,
+            [item IN diagnosis_display_values | item.diagnosis_basis] AS diagnosis_basis,
+            [item IN diagnosis_display_values | item.diagnosis_comment] AS diagnosis_comment,
+            [item IN diagnosis_display_values | item.tumor_classification] AS tumor_classification,
+            [item IN diagnosis_display_values | item.toronto_childhood_cancer_staging] AS toronto_childhood_cancer_staging,
+            [item IN diagnosis_display_values | item.tumor_grade] AS tumor_grade,
+            [item IN diagnosis_display_values | item.tumor_stage_clinical_t] AS tumor_stage_clinical_t,
+            [item IN diagnosis_display_values | item.tumor_stage_clinical_n] AS tumor_stage_clinical_n,
+            [item IN diagnosis_display_values | item.tumor_stage_clinical_m] AS tumor_stage_clinical_m
         page_size: 50
 
   # This index is for the Cohort Manifest CSV
