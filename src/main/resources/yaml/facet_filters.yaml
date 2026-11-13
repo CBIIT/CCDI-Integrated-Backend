@@ -190,10 +190,6 @@ treatments_table:
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountByAgeAtTreatmentStart
     widget_count_name: null
-  - agg_name: treatment_agent
-    cardinality_agg_name: pid
-    filter_count_name: filterParticipantCountByTreatmentAgent
-    widget_count_name: null
   - agg_name: treatment_type
     cardinality_agg_name: pid
     filter_count_name: filterParticipantCountByTreatmentType

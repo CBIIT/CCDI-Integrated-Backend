@@ -1148,7 +1148,6 @@ type SearchParticipantsResult {
     filterParticipantCountByFusionPartnerGene: [SearchParticipantsReturnObject]
     filterParticipantCountByStatus: [SearchParticipantsReturnObject]
     filterParticipantCountByTreatmentType: [SearchParticipantsReturnObject]
-    filterParticipantCountByTreatmentAgent: [SearchParticipantsReturnObject]
     filterParticipantCountByAgeAtTreatmentStart: RangeCount
     filterParticipantCountByAgeAtTreatmentEnd: RangeCount
     filterParticipantCountByResponse: [SearchParticipantsReturnObject]
@@ -1225,20 +1224,43 @@ type ParticipantOverViewResult {
     participant_id: String
     dbgap_accession: String
     study_id: String
+    consent_group_id: [String]
+    consent_group_name: [String]
     race: [String]
     sex_at_birth: String
     synonym_id: String
     files: [String]
-    diagnosis: String
-    diagnosis_category: String
-    anatomic_site: String
-    age_at_diagnosis: String
-    treatment_agent: String
-    treatment_type: String
-    age_at_treatment_start: String
+    diagnosis: [String]
+    diagnosis_category: [String]
+    diagnosis_anatomic_site: [String]
+    age_at_diagnosis: [String]
+    disease_phase: [String]
+    diagnosis_classification_system: [String]
+    diagnosis_basis: [String]
+    diagnosis_comment: [String]
+    tumor_classification: [String]
+    toronto_childhood_cancer_staging: [String]
+    tumor_grade: [String]
+    tumor_stage_clinical_t: [String]
+    tumor_stage_clinical_n: [String]
+    tumor_stage_clinical_m: [String]
+    tumor_spatial_extent: [String]
+    treatment_type: [String]
+    age_at_treatment_start: [String]
+    age_at_treatment_end: [String]
+    chemotherapy_agent: [String]
+    radiation_therapy_type: [String]
+    beam_radiation_type: [String]
+    surgery_type: [String]
+    other_treatment_type: [String]
+    response: [String]
+    age_at_response: [String]
     first_event: String
     last_known_survival_status: String
     age_at_last_known_survival_status: String
+    event_free_survival_status: String
+    age_at_event_free_survival_status: String
+    cause_of_death: String
     cpi_data: [CPIOverViewResult]
 }
 
@@ -1567,7 +1589,6 @@ type QueryType {
 
         # Treatments
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
         age_at_treatment_start: [Int] = [0],
         age_at_treatment_start_unknownAges: [String] = [""],
         age_at_treatment_end: [Int] = [0],
@@ -1649,7 +1670,6 @@ type QueryType {
 
         # Treatments
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
         age_at_treatment_start: [Int] = [0],
         age_at_treatment_start_unknownAges: [String] = [""],
         age_at_treatment_end: [Int] = [0],
@@ -1749,7 +1769,6 @@ type QueryType {
         age_at_treatment_end: [Int] = [0],
         age_at_treatment_end_unknownAges: [String] = [""],
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
 
         # Treatment Responses
         response: [String] = [""],
@@ -1838,7 +1857,6 @@ type QueryType {
         age_at_treatment_end: [Int] = [0],
         age_at_treatment_end_unknownAges: [String] = [""],
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
 
         # Treatment Responses
         response: [String] = [""],
@@ -1926,7 +1944,6 @@ type QueryType {
         age_at_treatment_end: [Int] = [0],
         age_at_treatment_end_unknownAges: [String] = [""],
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
 
         # Treatment Responses
         response: [String] = [""],
@@ -2015,7 +2032,6 @@ type QueryType {
         age_at_treatment_end: [Int] = [0],
         age_at_treatment_end_unknownAges: [String] = [""],
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
 
         # Treatment Responses
         response: [String] = [""],
@@ -2104,7 +2120,6 @@ type QueryType {
         age_at_treatment_end: [Int] = [0],
         age_at_treatment_end_unknownAges: [String] = [""],
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
 
         # Treatment Responses
         response: [String] = [""],
@@ -2192,7 +2207,6 @@ type QueryType {
         age_at_treatment_end: [Int] = [0],
         age_at_treatment_end_unknownAges: [String] = [""],
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
 
         # Treatment Responses
         id: [String] = [""], 
@@ -2281,7 +2295,6 @@ type QueryType {
         age_at_treatment_end: [Int] = [0],
         age_at_treatment_end_unknownAges: [String] = [""],
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
         
         # Treatment Responses
         response: [String] = [""],
@@ -2370,7 +2383,6 @@ type QueryType {
         age_at_treatment_end: [Int] = [0],
         age_at_treatment_end_unknownAges: [String] = [""],
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
         
         # Treatment Responses
         response: [String] = [""],
@@ -2459,7 +2471,6 @@ type QueryType {
         age_at_treatment_end: [Int] = [0],
         age_at_treatment_end_unknownAges: [String] = [""],
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
 
         # Treatment Responses
         response: [String] = [""],
@@ -2549,7 +2560,6 @@ type QueryType {
         age_at_treatment_end: [Int] = [0],
         age_at_treatment_end_unknownAges: [String] = [""],
         treatment_type: [String] = [""],
-        treatment_agent: [String] = [""],
         
         # Treatment Responses
         response: [String] = [""],

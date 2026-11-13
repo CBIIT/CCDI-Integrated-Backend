@@ -9,6 +9,8 @@ import gov.nih.nci.bento_ri.service.InventoryESService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -41,25 +43,48 @@ class PrivateESDataFetcherOverviewTablesTest {
             Set.of("first", "offset", "order_by", "sort_direction");
 
     private static final List<List<String>> PARTICIPANT_PROPERTIES = pairs(
-            "id", "id",
             "pid", "id",
+            "id", "id",
             "participant_id", "participant_id",
             "dbgap_accession", "dbgap_accession",
             "study_id", "study_id",
+            "consent_group_id", "consent_group_id",
+            "consent_group_name", "consent_group_name",
             "race", "race",
             "sex_at_birth", "sex_at_birth",
             "synonym_id", "alternate_participant_id",
             "files", "files",
-            "diagnosis", "diagnosis_str",
-            "anatomic_site", "diagnosis_anatomic_site_str",
-            "diagnosis_category", "diagnosis_category_str",
+            "diagnosis", "diagnosis",
+            "diagnosis_category", "diagnosis_category",
+            "diagnosis_anatomic_site", "diagnosis_anatomic_site",
             "age_at_diagnosis", "age_at_diagnosis_str",
-            "treatment_agent", "treatment_agent_str",
+            "disease_phase", "disease_phase",
+            "diagnosis_classification_system", "diagnosis_classification_system",
+            "diagnosis_basis", "diagnosis_basis",
+            "diagnosis_comment", "diagnosis_comment",
+            "tumor_classification", "tumor_classification",
+            "toronto_childhood_cancer_staging", "toronto_childhood_cancer_staging",
+            "tumor_grade", "tumor_grade",
+            "tumor_stage_clinical_t", "tumor_stage_clinical_t",
+            "tumor_stage_clinical_n", "tumor_stage_clinical_n",
+            "tumor_stage_clinical_m", "tumor_stage_clinical_m",
+            "tumor_spatial_extent", "tumor_spatial_extent",
             "treatment_type", "treatment_type_str",
             "age_at_treatment_start", "age_at_treatment_start_str",
-            "first_event", "first_event_str",
-            "last_known_survival_status", "last_known_survival_status_str",
-            "age_at_last_known_survival_status", "age_at_last_known_survival_status_str");
+            "age_at_treatment_end", "age_at_treatment_end_str",
+            "chemotherapy_agent", "chemotherapy_agent",
+            "radiation_therapy_type", "radiation_therapy_type",
+            "beam_radiation_type", "beam_radiation_type",
+            "surgery_type", "surgery_type",
+            "other_treatment_type", "other_treatment_type",
+            "response", "response",
+            "age_at_response", "age_at_response_str",
+            "first_event", "first_event",
+            "last_known_survival_status", "last_known_survival_status",
+            "age_at_last_known_survival_status", "age_at_last_known_survival_status",
+            "event_free_survival_status", "event_free_survival_status",
+            "age_at_event_free_survival_status", "age_at_event_free_survival_status",
+            "cause_of_death", "cause_of_death");
 
     private static final List<List<String>> DIAGNOSIS_PROPERTIES = pairs(
             "id", "id",
@@ -235,16 +260,21 @@ class PrivateESDataFetcherOverviewTablesTest {
     }
 
     /** Verifies participant overview projection, participant endpoint, sorting, and nested exclusions. */
-    @Test
-    void returnsParticipantOverview() throws Exception {
+    @ParameterizedTest
+    @CsvSource({
+            "race,race",
+            "age_at_treatment_start,age_at_treatment_start",
+            "age_at_treatment_end,age_at_treatment_end"
+    })
+    void returnsParticipantOverview(String orderBy, String expectedSortField) throws Exception {
         when(cpiFetcherService.fetchAssociatedParticipantIds(any())).thenReturn(List.of());
 
         verifyOverview(
                 "participantOverview",
                 "/participants_table/_search",
                 "participants_table",
-                "race",
-                "race_str",
+                orderBy,
+                expectedSortField,
                 Map.of("exclude", Set.of(
                         "sample_diagnosis_genetic_analysis_file_filters",
                         "survival_filters",

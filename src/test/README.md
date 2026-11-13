@@ -37,3 +37,15 @@ Run one area, for example the OpenSearch query tests:
 ```bash
 mvn -Dtest='gov.nih.nci.backendapi.opensearchquery.*Test' test
 ```
+
+Treatment consolidation graph regression tests run against a disposable Neo4j-compatible graph.
+Set `NEO4J_TEST_URI` to its Bolt URI (without authentication) and run:
+
+```bash
+NEO4J_TEST_URI=bolt://localhost:7687 mvn test-compile failsafe:integration-test failsafe:verify -Dit.test=TreatmentConsolidationIntegrationTest
+```
+
+The tests execute the `participants_table` treatment indexing query from `indices.yaml`
+with fixtures rolled back after each case. They skip when `NEO4J_TEST_URI` is unset.
+Reindex `participants_table` after deploying treatment consolidation changes so the
+consolidated display fields and instance identifiers are populated.

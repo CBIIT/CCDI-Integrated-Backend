@@ -33,8 +33,6 @@
 
       // treatment_chemotherapy, treatment_radiation, treatment_surgery, and treatment_other nodes
       "treatment_type",
-      // Normalized from chemotherapy_agent, radiation_therapy_type, surgery_type, or other_treatment_type
-      "treatment_agent",
       "age_at_treatment_start",
       // API-only companion for selecting records with an unknown age_at_treatment_start
       "age_at_treatment_start_unknownAges",
