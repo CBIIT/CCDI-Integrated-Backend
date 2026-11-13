@@ -2888,9 +2888,9 @@ indices:
               CASE WHEN toFloat(record.age_at_treatment_start) IS NOT NULL
                 AND toFloat(record.age_at_treatment_start) <> -999
                 THEN toFloat(record.age_at_treatment_start) ELSE null END AS start_age
-            // Sort whole instances so type, start age and end age stay aligned.
-            // Unknown ages follow valid ages, ordered by descending GUID.
-            ORDER BY start_age IS NULL, start_age, record.guid DESC,
+            // Sort by numeric start age ascending, keeping type and both ages aligned.
+            // Unknown ages (including -999) follow valid ages, ordered by descending GUID.
+            ORDER BY start_age IS NULL, start_age ASC, record.guid DESC,
               coalesce(record.treatment_chemotherapy_id, record.treatment_radiation_id,
                 record.treatment_surgery_id, record.treatment_other_id) DESC
             RETURN collect({
@@ -2904,8 +2904,12 @@ indices:
           CALL {
             WITH records
             UNWIND records AS record
-            WITH record
-            ORDER BY record.age_at_treatment_start IS NULL, record.age_at_treatment_start, record.guid
+            WITH record,
+              CASE WHEN toFloat(record.age_at_treatment_start) IS NOT NULL
+                AND toFloat(record.age_at_treatment_start) <> -999
+                THEN toFloat(record.age_at_treatment_start) ELSE null END AS display_start_age
+            // Normalize mixed ages; null and -999 ages sort last, with GUIDs descending.
+            ORDER BY display_start_age IS NULL, display_start_age ASC, record.guid DESC
             RETURN collect(CASE WHEN record:treatment_chemotherapy THEN record.chemotherapy_agent ELSE null END) AS chemotherapy_agent_lists,
               collect(CASE WHEN record:treatment_radiation THEN record.radiation_therapy_type ELSE null END) AS radiation_therapy_type_lists,
               collect(CASE WHEN record:treatment_radiation THEN record.beam_radiation_type ELSE null END) AS beam_radiation_type_lists,
@@ -2978,7 +2982,7 @@ indices:
               AND toFloat(tresp.age_at_response) <> -999
               THEN toFloat(tresp.age_at_response) ELSE null END AS response_age
           // Sort whole instances using the treatment start age ordering.
-          // Unknown ages follow valid ages, ordered by descending GUID.
+          // Unknown ages (including -999) follow valid ages, ordered by descending GUID.
           ORDER BY response_age IS NULL, response_age, tresp.guid DESC,
             tresp.treatment_response_id DESC
           WITH
