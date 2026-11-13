@@ -9,6 +9,8 @@ import gov.nih.nci.bento_ri.service.InventoryESService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -258,16 +260,21 @@ class PrivateESDataFetcherOverviewTablesTest {
     }
 
     /** Verifies participant overview projection, participant endpoint, sorting, and nested exclusions. */
-    @Test
-    void returnsParticipantOverview() throws Exception {
+    @ParameterizedTest
+    @CsvSource({
+            "race,race",
+            "age_at_treatment_start,age_at_treatment_start",
+            "age_at_treatment_end,age_at_treatment_end"
+    })
+    void returnsParticipantOverview(String orderBy, String expectedSortField) throws Exception {
         when(cpiFetcherService.fetchAssociatedParticipantIds(any())).thenReturn(List.of());
 
         verifyOverview(
                 "participantOverview",
                 "/participants_table/_search",
                 "participants_table",
-                "race",
-                "race_str",
+                orderBy,
+                expectedSortField,
                 Map.of("exclude", Set.of(
                         "sample_diagnosis_genetic_analysis_file_filters",
                         "survival_filters",
