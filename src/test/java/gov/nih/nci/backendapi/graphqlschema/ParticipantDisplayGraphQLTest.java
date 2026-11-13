@@ -31,14 +31,13 @@ import static org.mockito.Mockito.when;
 class ParticipantDisplayGraphQLTest {
     private static final List<String> DISPLAY_LISTS = List.of(
         "consent_group_id", "consent_group_name", "diagnosis", "diagnosis_category",
-        "diagnosis_anatomic_site", "age_at_diagnosis_str", "disease_phase",
+        "diagnosis_anatomic_site", "disease_phase",
         "diagnosis_classification_system", "diagnosis_basis", "diagnosis_comment",
         "tumor_classification", "toronto_childhood_cancer_staging", "tumor_grade",
         "tumor_stage_clinical_t", "tumor_stage_clinical_n", "tumor_stage_clinical_m",
-        "tumor_spatial_extent", "treatment_type_str", "age_at_treatment_start_str",
-        "age_at_treatment_end_str", "chemotherapy_agent", "radiation_therapy_type",
-        "beam_radiation_type", "surgery_type", "other_treatment_type", "response",
-        "age_at_response_str"
+        "tumor_spatial_extent", "treatment_type", "age_at_treatment_start",
+        "age_at_treatment_end", "chemotherapy_agent", "radiation_therapy_type",
+        "beam_radiation_type", "surgery_type", "other_treatment_type", "response"
     );
 
     @Test
@@ -55,8 +54,16 @@ class ParticipantDisplayGraphQLTest {
         source.put("id", "participant-guid");
         source.put("participant_id", "P1");
         source.put("study_id", "S1");
-        DISPLAY_LISTS.forEach(field -> source.put(field, List.of("first", "second")));
-        source.put("age_at_diagnosis", List.of(10, 20));
+        Map<String, String> displaySources = Map.of(
+            "treatment_type", "treatment_type_str",
+            "age_at_treatment_start", "age_at_treatment_start_str",
+            "age_at_treatment_end", "age_at_treatment_end_str"
+        );
+        DISPLAY_LISTS.forEach(field -> source.put(
+            displaySources.getOrDefault(field, field), List.of("first", "second")));
+        // Diagnosis ages use the display source, including the unknown-age label.
+        source.put("age_at_diagnosis", List.of(10, -999));
+        source.put("age_at_diagnosis_str", List.of("10", "Not Reported"));
         source.put("age_at_response", List.of(30, 40));
         source.put("event_free_survival_status", "Event-free");
         source.put("age_at_event_free_survival_status", 50);
@@ -86,9 +93,9 @@ class ParticipantDisplayGraphQLTest {
             @SuppressWarnings("unchecked")
             var row = ((List<Map<String, Object>>) data.get("participantOverview")).get(0);
             DISPLAY_LISTS.forEach(field -> assertEquals(List.of("first", "second"), row.get(field), field));
-            assertEquals(List.of(10, 20), row.get("age_at_diagnosis"));
-            assertEquals(List.of(30, 40), row.get("age_at_response"));
-            assertEquals(50, row.get("age_at_event_free_survival_status"));
+            assertEquals(List.of("10", "Not Reported"), row.get("age_at_diagnosis"));
+            assertEquals(List.of("30", "40"), row.get("age_at_response"));
+            assertEquals("50", row.get("age_at_event_free_survival_status"));
             assertEquals("Event-free", row.get("event_free_survival_status"));
             assertEquals("Not Reported", row.get("cause_of_death"));
         } finally {
