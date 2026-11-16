@@ -1467,6 +1467,66 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         return data;
     }
 
+    // Only idsLists uses this doc-values response shape; overview queries still read _source.
+    private List<Map<String, Object>> collectIdsListParticipants() throws IOException {
+        List<String> fields = List.of("id", "participant_id", "study_id");
+        Request request = new Request("GET", PARTICIPANTS_END_POINT);
+        request.addParameter("scroll", "1m");
+        request.setJsonEntity(gson.toJson(Map.of(
+                "query", Map.of("match_all", Map.of()),
+                "sort", Map.of("participant_id", "asc"),
+                "_source", false,
+                "docvalue_fields", fields,
+                "size", 10000)));
+
+        List<Map<String, Object>> participants = new ArrayList<>();
+        String scrollId = null;
+        try {
+            while (participants.size() < ESService.MAX_ES_SIZE) {
+                logger.info("Current records: " + participants.size() + ". Collecting more records...");
+                JsonObject response = inventoryESService.send(request);
+                if (response.has("_scroll_id")) {
+                    scrollId = response.get("_scroll_id").getAsString();
+                }
+                JsonArray hits = response.getAsJsonObject("hits").getAsJsonArray("hits");
+                logger.info("...collected " + hits.size() + " records. Current records: "
+                        + (participants.size() + hits.size()));
+                if (hits.isEmpty()) {
+                    break;
+                }
+                for (JsonElement hit : hits) {
+                    JsonObject values = hit.getAsJsonObject().getAsJsonObject("fields");
+                    Map<String, Object> participant = new HashMap<>();
+                    for (String field : fields) {
+                        JsonArray fieldValues = values == null ? null : values.getAsJsonArray(field);
+                        participant.put(field, fieldValues == null || fieldValues.isEmpty()
+                                ? null : fieldValues.get(0).getAsString());
+                    }
+                    participants.add(participant);
+                    if (participants.size() == ESService.MAX_ES_SIZE) {
+                        break;
+                    }
+                }
+                if (scrollId == null) {
+                    throw new IOException("Missing scroll ID in idsLists participant response");
+                }
+                request = new Request("POST", InventoryESService.SCROLL_ENDPOINT);
+                request.setJsonEntity(gson.toJson(Map.of("scroll", "1m", "scroll_id", scrollId)));
+            }
+            return participants;
+        } finally {
+            if (scrollId != null) {
+                Request clearRequest = new Request("DELETE", InventoryESService.SCROLL_ENDPOINT);
+                clearRequest.setJsonEntity(gson.toJson(Map.of("scroll_id", scrollId)));
+                try {
+                    inventoryESService.send(clearRequest);
+                } catch (IOException e) {
+                    logger.warn("Failed to clear idsLists scroll context", e);
+                }
+            }
+        }
+    }
+
     private Map<String, List<Object>> idsLists(Map<String, Object> params) throws IOException {
         String cacheKey = "idsLists".concat(generateCacheKey(params));
         Object cachedResultsRaw = null;
@@ -1481,17 +1541,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         int numCpiRequests = 0;
         int participantCount = 0;
         Map<String, List<Object>> results = null;
-
-        final String[][] participantProperties = new String[][]{
-            new String[]{"id", "id"},
-            new String[]{"study_id", "study_id"},
-            new String[]{"participant_id", "participant_id"}
-        };
-        Map<String, Object> participantParams = new HashMap<>(Map.of(
-            OFFSET, 0,
-            ORDER_BY, "participant_id",
-            SORT_DIRECTION, "asc"
-        ));
 
         if (useCache) {
             cachedResultsRaw = caffeineCache.asMap().get(cacheKey);
@@ -1508,24 +1557,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
             return results;
         }
 
-        participantParams.put(PAGE_SIZE, ESService.MAX_ES_SIZE);
-
-        Map<String, String> idsMapping = Map.of(
-            "participant_id", "participant_id",
-            "study_id", "study_id",
-            "id", "id"
-        );
-
-        allParticipants = overview(
-            PARTICIPANTS_END_POINT,
-            participantParams,
-            participantProperties,
-            "participant_id",
-            idsMapping,
-            Set.of(),
-            "nested_filters",
-            "participants_table"
-        );
+        allParticipants = collectIdsListParticipants();
 
         participantCount = allParticipants.size();
 

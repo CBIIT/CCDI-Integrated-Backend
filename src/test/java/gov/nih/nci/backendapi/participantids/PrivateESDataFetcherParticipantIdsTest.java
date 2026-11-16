@@ -4,6 +4,8 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.apache.http.util.EntityUtils;
 import gov.nih.nci.bento.service.ESService;
 import gov.nih.nci.bento_ri.model.FormattedCPIResponse;
 import gov.nih.nci.bento_ri.model.ParticipantRequest;
@@ -33,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.times;
@@ -70,7 +72,7 @@ class PrivateESDataFetcherParticipantIdsTest {
     @Test
     void returnsBatchedParticipantAndAssociatedIdsThenUsesCache() throws Exception {
         List<Map<String, Object>> participants = participantRows("P1", "P2", "P3");
-        stubParticipantOverview(participants);
+        stubIdsListParticipants(participants);
         when(cpiFetcherService.fetchAssociatedParticipantIds(any())).thenAnswer(invocation -> {
             @SuppressWarnings("unchecked")
             List<ParticipantRequest> requests = invocation.getArgument(0);
@@ -89,7 +91,8 @@ class PrivateESDataFetcherParticipantIdsTest {
             }
             return responses;
         });
-        when(inventoryESService.send(any(Request.class))).thenAnswer(invocation -> {
+        when(inventoryESService.send(argThat(request -> request != null && PARTICIPANTS_ENDPOINT.equals(request.getEndpoint())
+                && !request.getParameters().containsKey("scroll")))).thenAnswer(invocation -> {
             Request request = invocation.getArgument(0);
             if (!PARTICIPANTS_ENDPOINT.equals(request.getEndpoint())) {
                 throw new AssertionError("Unexpected OpenSearch endpoint: " + request.getEndpoint());
@@ -106,7 +109,8 @@ class PrivateESDataFetcherParticipantIdsTest {
                 Map.of("associated_id", "ASSOC-EXTERNAL", "participant_id", "P1")),
                 firstResult.get("associatedIds"));
         verify(cpiFetcherService, times(2)).fetchAssociatedParticipantIds(any());
-        verify(inventoryESService).send(any(Request.class));
+        verify(inventoryESService).send(argThat(request -> request != null && PARTICIPANTS_ENDPOINT.equals(request.getEndpoint())
+                && !request.getParameters().containsKey("scroll")));
 
         clearInvocations(inventoryESService, cpiFetcherService);
         Map<String, List<Object>> cachedResult = invokeIdsLists(params);
@@ -118,12 +122,22 @@ class PrivateESDataFetcherParticipantIdsTest {
     /** Verifies idsLists returns empty identifiers without calling CPI when no participants exist. */
     @Test
     void returnsEmptyIdentifierListsWhenNoParticipantsExist() throws Exception {
-        stubParticipantOverview(List.of());
+        stubIdsListParticipants(List.of());
 
         Map<String, List<Object>> result = invokeIdsLists(
                 Map.of("cpi_batch_size", 25, "use_cache", true));
 
         assertEquals(Map.of("participantIds", List.of(), "associatedIds", List.of()), result);
+        ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
+        verify(inventoryESService).send(requestCaptor.capture());
+        Request request = requestCaptor.getValue();
+        assertEquals("GET", request.getMethod());
+        assertEquals(PARTICIPANTS_ENDPOINT, request.getEndpoint());
+        assertEquals(Map.of("scroll", "1m"), request.getParameters());
+        assertEquals(JsonParser.parseString("""
+                {"query":{"match_all":{}},"sort":{"participant_id":"asc"},
+                 "_source":false,"docvalue_fields":["id","participant_id","study_id"],"size":10000}
+                """), JsonParser.parseString(EntityUtils.toString(request.getEntity())));
         verifyNoInteractions(cpiFetcherService);
         assertEquals(0, cache.estimatedSize());
     }
@@ -134,7 +148,7 @@ class PrivateESDataFetcherParticipantIdsTest {
      */
     @Test
     void keepsParticipantIdsWhenCpiIsUnavailable() throws Exception {
-        stubParticipantOverview(participantRows("P1"));
+        stubIdsListParticipants(participantRows("P1"));
         when(cpiFetcherService.fetchAssociatedParticipantIds(any()))
                 .thenThrow(new IOException("CPI unavailable"));
 
@@ -149,7 +163,7 @@ class PrivateESDataFetcherParticipantIdsTest {
     /** Verifies a failed asynchronous CPI batch is skipped while idsLists still returns safely. */
     @Test
     void skipsFailedAsynchronousCpiBatches() throws Exception {
-        stubParticipantOverview(participantRows("P1"));
+        stubIdsListParticipants(participantRows("P1"));
         when(cpiFetcherService.fetchAssociatedParticipantIds(any()))
                 .thenThrow(new AssertionError("worker failed"));
 
@@ -173,16 +187,15 @@ class PrivateESDataFetcherParticipantIdsTest {
         Map<String, List<Object>> sentinel = Map.of(
                 "participantIds", List.of("STALE"), "associatedIds", List.of());
         cache.put(cacheKey, sentinel);
-        stubParticipantOverview(participantRows("P1"));
+        stubIdsListParticipants(participantRows("P1"));
         when(cpiFetcherService.fetchAssociatedParticipantIds(any())).thenReturn(List.of());
 
         Map<String, List<Object>> result = invokeIdsLists(params);
 
         assertEquals(List.of("P1"), result.get("participantIds"));
         assertSame(result, cache.getIfPresent(cacheKey));
-        verify(inventoryESService).collectPage(
-                any(Request.class), anyMap(), any(String[][].class),
-                eq(ESService.MAX_ES_SIZE), eq(0));
+        verify(inventoryESService).send(argThat(request -> request != null && PARTICIPANTS_ENDPOINT.equals(request.getEndpoint())
+                && request.getParameters().containsKey("scroll")));
     }
 
     /** Verifies a non-map cache value is ignored and replaced by a valid idsLists response. */
@@ -192,7 +205,7 @@ class PrivateESDataFetcherParticipantIdsTest {
         String cacheKey = "idsLists" + invokePrivate(
                 "generateCacheKey", new Class<?>[]{Map.class}, params);
         cache.put(cacheKey, "invalid");
-        stubParticipantOverview(participantRows("P1"));
+        stubIdsListParticipants(participantRows("P1"));
         when(cpiFetcherService.fetchAssociatedParticipantIds(any())).thenReturn(List.of());
 
         Map<String, List<Object>> result = invokeIdsLists(params);
@@ -244,13 +257,86 @@ class PrivateESDataFetcherParticipantIdsTest {
         assertEquals("OpenSearch unavailable", exception.getMessage());
     }
 
-    private void stubParticipantOverview(List<Map<String, Object>> participants) throws IOException {
-        when(inventoryESService.buildFacetFilterQuery(
-                anyMap(), anySet(), anySet(), anySet(), eq("nested_filters"),
-                eq("participants_table"))).thenReturn(new HashMap<>());
-        when(inventoryESService.collectPage(
-                any(Request.class), anyMap(), any(String[][].class),
-                eq(ESService.MAX_ES_SIZE), eq(0))).thenReturn(participants);
+    @Test
+    void collectsDocValuesAcrossPagesAndClearsLatestScroll() throws Exception {
+        when(inventoryESService.send(any(Request.class))).thenReturn(
+                docValuesResponse(participantRows("P1"), "scroll-1"),
+                docValuesResponse(participantRows("P2"), "scroll-2"),
+                docValuesResponse(List.of(), "scroll-3"),
+                new JsonObject());
+
+        List<Map<String, Object>> result = invokePrivate(
+                "collectIdsListParticipants", new Class<?>[]{});
+
+        assertEquals(List.of("P1", "P2"), result.stream()
+                .map(row -> row.get("participant_id")).toList());
+        assertEquals("PID-1", result.get(0).get("id"));
+        assertEquals("STUDY-A", result.get(0).get("study_id"));
+        ArgumentCaptor<Request> requests = ArgumentCaptor.forClass(Request.class);
+        verify(inventoryESService, times(4)).send(requests.capture());
+        assertEquals("POST", requests.getAllValues().get(1).getMethod());
+        assertEquals(JsonParser.parseString("{\"scroll\":\"1m\",\"scroll_id\":\"scroll-1\"}"),
+                JsonParser.parseString(EntityUtils.toString(requests.getAllValues().get(1).getEntity())));
+        Request cleanup = requests.getAllValues().get(3);
+        assertEquals("DELETE", cleanup.getMethod());
+        assertEquals(InventoryESService.SCROLL_ENDPOINT, cleanup.getEndpoint());
+        assertEquals(JsonParser.parseString("{\"scroll_id\":\"scroll-3\"}"),
+                JsonParser.parseString(EntityUtils.toString(cleanup.getEntity())));
+    }
+
+    @Test
+    void clearsScrollAfterFailureWithoutMaskingOriginalError() throws Exception {
+        IOException failure = new IOException("search rejected");
+        when(inventoryESService.send(any(Request.class)))
+                .thenReturn(docValuesResponse(participantRows("P1"), "scroll-1"))
+                .thenThrow(failure)
+                .thenThrow(new IOException("cleanup failed"));
+
+        IOException actual = assertThrows(IOException.class,
+                () -> invokeIdsLists(Map.of("cpi_batch_size", 25, "use_cache", true)));
+
+        assertSame(failure, actual);
+        ArgumentCaptor<Request> requests = ArgumentCaptor.forClass(Request.class);
+        verify(inventoryESService, times(3)).send(requests.capture());
+        assertEquals("DELETE", requests.getAllValues().get(2).getMethod());
+        verifyNoInteractions(cpiFetcherService);
+        assertEquals(0, cache.estimatedSize());
+    }
+
+    private void stubIdsListParticipants(List<Map<String, Object>> participants) throws IOException {
+        when(inventoryESService.send(argThat(request -> request != null && request.getParameters().containsKey("scroll"))))
+                .thenReturn(docValuesResponse(participants, participants.isEmpty() ? null : "scroll-1"));
+        if (!participants.isEmpty()) {
+            when(inventoryESService.send(argThat(request -> request != null && "POST".equals(request.getMethod())
+                    && InventoryESService.SCROLL_ENDPOINT.equals(request.getEndpoint()))))
+                    .thenReturn(docValuesResponse(List.of(), "scroll-2"));
+            when(inventoryESService.send(argThat(request -> request != null && "DELETE".equals(request.getMethod())
+                    && InventoryESService.SCROLL_ENDPOINT.equals(request.getEndpoint()))))
+                    .thenReturn(new JsonObject());
+        }
+    }
+
+    private static JsonObject docValuesResponse(List<Map<String, Object>> participants, String scrollId) {
+        JsonArray hits = new JsonArray();
+        for (Map<String, Object> participant : participants) {
+            JsonObject fields = new JsonObject();
+            participant.forEach((key, value) -> {
+                JsonArray values = new JsonArray();
+                values.add(value.toString());
+                fields.add(key, values);
+            });
+            JsonObject hit = new JsonObject();
+            hit.add("fields", fields);
+            hits.add(hit);
+        }
+        JsonObject hitsObject = new JsonObject();
+        hitsObject.add("hits", hits);
+        JsonObject response = new JsonObject();
+        response.add("hits", hitsObject);
+        if (scrollId != null) {
+            response.addProperty("_scroll_id", scrollId);
+        }
+        return response;
     }
 
     private static List<Map<String, Object>> participantRows(String... participantIds) {
