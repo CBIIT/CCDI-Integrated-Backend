@@ -2458,572 +2458,6 @@ indices:
           RETURN stu.guid AS guid, cell_lines
         page_size: 100
 
-  # participant centric index for study and other facets
-  - index_name: study_participants_faceted
-    id_field: "id"
-    mapping:
-      keyword:
-        - id
-        - participant_id
-        - race
-        - race_str
-        - sex_at_birth
-        - study_id
-        - dbgap_accession
-        - study_phase
-        - study_acronym
-        - study_name
-        - survival_filters.last_known_survival_status
-        - survival_filters.cause_of_death
-        - survival_filters.first_event
-        - treatment_filters.treatment_type
-        - treatment_filters.treatment_agent
-        - treatment_response_filters.response
-        - treatment_response_filters.response_category
-        - treatment_response_filters.response_system
-        - sample_diagnosis_genetic_analysis_file_filters.sample_anatomic_site
-        - sample_diagnosis_genetic_analysis_file_filters.sample_tumor_status
-        - sample_diagnosis_genetic_analysis_file_filters.tumor_spatial_extent
-        - sample_diagnosis_genetic_analysis_file_filters.diagnosis
-        - sample_diagnosis_genetic_analysis_file_filters.diagnosis_category
-        - sample_diagnosis_genetic_analysis_file_filters.diagnosis_anatomic_site
-        - sample_diagnosis_genetic_analysis_file_filters.diagnosis_classification_system
-        - sample_diagnosis_genetic_analysis_file_filters.diagnosis_basis
-        - sample_diagnosis_genetic_analysis_file_filters.disease_phase
-        - sample_diagnosis_genetic_analysis_file_filters.reported_significance
-        - sample_diagnosis_genetic_analysis_file_filters.reported_significance_system
-        - sample_diagnosis_genetic_analysis_file_filters.gene_symbol
-        - sample_diagnosis_genetic_analysis_file_filters.alteration
-        - sample_diagnosis_genetic_analysis_file_filters.fusion_partner_gene
-        - sample_diagnosis_genetic_analysis_file_filters.alteration_type
-        - sample_diagnosis_genetic_analysis_file_filters.status
-        - sample_diagnosis_genetic_analysis_file_filters.data_category
-        - sample_diagnosis_genetic_analysis_file_filters.file_type
-        - sample_diagnosis_genetic_analysis_file_filters.file_mapping_level
-        - sample_diagnosis_genetic_analysis_file_filters.library_selection
-        - sample_diagnosis_genetic_analysis_file_filters.library_source_material
-        - sample_diagnosis_genetic_analysis_file_filters.library_source_molecule
-        - sample_diagnosis_genetic_analysis_file_filters.library_strategy
-      integer:
-        - survival_filters.age_at_last_known_survival_status
-        - treatment_filters.age_at_treatment_start
-        - treatment_filters.age_at_treatment_end
-        - treatment_response_filters.age_at_response
-        - sample_diagnosis_genetic_analysis_file_filters.participant_age_at_collection
-        - sample_diagnosis_genetic_analysis_file_filters.age_at_diagnosis
-    # Cypher query will be used to retrieve data from Neo4j, and index into Elasticsearch
-    initial_query:
-      query: |
-        MATCH (p:participant)
-        WITH p
-        SKIP $skip LIMIT $limit
-        RETURN p.guid AS id
-      page_size: 5000
-    update_queries:
-      - name: "study_properties"
-        query: |
-          MATCH
-            // Participant -> Consent Group -> Study
-            (p:participant),
-            (cg:consent_group)<-[:of_participant]->(p),
-            (stu:study)<-[:of_consent_group]-(cg)
-          WITH p, stu
-          SKIP $skip LIMIT $limit
-          RETURN
-            p.guid AS id,
-            stu.study_id AS study_id,
-            stu.dbgap_accession AS dbgap_accession,
-            stu.study_phase AS study_phase,
-            stu.study_acronym AS study_acronym,
-            stu.study_name AS study_name
-        page_size: 1000
-      - name: "participant_properties"
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-          RETURN
-            p.guid AS id,
-            p.participant_id AS participant_id,
-            p.race AS race,
-            reduce(result = '', x IN p.race |
-              CASE
-                WHEN result = "" THEN x
-                ELSE result + ";" + x
-              END
-            ) AS race_str,
-            p.sex_at_birth AS sex_at_birth
-        page_size: 5000
-      - name: "survival_filters"
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (sur:survival)-[:of_survival]->(p)
-          WITH
-            p.guid AS id,
-            count(sur) AS survival_count,
-            [item IN collect(
-              DISTINCT {
-                last_known_survival_status: sur.last_known_survival_status,
-                cause_of_death: sur.cause_of_death,
-                first_event: sur.first_event,
-                age_at_last_known_survival_status: sur.age_at_last_known_survival_status
-              }
-            ) WHERE item IS NOT NULL] AS survival_filters
-          WITH
-            id,
-            CASE
-              WHEN survival_count >0
-              THEN survival_filters
-              ELSE []
-            END AS survival_filters
-          RETURN id, survival_filters
-        page_size: 5000
-      - name: "treatment_filters"
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-
-          // Build a superlist of treatment filters
-          CALL {
-            // treatment_chemotherapy
-            WITH p
-            OPTIONAL MATCH (tchemo:treatment_chemotherapy)-[:of_treatment_chemotherapy]->(p)
-            WITH
-              p.guid AS id,
-              count(tchemo) AS tchemo_count,
-              collect(DISTINCT {
-                treatment_type: CASE
-                  WHEN tchemo.chemotherapy_type IS NULL OR size(tchemo.chemotherapy_type) = 0 THEN ['chemotherapy']
-                  ELSE [x IN tchemo.chemotherapy_type WHERE x IS NOT NULL | trim(x)]
-                END,
-                treatment_agent: tchemo.chemotherapy_agent,
-                age_at_treatment_start: tchemo.age_at_treatment_start,
-                age_at_treatment_end: tchemo.age_at_treatment_end
-              }) AS treatment_filters
-            WITH
-              id,
-              CASE
-                WHEN tchemo_count > 0
-                THEN treatment_filters
-                ELSE []
-              END AS treatment_filters
-            RETURN id, treatment_filters
-
-            UNION
-
-            // treatment_radiation
-            WITH p
-            OPTIONAL MATCH (trad:treatment_radiation)-[:of_treatment_radiation]->(p)
-            WITH
-              p.guid AS id,
-              count(trad) AS trad_count,
-              [item in collect(
-                DISTINCT {
-                  treatment_type: trad.treatment_type,
-                  treatment_agent: trad.radiation_therapy_type,
-                  age_at_treatment_start: trad.age_at_treatment_start,
-                  age_at_treatment_end: trad.age_at_treatment_end
-                }
-              ) WHERE item IS NOT NULL] AS treatment_filters
-            WITH
-              id,
-              CASE
-                WHEN trad_count > 0
-                THEN treatment_filters
-                ELSE []
-              END AS treatment_filters
-            RETURN id, treatment_filters
-
-            UNION
-
-            // treatment_surgery
-            WITH p
-            OPTIONAL MATCH (tsurg:treatment_surgery)-[:of_treatment_surgery]->(p)
-            WITH
-              p.guid AS id,
-              count(tsurg) AS tsurg_count,
-              [item in collect(
-                DISTINCT {
-                  treatment_type: tsurg.treatment_type,
-                  treatment_agent: tsurg.surgery_type,
-                  age_at_treatment_start: tsurg.age_at_treatment_start,
-                  age_at_treatment_end: tsurg.age_at_treatment_end
-                }
-              ) WHERE item IS NOT NULL] AS treatment_filters
-            WITH
-              id,
-              CASE
-                WHEN tsurg_count > 0
-                THEN treatment_filters
-                ELSE []
-              END AS treatment_filters
-            RETURN id, treatment_filters
-
-            UNION
-
-            // treatment_other
-            WITH p
-            OPTIONAL MATCH (toth:treatment_other)-[:of_treatment_other]->(p)
-            WITH
-              p.guid AS id,
-              count(toth) AS toth_count,
-              [item in collect(
-                DISTINCT {
-                  treatment_type: toth.treatment_type,
-                  treatment_agent: toth.other_treatment_type,
-                  age_at_treatment_start: toth.age_at_treatment_start,
-                  age_at_treatment_end: toth.age_at_treatment_end
-                }
-              ) WHERE item IS NOT NULL] AS treatment_filters
-            WITH
-              id,
-              CASE
-                WHEN toth_count > 0
-                THEN treatment_filters
-                ELSE []
-              END AS treatment_filters
-            RETURN id, treatment_filters
-          }
-          WITH
-            id,
-            collect(treatment_filters) AS treatment_filters_superlist
-          WITH
-            id,
-            reduce(all_filters = [], filters IN treatment_filters_superlist | all_filters + filters) AS treatment_filters
-          RETURN id, treatment_filters
-        page_size: 5000
-      - name: "treatment_response_filters"
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-          OPTIONAL MATCH (tresp:treatment_response)-[:of_treatment_response]->(p)
-          WITH
-            p.guid AS id,
-            count(tresp) AS treatment_response_count,
-            [item IN collect(
-              DISTINCT {
-                age_at_response: tresp.age_at_response,
-                response: tresp.response,
-                response_category: tresp.response_category,
-                response_system: tresp.response_system
-              }
-            ) WHERE item IS NOT NULL] AS treatment_response_filters
-          WITH
-            id,
-            CASE
-              WHEN treatment_response_count > 0
-              THEN treatment_response_filters
-              ELSE []
-            END AS treatment_response_filters
-          RETURN id, treatment_response_filters
-        page_size: 5000
-      - name: "sample_diagnosis_genetic_analysis_file_filters"
-        query: |
-          MATCH (p:participant)
-          WITH p
-          SKIP $skip LIMIT $limit
-
-          // Direct participant samples: self-context
-          OPTIONAL MATCH (p)<--(s1:sample)
-          WITH
-            p,
-            collect(DISTINCT { sm: s1, source_sm: s1 }) AS direct_contexts
-
-          // Model-linked samples: p <- Sample_1 <- cell_line/pdx <- Sample_2
-          OPTIONAL MATCH (p)<-[:of_sample]-(s1_model:sample)<--(model)<--(s2:sample)
-          WHERE model:cell_line OR model:pdx
-
-          WITH
-            p,
-            [ctx IN (
-              direct_contexts
-              + collect(DISTINCT { sm: s1_model, source_sm: s1_model })
-              + collect(DISTINCT { sm: s2, source_sm: s2 })
-              + collect(DISTINCT { sm: s1_model, source_sm: s2 })
-              + collect(DISTINCT { sm: s2, source_sm: s1_model })
-            )
-            WHERE ctx.sm IS NOT NULL AND ctx.source_sm IS NOT NULL] AS sample_contexts
-
-          WITH
-            p,
-            CASE
-              WHEN size(sample_contexts) = 0 THEN [{ sm: null, source_sm: null }]
-              ELSE sample_contexts
-            END AS sample_contexts
-
-          // Study-level files
-          OPTIONAL MATCH (st:study)<--(:consent_group)<--(p)
-          OPTIONAL MATCH (st)<--(study_file)
-          WHERE study_file:clinical_measure_file
-            OR study_file:generic_file
-
-          WITH
-            p,
-            sample_contexts,
-            collect(DISTINCT study_file) AS study_files
-
-          OPTIONAL MATCH (p)<--(participant_file)
-          WHERE participant_file:clinical_measure_file
-            OR participant_file:generic_file
-            OR participant_file:radiology_file
-
-          WITH
-            p,
-            sample_contexts,
-            study_files,
-            collect(DISTINCT participant_file) AS participant_files
-
-          OPTIONAL MATCH (p)<--(participant_dg:diagnosis)
-
-          WITH
-            p,
-            sample_contexts,
-            study_files,
-            participant_files,
-            collect(DISTINCT participant_dg) AS participant_diagnoses
-
-          OPTIONAL MATCH (p)<--(participant_ga:genetic_analysis)
-
-          WITH
-            p,
-            sample_contexts,
-            study_files,
-            participant_files,
-            participant_diagnoses,
-            collect(DISTINCT participant_ga) AS participant_gas
-
-          UNWIND sample_contexts AS ctx
-
-          WITH
-            p,
-            ctx.sm AS sm,
-            ctx.source_sm AS source_sm,
-            study_files,
-            participant_files,
-            participant_diagnoses,
-            participant_gas
-
-          // Source sample-level files
-          OPTIONAL MATCH (source_sm)<--(sample_file)
-          WHERE sample_file:sequencing_file
-            OR sample_file:generic_file
-            OR sample_file:methylation_array_file
-            OR sample_file:pathology_file
-            OR sample_file:cytogenomic_file
-
-          WITH
-            p,
-            sm,
-            source_sm,
-            study_files,
-            participant_files,
-            participant_diagnoses,
-            participant_gas,
-            collect(DISTINCT sample_file) AS sample_files
-
-          // Source sample-level diagnosis
-          OPTIONAL MATCH (source_sm)<--(sample_dg:diagnosis)
-
-          WITH
-            p,
-            sm,
-            source_sm,
-            study_files,
-            participant_files,
-            participant_diagnoses,
-            participant_gas,
-            sample_files,
-            collect(DISTINCT sample_dg) AS sample_diagnoses
-
-          // Source sample-level genetic analysis
-          OPTIONAL MATCH (source_sm)<--(sample_ga:genetic_analysis)
-
-          WITH
-            p,
-            sm,
-            sample_files + participant_files + study_files AS files,
-            sample_diagnoses + participant_diagnoses AS diagnoses,
-            collect(DISTINCT sample_ga) + participant_gas AS gas
-
-          CALL {
-            WITH files
-
-            UNWIND CASE WHEN size(files) = 0 THEN [null] ELSE files END AS file
-
-            WITH DISTINCT
-              file.data_category AS data_category,
-              file.file_type AS file_type,
-              file.file_mapping_level AS file_mapping_level,
-              CASE
-                WHEN file IS NOT NULL AND file:sequencing_file
-                THEN file.library_selection
-                ELSE null
-              END AS library_selection,
-              CASE
-                WHEN file IS NOT NULL AND file:sequencing_file
-                THEN file.library_source_material
-                ELSE null
-              END AS library_source_material,
-              CASE
-                WHEN file IS NOT NULL AND file:sequencing_file
-                THEN file.library_source_molecule
-                ELSE null
-              END AS library_source_molecule,
-              CASE
-                WHEN file IS NOT NULL AND file:sequencing_file
-                THEN file.library_strategy
-                ELSE null
-              END AS library_strategy
-
-            RETURN collect([
-              data_category,
-              file_type,
-              file_mapping_level,
-              library_selection,
-              library_source_material,
-              library_source_molecule,
-              library_strategy
-            ]) AS file_filter_keys
-          }
-
-          CALL {
-            WITH diagnoses
-
-            UNWIND CASE WHEN size(diagnoses) = 0 THEN [null] ELSE diagnoses END AS dg
-
-            WITH DISTINCT
-              dg.age_at_diagnosis AS age_at_diagnosis,
-              dg.anatomic_site AS diagnosis_anatomic_site,
-              dg.disease_phase AS disease_phase,
-              dg.diagnosis_classification_system AS diagnosis_classification_system,
-              dg.diagnosis_category AS diagnosis_category,
-              dg.diagnosis_basis AS diagnosis_basis,
-              dg.diagnosis AS diagnosis
-
-            RETURN collect([
-              age_at_diagnosis,
-              diagnosis_anatomic_site,
-              disease_phase,
-              diagnosis_classification_system,
-              diagnosis_category,
-              diagnosis_basis,
-              diagnosis
-            ]) AS diagnosis_filter_keys
-          }
-
-          CALL {
-            WITH gas
-
-            UNWIND CASE WHEN size(gas) = 0 THEN [null] ELSE gas END AS ga
-
-            // Expand stringified gene lists ("[ABL1, BRD3, ...]") into individual gene symbols
-            // so nested filters/aggs bucket and match one gene at a time.
-            WITH ga,
-              CASE
-                WHEN ga IS NULL OR ga.gene_symbol IS NULL THEN [null]
-                WHEN ga.gene_symbol STARTS WITH '[' AND ga.gene_symbol ENDS WITH ']' THEN
-                  [x IN split(replace(substring(ga.gene_symbol, 1, size(ga.gene_symbol)-2), "'", ""), ",") |
-                    CASE WHEN trim(x) = '' THEN 'Not Reported' ELSE trim(x) END]
-                WHEN trim(toString(ga.gene_symbol)) = '' THEN ['Not Reported']
-                ELSE [trim(toString(ga.gene_symbol))]
-              END AS gene_symbol_arr
-            UNWIND gene_symbol_arr AS gene_symbol
-
-            WITH DISTINCT
-              ga.reported_significance AS reported_significance,
-              ga.reported_significance_system AS reported_significance_system,
-              gene_symbol,
-              ga.alteration AS alteration,
-              ga.fusion_partner_gene AS fusion_partner_gene,
-              ga.alteration_type AS alteration_type,
-              ga.status AS status
-
-            RETURN collect([
-              reported_significance,
-              reported_significance_system,
-              gene_symbol,
-              alteration,
-              fusion_partner_gene,
-              alteration_type,
-              status
-            ]) AS genetic_analysis_filter_keys
-          }
-
-          UNWIND file_filter_keys AS file_filter_key
-          UNWIND diagnosis_filter_keys AS diagnosis_filter_key
-          UNWIND genetic_analysis_filter_keys AS genetic_analysis_filter_key
-
-          WITH DISTINCT
-            p.guid AS id,
-
-            // Sample facets
-            sm.anatomic_site AS sample_anatomic_site,
-            sm.participant_age_at_collection AS participant_age_at_collection,
-            sm.sample_tumor_status AS sample_tumor_status,
-            sm.tumor_spatial_extent AS tumor_spatial_extent,
-
-            // Diagnosis facets
-            diagnosis_filter_key[0] AS age_at_diagnosis,
-            diagnosis_filter_key[1] AS diagnosis_anatomic_site,
-            diagnosis_filter_key[2] AS disease_phase,
-            diagnosis_filter_key[3] AS diagnosis_classification_system,
-            diagnosis_filter_key[4] AS diagnosis_category,
-            diagnosis_filter_key[5] AS diagnosis_basis,
-            diagnosis_filter_key[6] AS diagnosis,
-
-            // Genetic Analysis facets
-            genetic_analysis_filter_key[0] AS reported_significance,
-            genetic_analysis_filter_key[1] AS reported_significance_system,
-            genetic_analysis_filter_key[2] AS gene_symbol,
-            genetic_analysis_filter_key[3] AS alteration,
-            genetic_analysis_filter_key[4] AS fusion_partner_gene,
-            genetic_analysis_filter_key[5] AS alteration_type,
-            genetic_analysis_filter_key[6] AS status,
-
-            // File facets
-            file_filter_key[0] AS data_category,
-            file_filter_key[1] AS file_type,
-            file_filter_key[2] AS file_mapping_level,
-            file_filter_key[3] AS library_selection,
-            file_filter_key[4] AS library_source_material,
-            file_filter_key[5] AS library_source_molecule,
-            file_filter_key[6] AS library_strategy
-
-          RETURN
-            id,
-            collect({
-              sample_anatomic_site: sample_anatomic_site,
-              participant_age_at_collection: participant_age_at_collection,
-              sample_tumor_status: sample_tumor_status,
-              tumor_spatial_extent: tumor_spatial_extent,
-              age_at_diagnosis: age_at_diagnosis,
-              diagnosis_anatomic_site: diagnosis_anatomic_site,
-              disease_phase: disease_phase,
-              diagnosis_classification_system: diagnosis_classification_system,
-              diagnosis_category: diagnosis_category,
-              diagnosis_basis: diagnosis_basis,
-              diagnosis: diagnosis,
-              reported_significance: reported_significance,
-              reported_significance_system: reported_significance_system,
-              gene_symbol: gene_symbol,
-              alteration: alteration,
-              fusion_partner_gene: fusion_partner_gene,
-              alteration_type: alteration_type,
-              status: status,
-              data_category: data_category,
-              file_type: file_type,
-              file_mapping_level: file_mapping_level,
-              library_selection: library_selection,
-              library_source_material: library_source_material,
-              library_source_molecule: library_source_molecule,
-              library_strategy: library_strategy
-            }) AS sample_diagnosis_genetic_analysis_file_filters
-        page_size: 100
-
   # Data points for KM plot
   # Excludes survival records with bad age_at_last_known_survival_status
   # Excludes survival records associated with bad age_at_diagnosis
@@ -3190,6 +2624,7 @@ indices:
       page_size: 2000
 
   # participant index for table display and participant level facets
+  # TODO - Determine which _str properties to remove
   - index_name: participants_table
     id_field: "id"
     mapping:
@@ -3293,6 +2728,9 @@ indices:
         - age_at_event_free_survival_status
         # Survival numerical filters
         - survival_filters.age_at_last_known_survival_status
+        # Treatment numerical fields
+        - age_at_treatment_start
+        - age_at_treatment_end
         # Treatment numerical filters
         - treatment_filters.age_at_treatment_start
         - treatment_filters.age_at_treatment_end
@@ -3450,9 +2888,9 @@ indices:
               CASE WHEN toFloat(record.age_at_treatment_start) IS NOT NULL
                 AND toFloat(record.age_at_treatment_start) <> -999
                 THEN toFloat(record.age_at_treatment_start) ELSE null END AS start_age
-            // Sort whole instances so type, start age and end age stay aligned.
-            // Unknown ages follow valid ages, ordered by descending GUID.
-            ORDER BY start_age IS NULL, start_age, record.guid DESC,
+            // Sort by numeric start age ascending, keeping type and both ages aligned.
+            // Unknown ages (including -999) follow valid ages, ordered by descending GUID.
+            ORDER BY start_age IS NULL, start_age ASC, record.guid DESC,
               coalesce(record.treatment_chemotherapy_id, record.treatment_radiation_id,
                 record.treatment_surgery_id, record.treatment_other_id) DESC
             RETURN collect({
@@ -3466,8 +2904,12 @@ indices:
           CALL {
             WITH records
             UNWIND records AS record
-            WITH record
-            ORDER BY record.age_at_treatment_start IS NULL, record.age_at_treatment_start, record.guid
+            WITH record,
+              CASE WHEN toFloat(record.age_at_treatment_start) IS NOT NULL
+                AND toFloat(record.age_at_treatment_start) <> -999
+                THEN toFloat(record.age_at_treatment_start) ELSE null END AS display_start_age
+            // Normalize mixed ages; null and -999 ages sort last, with GUIDs descending.
+            ORDER BY display_start_age IS NULL, display_start_age ASC, record.guid DESC
             RETURN collect(CASE WHEN record:treatment_chemotherapy THEN record.chemotherapy_agent ELSE null END) AS chemotherapy_agent_lists,
               collect(CASE WHEN record:treatment_radiation THEN record.radiation_therapy_type ELSE null END) AS radiation_therapy_type_lists,
               collect(CASE WHEN record:treatment_radiation THEN record.beam_radiation_type ELSE null END) AS beam_radiation_type_lists,
@@ -3498,6 +2940,13 @@ indices:
           // Preserve aligned lists; the frontend adds display delimiters.
           RETURN p.guid AS id, treatment_filters,
             [item IN display_values | item.treatment_type] AS treatment_type_str,
+            // Keep unknown ages as -999 so numeric lists retain every display position.
+            [item IN display_values |
+              CASE WHEN item.start_age = 'Not Reported' THEN -999
+                ELSE toInteger(toFloat(item.start_age)) END] AS age_at_treatment_start,
+            [item IN display_values |
+              CASE WHEN item.end_age = 'Not Reported' THEN -999
+                ELSE toInteger(toFloat(item.end_age)) END] AS age_at_treatment_end,
             [item IN display_values | item.start_age] AS age_at_treatment_start_str,
             [item IN display_values | item.end_age] AS age_at_treatment_end_str,
             reduce(values = [], items IN chemotherapy_agent_lists |
@@ -3533,7 +2982,7 @@ indices:
               AND toFloat(tresp.age_at_response) <> -999
               THEN toFloat(tresp.age_at_response) ELSE null END AS response_age
           // Sort whole instances using the treatment start age ordering.
-          // Unknown ages follow valid ages, ordered by descending GUID.
+          // Unknown ages (including -999) follow valid ages, ordered by descending GUID.
           ORDER BY response_age IS NULL, response_age, tresp.guid DESC,
             tresp.treatment_response_id DESC
           WITH

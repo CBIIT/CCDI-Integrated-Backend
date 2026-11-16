@@ -29,7 +29,7 @@ public class InventoryESService extends ESService {
     public static final int MAX_ES_SIZE = 10000;
     final Set<String> PARTICIPANT_PARAMS = Set.of("race", "sex_at_birth", "participant_id");
     final Set<String> SURVIVAL_PARAMS = Set.of("last_known_survival_status", "age_at_last_known_survival_status", "first_event", "cause_of_death");
-    final Set<String> TREATMENT_PARAMS = Set.of("treatment_type", "treatment_agent", "age_at_treatment_start", "age_at_treatment_end");
+    final Set<String> TREATMENT_PARAMS = Set.of("treatment_type", "age_at_treatment_start", "age_at_treatment_end");
     final Set<String> TREATMENT_RESPONSE_PARAMS = Set.of("response_category", "age_at_response", "response_system", "response");
     final Set<String> DIAGNOSIS_PARAMS = Set.of( "diagnosis", "disease_phase", "diagnosis_classification_system", "diagnosis_basis", "diagnosis_anatomic_site", "age_at_diagnosis", "diagnosis_category");
     final Set<String> GENETIC_ANALYSIS_PARAMS = Set.of( "alteration", "alteration_type", "fusion_partner_gene", "gene_symbol", "reported_significance", "reported_significance_system", "status");
