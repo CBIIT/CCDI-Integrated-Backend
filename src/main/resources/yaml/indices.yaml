@@ -3543,6 +3543,7 @@ indices:
               dg.diagnosis_basis AS diagnosis_basis,
               dg.diagnosis AS diagnosis,
               dg.guid AS diagnosis_guid,
+              toString(dg.diagnosis_id) AS diagnosis_id,
               dg.diagnosis_comment AS diagnosis_comment,
               // Diagnosis tumor classification uses tumor_spatial_extent in the current model.
               coalesce(dg.tumor_classification, dg.tumor_spatial_extent) AS tumor_classification,
@@ -3570,7 +3571,8 @@ indices:
               tumor_grade,
               tumor_stage_clinical_t,
               tumor_stage_clinical_n,
-              tumor_stage_clinical_m
+              tumor_stage_clinical_m,
+              diagnosis_id
             ]) AS diagnosis_filter_keys
           }
 
@@ -3696,8 +3698,9 @@ indices:
                 THEN toFloat(dg[0]) ELSE null END AS diagnosis_age
             // Sort diagnosis instances before joining each instance's anatomic sites.
             // Unknown display ages use -999 to preserve numeric list alignment.
-            // Unknown ages sort last, alphanumerically by diagnosis GUID.
-            ORDER BY diagnosis_age IS NULL, diagnosis_age, dg[7]
+            // Known ages sort numerically. Unknown ages (-999 / Not Reported) sort last,
+            // alphanumerically by diagnosis_id. diagnosis_id is also the tiebreaker.
+            ORDER BY diagnosis_age IS NULL, diagnosis_age, dg[16]
             WITH collect(dg) AS diagnoses
             UNWIND range(0, size(diagnoses) - 1) AS diagnosis_index
             WITH diagnosis_index, diagnoses[diagnosis_index] AS dg
