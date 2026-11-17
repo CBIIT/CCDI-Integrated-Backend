@@ -57,7 +57,7 @@ class PrivateESDataFetcherOverviewTablesTest {
             "diagnosis", "diagnosis",
             "diagnosis_category", "diagnosis_category",
             "diagnosis_anatomic_site", "diagnosis_anatomic_site",
-            "age_at_diagnosis", "age_at_diagnosis",
+            "age_at_diagnosis", "age_at_diagnosis_str",
             "disease_phase", "disease_phase",
             "diagnosis_classification_system", "diagnosis_classification_system",
             "diagnosis_basis", "diagnosis_basis",
@@ -69,16 +69,16 @@ class PrivateESDataFetcherOverviewTablesTest {
             "tumor_stage_clinical_n", "tumor_stage_clinical_n",
             "tumor_stage_clinical_m", "tumor_stage_clinical_m",
             "tumor_spatial_extent", "tumor_spatial_extent",
-            "treatment_type", "treatment_type",
-            "age_at_treatment_start", "age_at_treatment_start",
-            "age_at_treatment_end", "age_at_treatment_end",
+            "treatment_type", "treatment_type_str",
+            "age_at_treatment_start", "age_at_treatment_start_str",
+            "age_at_treatment_end", "age_at_treatment_end_str",
             "chemotherapy_agent", "chemotherapy_agent",
             "radiation_therapy_type", "radiation_therapy_type",
             "beam_radiation_type", "beam_radiation_type",
             "surgery_type", "surgery_type",
             "other_treatment_type", "other_treatment_type",
             "response", "response",
-            "age_at_response", "age_at_response",
+            "age_at_response", "age_at_response_str",
             "first_event", "first_event",
             "last_known_survival_status", "last_known_survival_status",
             "age_at_last_known_survival_status", "age_at_last_known_survival_status",
@@ -263,8 +263,11 @@ class PrivateESDataFetcherOverviewTablesTest {
     @ParameterizedTest
     @CsvSource({
             "race,race",
-            "age_at_treatment_start,age_at_treatment_start",
-            "age_at_treatment_end,age_at_treatment_end"
+            "age_at_diagnosis,age_at_diagnosis_str",
+            "treatment_type,treatment_type_str",
+            "age_at_treatment_start,age_at_treatment_start_str",
+            "age_at_treatment_end,age_at_treatment_end_str",
+            "age_at_response,age_at_response_str"
     })
     void returnsParticipantOverview(String orderBy, String expectedSortField) throws Exception {
         when(cpiFetcherService.fetchAssociatedParticipantIds(any())).thenReturn(List.of());
