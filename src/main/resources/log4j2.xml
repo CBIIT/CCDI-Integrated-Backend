@@ -41,6 +41,11 @@
         </Async>
 	</Appenders>
 	<Loggers>
+		<Logger name="gov.nih.nci.bento_ri.model.PrivateESDataFetcher" level="info" additivity="false">
+			<AppenderRef ref="AsyncInfo" />
+			<AppenderRef ref="AsyncErr" level="error" />
+			<AppenderRef ref="LogToConsole" />
+		</Logger>
 		<Logger name="gov.nih.nci.bento" level="info" additivity="false">
 			<AppenderRef ref="AsyncInfo" />
 			<AppenderRef ref="LogToConsole" />
