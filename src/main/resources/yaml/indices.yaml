@@ -2624,7 +2624,6 @@ indices:
       page_size: 2000
 
   # participant index for table display and participant level facets
-  # TODO - Determine which _str properties to remove
   - index_name: participants_table
     id_field: "id"
     mapping:
@@ -2653,10 +2652,15 @@ indices:
         - survival_filters.first_event
         # Treatment display fields
         - chemotherapy_agent
+        - chemotherapy_agent_str
         - radiation_therapy_type
+        - radiation_therapy_type_str
         - beam_radiation_type
         - surgery_type
+        - surgery_type_str
         - other_treatment_type
+        - other_treatment_type_str
+        - treatment_type
         - treatment_type_str
         - age_at_treatment_start_str
         - age_at_treatment_end_str
@@ -2665,22 +2669,35 @@ indices:
         - treatment_filters.treatment_type
         # Diagnosis display fields
         - diagnosis_classification_system
+        - diagnosis_classification_system_str
         - diagnosis_basis
+        - diagnosis_basis_str
         - diagnosis_comment
+        - diagnosis_comment_str
         - tumor_classification
+        - tumor_classification_str
         - toronto_childhood_cancer_staging
+        - toronto_childhood_cancer_staging_str
         - tumor_grade
+        - tumor_grade_str
         - tumor_stage_clinical_t
+        - tumor_stage_clinical_t_str
         - tumor_stage_clinical_n
+        - tumor_stage_clinical_n_str
         - tumor_stage_clinical_m
+        - tumor_stage_clinical_m_str
         - diagnosis_category
         - tumor_spatial_extent
         - diagnosis
+        - diagnosis_str
         - age_at_diagnosis_str
         - diagnosis_anatomic_site
+        - diagnosis_anatomic_site_str
         - disease_phase
+        - disease_phase_str
         # Treatment Response display fields
         - response
+        - response_str
         - age_at_response_str
         # Treatment Response filters
         - treatment_response_filters.response
@@ -2783,18 +2800,16 @@ indices:
           MATCH (p:participant)
           WITH p
           SKIP $skip LIMIT $limit
-          RETURN
+          WITH
             p.guid AS id,
             p.participant_id AS participant_id,
             p.race AS race,
-            reduce(result = '', x IN p.race |
-              CASE
-                WHEN result = "" THEN x
-                ELSE result + ";" + x
-              END
-            ) AS race_str,
             p.sex_at_birth AS sex_at_birth,
             p.occupation AS occupation
+          RETURN *,
+            reduce(result = '', i IN range(0, size(race) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(race[i])) AS race_str
         page_size: 5000
       - name: "survivals"
         query: |
@@ -2937,9 +2952,9 @@ indices:
                 THEN toString(treatment.age_at_treatment_end) ELSE 'Not Reported' END
             }) AS display_values
           }
-          // Preserve aligned lists; the frontend adds display delimiters.
-          RETURN p.guid AS id, treatment_filters,
-            [item IN display_values | item.treatment_type] AS treatment_type_str,
+          // Preserve aligned lists and derive display strings below.
+          WITH p.guid AS id, treatment_filters,
+            [item IN display_values | item.treatment_type] AS treatment_type,
             // Keep unknown ages as -999 so numeric lists retain every display position.
             [item IN display_values |
               CASE WHEN item.start_age = 'Not Reported' THEN -999
@@ -2947,8 +2962,6 @@ indices:
             [item IN display_values |
               CASE WHEN item.end_age = 'Not Reported' THEN -999
                 ELSE toInteger(toFloat(item.end_age)) END] AS age_at_treatment_end,
-            [item IN display_values | item.start_age] AS age_at_treatment_start_str,
-            [item IN display_values | item.end_age] AS age_at_treatment_end_str,
             reduce(values = [], items IN chemotherapy_agent_lists |
               reduce(result = values, value IN items |
                 CASE WHEN value IS NULL OR value IN result THEN result
@@ -2969,6 +2982,28 @@ indices:
               reduce(result = values, value IN items |
                 CASE WHEN value IS NULL OR value IN result THEN result
                   ELSE result + [value] END)) AS other_treatment_type
+          RETURN *,
+            reduce(result = '', i IN range(0, size(treatment_type) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(treatment_type[i])) AS treatment_type_str,
+            reduce(result = '', i IN range(0, size(age_at_treatment_start) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(age_at_treatment_start[i])) AS age_at_treatment_start_str,
+            reduce(result = '', i IN range(0, size(age_at_treatment_end) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(age_at_treatment_end[i])) AS age_at_treatment_end_str,
+            reduce(result = '', i IN range(0, size(chemotherapy_agent) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(chemotherapy_agent[i])) AS chemotherapy_agent_str,
+            reduce(result = '', i IN range(0, size(radiation_therapy_type) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(radiation_therapy_type[i])) AS radiation_therapy_type_str,
+            reduce(result = '', i IN range(0, size(surgery_type) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(surgery_type[i])) AS surgery_type_str,
+            reduce(result = '', i IN range(0, size(other_treatment_type) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(other_treatment_type[i])) AS other_treatment_type_str
         page_size: 5000
       - name: "treatment_responses"
         query: |
@@ -3023,14 +3058,18 @@ indices:
                 THEN toInteger(toFloat(treatment_response.age_at_response)) ELSE -999 END
             }) AS display_values
           }
-          RETURN
+          WITH
             id,
             treatment_response_filters,
             [item IN display_values | item.response] AS response,
-            [item IN display_values | item.age_at_response] AS age_at_response,
-            [item IN display_values |
-              CASE WHEN item.age_at_response = -999 THEN 'Not Reported'
-                ELSE toString(item.age_at_response) END] AS age_at_response_str
+            [item IN display_values | item.age_at_response] AS age_at_response
+          RETURN *,
+            reduce(result = '', i IN range(0, size(response) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(response[i])) AS response_str,
+            reduce(result = '', i IN range(0, size(age_at_response) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(age_at_response[i])) AS age_at_response_str
         page_size: 5000
       - name: "global_search_properties"
         query: |
@@ -3739,7 +3778,7 @@ indices:
               tumor_stage_clinical_m: coalesce(dg[15], 'Not Reported')
             }) AS diagnosis_display_values
           }
-          RETURN
+          WITH
             id,
             sample_diagnosis_genetic_analysis_file_filters,
             // Table columns reuse the existing facet values without new nested fields.
@@ -3753,9 +3792,6 @@ indices:
                 ELSE values + [item.tumor_spatial_extent] END) AS tumor_spatial_extent,
             [item IN diagnosis_display_values | item.diagnosis] AS diagnosis,
             [item IN diagnosis_display_values | item.age_at_diagnosis] AS age_at_diagnosis,
-            [item IN diagnosis_display_values |
-              CASE WHEN item.age_at_diagnosis = -999 THEN 'Not Reported'
-                ELSE toString(item.age_at_diagnosis) END] AS age_at_diagnosis_str,
             [item IN diagnosis_display_values | item.diagnosis_anatomic_site] AS diagnosis_anatomic_site,
             [item IN diagnosis_display_values | item.disease_phase] AS disease_phase,
             [item IN diagnosis_display_values | item.diagnosis_classification_system] AS diagnosis_classification_system,
@@ -3767,6 +3803,46 @@ indices:
             [item IN diagnosis_display_values | item.tumor_stage_clinical_t] AS tumor_stage_clinical_t,
             [item IN diagnosis_display_values | item.tumor_stage_clinical_n] AS tumor_stage_clinical_n,
             [item IN diagnosis_display_values | item.tumor_stage_clinical_m] AS tumor_stage_clinical_m
+          RETURN *,
+            reduce(result = '', i IN range(0, size(diagnosis) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(diagnosis[i])) AS diagnosis_str,
+            reduce(result = '', i IN range(0, size(age_at_diagnosis) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(age_at_diagnosis[i])) AS age_at_diagnosis_str,
+            reduce(result = '', i IN range(0, size(diagnosis_anatomic_site) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(diagnosis_anatomic_site[i])) AS diagnosis_anatomic_site_str,
+            reduce(result = '', i IN range(0, size(disease_phase) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(disease_phase[i])) AS disease_phase_str,
+            reduce(result = '', i IN range(0, size(diagnosis_classification_system) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(diagnosis_classification_system[i])) AS diagnosis_classification_system_str,
+            reduce(result = '', i IN range(0, size(diagnosis_comment) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(diagnosis_comment[i])) AS diagnosis_comment_str,
+            reduce(result = '', i IN range(0, size(tumor_classification) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(tumor_classification[i])) AS tumor_classification_str,
+            reduce(result = '', i IN range(0, size(toronto_childhood_cancer_staging) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(toronto_childhood_cancer_staging[i])) AS toronto_childhood_cancer_staging_str,
+            reduce(result = '', i IN range(0, size(tumor_grade) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(tumor_grade[i])) AS tumor_grade_str,
+            reduce(result = '', i IN range(0, size(tumor_stage_clinical_t) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(tumor_stage_clinical_t[i])) AS tumor_stage_clinical_t_str,
+            reduce(result = '', i IN range(0, size(tumor_stage_clinical_n) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(tumor_stage_clinical_n[i])) AS tumor_stage_clinical_n_str,
+            reduce(result = '', i IN range(0, size(tumor_stage_clinical_m) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(tumor_stage_clinical_m[i])) AS tumor_stage_clinical_m_str,
+            reduce(result = '', i IN range(0, size(diagnosis_basis) - 1) |
+              result + CASE WHEN i = 0 THEN '' ELSE '; ' END
+                + toString(diagnosis_basis[i])) AS diagnosis_basis_str
         page_size: 50
 
   # This index is for the Cohort Manifest CSV
