@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,28 +53,25 @@ class PrivateESDataFetcherStudyOperationsTest {
     }
 
     /**
-     * Verifies studyDetails formats profile counts, retrieves exact participant counts, corrects
-     * oversized data-category counts, and includes the configured IDC supporting-data record.
+     * Verifies studyDetails keeps diagnosis participant counts and file category counts separate,
+     * including file counts above the former participant-correction thresholds.
      */
     @Test
-    void returnsStudyDetailsWithCorrectedCountsAndSupportingData() throws Exception {
+    void returnsStudyDetailsWithFileCountsAndSupportingData() throws Exception {
         Map<String, Object> study = mutableMap(
                 "study_id", "phs002790",
                 "study_name", "MCI",
                 "diagnosis_anatomic_site", "Brain (5); Kidney");
         stubStudyOverview(study);
         JsonObject diagnosisResponse = facetResponse(Map.of("Neuroblastoma", 8));
-        JsonObject dataCategoryResponse = facetResponse(new LinkedHashMap<>(Map.of(
+        JsonObject dataCategoryResponse = fileFacetResponse(new LinkedHashMap<>(Map.of(
                 "Pathology Imaging", 1001,
                 "Sequencing", 500,
                 "Clinical", 1501,
                 "Other", 4)));
-        JsonObject correctionResponse = new JsonObject();
         when(inventoryESService.send(any(Request.class)))
-                .thenReturn(diagnosisResponse, dataCategoryResponse, correctionResponse);
-        stubFacetAggregations(true);
-        when(inventoryESService.collectCustomTerms(correctionResponse, "facetAgg"))
-                .thenReturn(Map.of("Pathology Imaging", 901, "Clinical", 1401));
+                .thenReturn(diagnosisResponse, dataCategoryResponse);
+        stubFacetAggregations();
 
         Map<String, Object> result = invoke("studyDetails", Map.of("study_id", "phs002790"));
 
@@ -84,22 +82,28 @@ class PrivateESDataFetcherStudyOperationsTest {
         assertEquals(List.of(Map.of("group", "Neuroblastoma", "subjects", 8)),
                 result.get("diagnoses"));
         assertEquals(Map.of(
-                "Pathology Imaging", 901,
-                "Clinical", 1401,
+                "Pathology Imaging", 1001,
+                "Clinical", 1501,
                 "Sequencing", 500,
                 "Other", 4), countsByGroup(mapList(result, "data_categories")));
         List<Map<String, Object>> supportingData = mapList(result, "supporting_data");
         assertEquals(1, supportingData.size());
         assertEquals("IDC", supportingData.get(0).get("data_category"));
-        verify(inventoryESService, times(3)).send(any(Request.class));
+        ArgumentCaptor<Request> requests = ArgumentCaptor.forClass(Request.class);
+        verify(inventoryESService, times(2)).send(requests.capture());
+        assertEquals(List.of(PARTICIPANTS_ENDPOINT, "/files_table/_search"),
+                requests.getAllValues().stream().map(Request::getEndpoint).toList());
+        verify(inventoryESService).buildFacetFilterQuery(
+                eq(Map.of("study_id", List.of("phs002790"))), anySet(),
+                eq(Set.of("first", "data_category")), eq(Set.of()),
+                eq("nested_filters"), eq("files_table"));
     }
 
     /**
-     * Verifies studyDetails can return TCIA-only supporting data and skips count correction when
-     * every data-category count is at or below its correction threshold.
+     * Verifies studyDetails can return TCIA-only supporting data with file category counts.
      */
     @Test
-    void returnsTciaSupportingDataWithoutUnneededCountCorrection() throws Exception {
+    void returnsTciaSupportingDataWithFileCounts() throws Exception {
         String studyId = "study-with-tcia";
         Map<String, Object> study = mutableMap(
                 "study_id", studyId,
@@ -108,11 +112,11 @@ class PrivateESDataFetcherStudyOperationsTest {
         stubStudyOverview(study);
         when(inventoryESService.send(any(Request.class))).thenReturn(
                 facetResponse(Map.of("Osteosarcoma", 2)),
-                facetResponse(Map.of(
+                fileFacetResponse(Map.of(
                         "Pathology Imaging", 1000,
                         "Sequencing", 500,
                         "Clinical", 1500)));
-        stubFacetAggregations(false);
+        stubFacetAggregations();
 
         Map<String, Object> result = invoke("studyDetails", Map.of("study_id", studyId));
 
@@ -132,8 +136,8 @@ class PrivateESDataFetcherStudyOperationsTest {
         stubStudyOverview(study);
         when(inventoryESService.send(any(Request.class))).thenReturn(
                 facetResponse(Map.of()),
-                facetResponse(Map.of()));
-        stubFacetAggregations(false);
+                fileFacetResponse(Map.of()));
+        stubFacetAggregations();
 
         Map<String, Object> result = invoke("studyDetails", Map.of("study_id", studyId));
 
@@ -196,17 +200,30 @@ class PrivateESDataFetcherStudyOperationsTest {
                 .thenReturn(List.of(study));
     }
 
-    private void stubFacetAggregations(boolean includeCorrectionAggregation) {
+    private void stubFacetAggregations() {
         when(inventoryESService.addCustomAggregations(
-                anyMap(), eq("facetAgg"), any(String.class),
+                anyMap(), eq("facetAgg"), eq("diagnosis"),
                 eq("sample_diagnosis_genetic_analysis_file_filters"), anyList()))
                 .thenAnswer(invocation -> new HashMap<>(invocation.getArgument(0)));
-        if (includeCorrectionAggregation) {
-            when(inventoryESService.addCustomAggregations(
-                    anyMap(), eq("facetAgg"), eq("data_category"),
-                    eq("sample_diagnosis_genetic_analysis_file_filters")))
-                    .thenAnswer(invocation -> new HashMap<>(invocation.getArgument(0)));
-        }
+        when(inventoryESService.addAggregations(
+                anyMap(), any(String[].class), isNull(), anyList()))
+                .thenCallRealMethod();
+        when(inventoryESService.addAggregations(
+                anyMap(), any(String[].class), isNull(), any(String[].class), anyList()))
+                .thenCallRealMethod();
+        when(inventoryESService.collectTermAggs(any(JsonObject.class), any(String[].class)))
+                .thenCallRealMethod();
+    }
+
+    private static JsonObject fileFacetResponse(Map<String, Integer> counts) {
+        String buckets = counts.entrySet().stream()
+                .map(entry -> "{\"key\":\"" + entry.getKey()
+                        + "\",\"doc_count\":" + entry.getValue() + "}")
+                .collect(Collectors.joining(","));
+        return JsonParser.parseString(
+                "{\"aggregations\":{\"data_category\":{\"buckets\":["
+                        + buckets + "]}}}")
+                .getAsJsonObject();
     }
 
     private void assertCollectedFields(String endpoint, Set<String> expectedFields)

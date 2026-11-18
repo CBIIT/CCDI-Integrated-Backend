@@ -47,7 +47,6 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     final String AGG_ENDPOINT = "agg_endpoint";
     final String WIDGET_QUERY = "widget_count_name";
     final String FILTER_COUNT_QUERY = "filter_count_name";
-    final String ADDITIONAL_UPDATE = "additional_update";
 
     private Map<String, List<Map<String, Object>>> facetFilters;
     private Map<String, Map<String, String>> cohortChartProperties;
@@ -2186,77 +2185,12 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         Map<String, Object> query_params = Map.ofEntries(
             Map.entry("study_id", List.of(studyId))
         );
-        Map<String, Object> data = new HashMap<>();
-        final List<Map<String, Object>> PARTICIPANT_TERM_AGGS = new ArrayList<>();
-        PARTICIPANT_TERM_AGGS.add(Map.of(
-                CARDINALITY_AGG_NAME, "pid",
-                AGG_NAME, "diagnosis",
-                FILTER_COUNT_QUERY, "diagnoses",
-                AGG_ENDPOINT, DIAGNOSIS_END_POINT
-        ));
-        //data_category mapped to data_category
-        PARTICIPANT_TERM_AGGS.add(Map.of(
-                CARDINALITY_AGG_NAME, "pid",
-                AGG_NAME, "data_category",
-                FILTER_COUNT_QUERY, "data_categories",
-                ADDITIONAL_UPDATE, Map.of("Pathology Imaging", 1000, "Sequencing", 500, "Clinical", 1500),
-                AGG_ENDPOINT, FILES_END_POINT
-        ));
-        for (var agg: PARTICIPANT_TERM_AGGS) {
-            String field = (String)agg.get(AGG_NAME);
-            Map<String, Integer> additionalUpdate = (Map<String, Integer>)agg.get(ADDITIONAL_UPDATE);
-            String filterCountQueryName = (String)agg.get(FILTER_COUNT_QUERY);
-            String endpoint = (String)agg.get(AGG_ENDPOINT);
-            String indexType = endpoint.replace("/", "").replace("_search", "");
-            String cardinalityAggName = (String)agg.get(CARDINALITY_AGG_NAME);
-            // System.out.println(cardinalityAggName);
-            List<Map<String, Object>> filterCount = filterSubjectCountBy(field, query_params, endpoint, cardinalityAggName, indexType);
-            if(RANGE_PARAMS.contains(field)) {
-                study.put(filterCountQueryName, filterCount.get(0));
-            } else {
-                study.put(filterCountQueryName, filterCount);
-            }
-
-            if (additionalUpdate != null) {
-                List<Map<String, Object>> filterCount_2_update = (List<Map<String, Object>>)study.get(filterCountQueryName);
-                List<String> facetValues_need_update = new ArrayList<String>();
-                //check if the count for each of the group within the filterCount is smaller than the marked number
-                for (Map<String, Object> map : filterCount_2_update) {
-                    String group = (String)map.get("group");
-                    if (additionalUpdate.containsKey(group)) {
-                        int count = (Integer)map.get("subjects");
-                        int marked = (Integer)additionalUpdate.get(group);
-                        if (count > marked) {
-                            //need to perform query
-                            facetValues_need_update.add(group);
-                        }
-                    }
-                }
-                //if any facet value is above the number, perform the query
-                if (facetValues_need_update.size() > 0) {
-                    Map<String, Object> query_4_update = inventoryESService.buildFacetFilterQuery(query_params, RANGE_PARAMS, Set.of(field), Set.of(), "nested_filters", "participants_table");
-                    String prop = field;
-                    query_4_update = inventoryESService.addCustomAggregations(query_4_update, "facetAgg", prop, "sample_diagnosis_genetic_analysis_file_filters");
-                    Request request = new Request("GET", PARTICIPANTS_END_POINT);
-                    request.setJsonEntity(gson.toJson(query_4_update));
-                    JsonObject jsonObject = inventoryESService.send(request);
-                    Map<String, Integer> updated_values = inventoryESService.collectCustomTerms(jsonObject, "facetAgg");
-                    //update the facet value one more time
-                    List<Map<String, Object>> filterCount_new = new ArrayList<Map<String, Object>>();
-                    for (Map<String, Object> map : filterCount_2_update) {
-                        String group = (String)map.get("group");
-                        int count = (Integer)map.get("subjects");
-                        // System.out.println(count);
-                        if (facetValues_need_update.indexOf(group) >= 0) {
-                            count = updated_values.get(group);
-                            // System.out.println("-->"+ count);
-                        }
-                        filterCount_new.add(Map.of("group", group, "subjects", count));
-                    }
-                    study.put(filterCountQueryName, filterCount_new);
-                }
-            }
-        }
+        study.put("diagnoses", filterSubjectCountBy(
+                "diagnosis", query_params, DIAGNOSIS_END_POINT, "pid", "diagnoses_table"));
+        // Each files_table document represents one distinct DCF file. Count documents per
+        // category, including study-level files that have no associated participant.
+        study.put("data_categories", filterSubjectCountBy(
+                "data_category", query_params, FILES_END_POINT, null, "files_table"));
 
         // todo: querying idc_tcia index for the supporting data
         // if error, return default idc, tcia data
