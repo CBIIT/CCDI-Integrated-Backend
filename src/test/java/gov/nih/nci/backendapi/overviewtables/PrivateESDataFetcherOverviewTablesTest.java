@@ -263,8 +263,11 @@ class PrivateESDataFetcherOverviewTablesTest {
     @ParameterizedTest
     @CsvSource({
             "race,race",
-            "age_at_treatment_start,age_at_treatment_start",
-            "age_at_treatment_end,age_at_treatment_end"
+            "age_at_diagnosis,age_at_diagnosis_str",
+            "treatment_type,treatment_type_str",
+            "age_at_treatment_start,age_at_treatment_start_str",
+            "age_at_treatment_end,age_at_treatment_end_str",
+            "age_at_response,age_at_response_str"
     })
     void returnsParticipantOverview(String orderBy, String expectedSortField) throws Exception {
         when(cpiFetcherService.fetchAssociatedParticipantIds(any())).thenReturn(List.of());
