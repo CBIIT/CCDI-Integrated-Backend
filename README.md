@@ -73,6 +73,22 @@ docker run --rm \
 ### NIH Network Certificate Workaround
 On the NIH network, Maven dependency downloads may fail inside Docker with a Java certificate error like ````PKIX path building failed````. This means the container JVM does not trust the local NIH certificate chain. For a disposable test container, extract the certificate chain and import it into the container truststore before running Maven.
 
+## Container Runtime Security
+
+The runtime uses Temurin JRE 21.0.13.1+2 and runs as UID/GID 65532 (non-root).
+Distroless and the published Temurin container still contain 21.0.13, so the
+Docker build replaces the Temurin image's JRE with the official release archive
+after verifying its pinned SHA-256 checksum. Replace this bootstrap with an
+official patched image when available. Available Ubuntu package updates are
+also installed during the runtime build.
+
+Verified patched archives are currently configured for amd64, ppc64le, and s390x.
+Other architectures fail the build rather than silently using an unpatched JRE.
+On an ARM development machine, build the deployment image with:
+
+````bash
+docker build --pull --platform linux/amd64 -t ccdi-integrated-backend:local .
+````
 
 ## Configuration
 The following file will need to be edited to configure the Bento Backend Code to work within a Bento based application:
