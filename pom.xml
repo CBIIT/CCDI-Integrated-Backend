@@ -468,7 +468,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20231013</version>
+            <version>20260814</version>
         </dependency>
 
         <!-- Explicit patched Kotlin stdlib (prevents older transitive copies) -->

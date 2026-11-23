@@ -8,10 +8,13 @@ RUN mvn -DskipTests clean package \
  && cd /usr/src/app/extracted \
  && jar -xf /usr/src/app/target/Bento-0.0.1.war
 
-# Runtime stage - minimal distroless Java 21, non-root
-FROM gcr.io/distroless/java21-debian13:nonroot AS final
+# Runtime stage - patched Java 21, non-root
+FROM eclipse-temurin:21.0.13.1_2-jre-noble AS final
 
 WORKDIR /app
+
+RUN install -d -o 65532 -g 65532 /app/logs
+USER 65532:65532
 
 EXPOSE 8080
 
