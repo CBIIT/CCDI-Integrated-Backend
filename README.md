@@ -11,15 +11,6 @@ The Bento Backend can be found in this Github Repository: [Bento Backend](https:
 *   Java 17 or newer installed on the server hosting the Bento Backend
 *   The Neo4j database containing the Bento data has been initialized and is running
 
-## Container Runtime
-The production image uses Eclipse Temurin JRE 21.0.13.1+2 on Ubuntu Noble
-instead of distroless to pick up the November 2026 Java security updates.
-It retains non-root UID/GID 65532, port 8080, the exploded-WAR classpath,
-and the existing JVM options. The patched Temurin tag does not currently
-provide an ARM64 image; on ARM64 hosts, build with
-`docker build --platform linux/amd64 -t ccdi-integrated-backend:local .`.
-Keep the pinned JRE tag current when applying future Java security updates.
-
 ## Running Unit Tests Locally
 This project uses Maven and JUnit for unit tests. Unit tests are located under
 ````src/test/java/gov/nih/nci/backendapi```` and are organized by backend API
