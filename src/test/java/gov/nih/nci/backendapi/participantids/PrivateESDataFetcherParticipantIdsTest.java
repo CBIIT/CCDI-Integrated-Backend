@@ -6,7 +6,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.http.util.EntityUtils;
-import gov.nih.nci.bento.service.ESService;
 import gov.nih.nci.bento_ri.model.FormattedCPIResponse;
 import gov.nih.nci.bento_ri.model.ParticipantRequest;
 import gov.nih.nci.bento_ri.model.PrivateESDataFetcher;
@@ -214,41 +213,58 @@ class PrivateESDataFetcherParticipantIdsTest {
         assertSame(result, cache.getIfPresent(cacheKey));
     }
 
-    /**
-     * Verifies findParticipantIdsInList delegates the supplied identifiers to the list-query
-     * builder and retrieves every matching participant from the participant index.
-     */
     @Test
-    void findsParticipantIdsUsingTheListQuery() throws Exception {
-        Map<String, Object> params = Map.of("participant_id", List.of("PID-1", "PID-2"));
-        Map<String, Object> query = new HashMap<>(Map.of("query", Map.of("match_all", Map.of())));
-        List<Map<String, Object>> expected = List.of(
-                Map.of("participant_id", "P1", "study_id", "STUDY-A"),
-                Map.of("participant_id", "P2", "study_id", "STUDY-B"));
-        when(inventoryESService.buildListQuery(params, Set.of(), false)).thenReturn(query);
-        when(inventoryESService.collectPage(
-                any(Request.class), eq(query), any(String[][].class),
-                eq(ESService.MAX_ES_SIZE), eq(0))).thenReturn(expected);
+    void findsFiveThousandParticipantIdsUsingDocValues() throws Exception {
+        List<String> ids = java.util.stream.IntStream.range(0, 5000)
+                .mapToObj(i -> "P" + i).toList();
+        Map<String, Object> params = Map.of("participant_id", ids);
+        Map<String, Object> filter = Map.of("bool", Map.of("filter",
+                List.of(Map.of("terms", Map.of("participant_id", ids)))));
+        when(inventoryESService.buildListQuery(params, Set.of(), false))
+                .thenReturn(new HashMap<>(Map.of("query", filter)));
+        List<Map<String, Object>> expected = ids.stream()
+                .map(id -> Map.<String, Object>of("participant_id", id, "study_id", "STUDY-A"))
+                .toList();
+        when(inventoryESService.send(any(Request.class))).thenReturn(
+                docValuesResponse(expected, "scroll-1"),
+                docValuesResponse(List.of(), "scroll-2"), new JsonObject());
 
-        List<Map<String, Object>> result = invokeFindParticipantIdsInList(params);
+        assertEquals(expected, invokeFindParticipantIdsInList(params));
 
-        assertSame(expected, result);
-        ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
-        verify(inventoryESService).collectPage(
-                requestCaptor.capture(), eq(query), any(String[][].class),
-                eq(ESService.MAX_ES_SIZE), eq(0));
-        assertEquals(PARTICIPANTS_ENDPOINT, requestCaptor.getValue().getEndpoint());
+        ArgumentCaptor<Request> requests = ArgumentCaptor.forClass(Request.class);
+        verify(inventoryESService, times(3)).send(requests.capture());
+        Request search = requests.getAllValues().get(0);
+        assertEquals(PARTICIPANTS_ENDPOINT, search.getEndpoint());
+        assertEquals("1m", search.getParameters().get("scroll"));
+        JsonObject body = JsonParser.parseString(EntityUtils.toString(search.getEntity())).getAsJsonObject();
+        assertEquals(false, body.get("_source").getAsBoolean());
+        assertEquals(JsonParser.parseString("[\"participant_id\",\"study_id\"]"), body.get("docvalue_fields"));
+        assertEquals(5000, body.getAsJsonObject("query").getAsJsonObject("bool")
+                .getAsJsonArray("filter").get(0).getAsJsonObject()
+                .getAsJsonObject("terms").getAsJsonArray("participant_id").size());
+        assertEquals("DELETE", requests.getAllValues().get(2).getMethod());
     }
 
-    /** Verifies findParticipantIdsInList propagates OpenSearch query-construction failures. */
+    @Test
+    void returnsNullForMissingParticipantDocValues() throws Exception {
+        Map<String, Object> params = Map.of("participant_id", List.of("P1"));
+        when(inventoryESService.buildListQuery(params, Set.of(), false)).thenReturn(new HashMap<>());
+        when(inventoryESService.send(any(Request.class))).thenReturn(
+                docValuesResponse(List.of(Map.of("participant_id", "P1")), "scroll-1"),
+                docValuesResponse(List.of(), "scroll-2"), new JsonObject());
+
+        Map<String, Object> expected = new HashMap<>();
+        expected.put("participant_id", "P1");
+        expected.put("study_id", null);
+        assertEquals(List.of(expected), invokeFindParticipantIdsInList(params));
+    }
+
+    /** Verifies findParticipantIdsInList propagates OpenSearch failures. */
     @Test
     void propagatesParticipantListQueryFailures() throws Exception {
         Map<String, Object> params = Map.of("participant_id", List.of("PID-1"));
-        Map<String, Object> query = new HashMap<>();
-        when(inventoryESService.buildListQuery(params, Set.of(), false)).thenReturn(query);
-        when(inventoryESService.collectPage(
-                any(Request.class), eq(query), any(String[][].class),
-                eq(ESService.MAX_ES_SIZE), eq(0)))
+        when(inventoryESService.buildListQuery(params, Set.of(), false)).thenReturn(new HashMap<>());
+        when(inventoryESService.send(any(Request.class)))
                 .thenThrow(new IOException("OpenSearch unavailable"));
 
         IOException exception = assertThrows(IOException.class,

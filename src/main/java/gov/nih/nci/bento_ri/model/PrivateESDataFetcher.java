@@ -1466,17 +1466,21 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         return data;
     }
 
-    // Only idsLists uses this doc-values response shape; overview queries still read _source.
     private List<Map<String, Object>> collectIdsListParticipants() throws IOException {
-        List<String> fields = List.of("id", "participant_id", "study_id");
+        return collectParticipantDocValues(new HashMap<>(Map.of(
+                "query", Map.of("match_all", Map.of()),
+                "sort", Map.of("participant_id", "asc"))),
+                List.of("id", "participant_id", "study_id"));
+    }
+
+    private List<Map<String, Object>> collectParticipantDocValues(
+            Map<String, Object> query, List<String> fields) throws IOException {
         Request request = new Request("GET", PARTICIPANTS_END_POINT);
         request.addParameter("scroll", "1m");
-        request.setJsonEntity(gson.toJson(Map.of(
-                "query", Map.of("match_all", Map.of()),
-                "sort", Map.of("participant_id", "asc"),
-                "_source", false,
-                "docvalue_fields", fields,
-                "size", 10000)));
+        query.put("_source", false);
+        query.put("docvalue_fields", fields);
+        query.put("size", 10000);
+        request.setJsonEntity(gson.toJson(query));
 
         List<Map<String, Object>> participants = new ArrayList<>();
         String scrollId = null;
@@ -1507,7 +1511,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                     }
                 }
                 if (scrollId == null) {
-                    throw new IOException("Missing scroll ID in idsLists participant response");
+                    throw new IOException("Missing scroll ID in participant doc-values response");
                 }
                 request = new Request("POST", InventoryESService.SCROLL_ENDPOINT);
                 request.setJsonEntity(gson.toJson(Map.of("scroll", "1m", "scroll_id", scrollId)));
@@ -1520,7 +1524,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
                 try {
                     inventoryESService.send(clearRequest);
                 } catch (IOException e) {
-                    logger.warn("Failed to clear idsLists scroll context", e);
+                    logger.warn("Failed to clear participant doc-values scroll context", e);
                 }
             }
         }
@@ -3644,15 +3648,9 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
 
     private List<Map<String, Object>> findParticipantIdsInList(Map<String, Object> params) throws IOException {
-        final String[][] properties = new String[][]{
-                new String[]{"participant_id", "participant_id"},
-                new String[]{"study_id", "study_id"}
-        };
-
+        // TODO: Rename the GraphQL argument participant_id to participant_ids with client updates.
         Map<String, Object> query = esService.buildListQuery(params, Set.of(), false);
-        Request request = new Request("GET",PARTICIPANTS_END_POINT);
-
-        return esService.collectPage(request, query, properties, ESService.MAX_ES_SIZE, 0);
+        return collectParticipantDocValues(query, List.of("participant_id", "study_id"));
     }
 
     private Integer numberOfDiseases(Map<String, Object> params) throws IOException {
