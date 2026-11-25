@@ -67,11 +67,9 @@ class TreatmentConsolidationIntegrationTest {
         treatment("other", "w", "-999", -999, List.of("Other"));
         Map<String, Object> row = consolidate();
         assertEquals(List.of("Radiation", "Chemotherapy", "Surgery", "Other", "Other", "Other"),
-                row.get("treatment_type_str"));
-        assertEquals(List.of("10", "20", "Not Reported", "Not Reported", "Not Reported", "Not Reported"),
-                row.get("age_at_treatment_start_str"));
-        assertEquals(List.of("15", "30", "40", "Not Reported", "50", "Not Reported"),
-                row.get("age_at_treatment_end_str"));
+                row.get("treatment_type"));
+        assertEquals("10; 20; -999; -999; -999; -999", row.get("age_at_treatment_start_str"));
+        assertEquals("15; 30; 40; -999; 50; -999", row.get("age_at_treatment_end_str"));
         assertEquals(List.of(10L, 20L, -999L, -999L, -999L, -999L), row.get("age_at_treatment_start"));
         assertEquals(List.of(15L, 30L, 40L, -999L, 50L, -999L), row.get("age_at_treatment_end"));
         assertEquals(List.of("agent-a"), row.get("chemotherapy_agent"));
@@ -90,11 +88,11 @@ class TreatmentConsolidationIntegrationTest {
         treatment("chemotherapy", "b", 0, null, List.of("Chemotherapy"));
         Map<String, Object> row = consolidate();
         assertEquals(2, filters(row).size());
-        assertEquals(List.of("Chemotherapy", "Chemotherapy"), row.get("treatment_type_str"));
+        assertEquals(List.of("Chemotherapy", "Chemotherapy"), row.get("treatment_type"));
         assertEquals(List.of("b", "a"), filters(row).stream().map(record -> record.get("guid")).toList());
         assertEquals(List.of("agent-b", "agent-a"), row.get("chemotherapy_agent"));
-        assertEquals(List.of("0", "0"), row.get("age_at_treatment_start_str"));
-        assertEquals(List.of("Not Reported", "Not Reported"), row.get("age_at_treatment_end_str"));
+        assertEquals("0; 0", row.get("age_at_treatment_start_str"));
+        assertEquals("-999; -999", row.get("age_at_treatment_end_str"));
         assertEquals(List.of(0L, 0L), row.get("age_at_treatment_start"));
         assertEquals(List.of(-999L, -999L), row.get("age_at_treatment_end"));
     }
@@ -104,20 +102,28 @@ class TreatmentConsolidationIntegrationTest {
         treatment("other", "a", 1, 2, List.of("Other", "Surgery"));
         treatment("chemotherapy", "b", 3, 4, null);
         Map<String, Object> row = consolidate();
-        assertEquals(List.of("Other", "Surgery", "Not Reported"), row.get("treatment_type_str"));
-        assertEquals(List.of("1", "1", "3"), row.get("age_at_treatment_start_str"));
-        assertEquals(List.of("2", "2", "4"), row.get("age_at_treatment_end_str"));
+        assertEquals(List.of("Other", "Surgery", "Not Reported"), row.get("treatment_type"));
+        assertEquals("1; 1; 3", row.get("age_at_treatment_start_str"));
+        assertEquals("2; 2; 4", row.get("age_at_treatment_end_str"));
         assertEquals(List.of(1L, 1L, 3L), row.get("age_at_treatment_start"));
         assertEquals(List.of(2L, 2L, 4L), row.get("age_at_treatment_end"));
+    }
+
+    @Test
+    void joinsElementsWithoutSplittingCommasTrimmingOrDroppingEmptyValues() {
+        treatment("other", "a", 1, 2, List.of("", "a, b", "", "a, b"));
+        Map<String, Object> row = consolidate();
+        assertEquals(List.of("", "a, b", "", "a, b"), row.get("treatment_type"));
+        assertEquals("; a, b; ; a, b", row.get("treatment_type_str"));
     }
 
     @Test
     void returnsParticipantWithEmptyColumnsWhenNoTreatmentsExist() {
         Map<String, Object> row = consolidate();
         assertEquals(List.of(), row.get("treatment_filters"));
-        assertEquals(List.of(), row.get("treatment_type_str"));
-        assertEquals(List.of(), row.get("age_at_treatment_start_str"));
-        assertEquals(List.of(), row.get("age_at_treatment_end_str"));
+        assertEquals(List.of(), row.get("treatment_type"));
+        assertEquals("", row.get("age_at_treatment_start_str"));
+        assertEquals("", row.get("age_at_treatment_end_str"));
         assertEquals(List.of(), row.get("age_at_treatment_start"));
         assertEquals(List.of(), row.get("age_at_treatment_end"));
     }
@@ -146,8 +152,15 @@ class TreatmentConsolidationIntegrationTest {
     }
 
     private Map<String, Object> consolidate() {
-        return tx.run(query, Map.of("participantGuid", participantGuid, "skip", 0, "limit", 1))
+        Map<String, Object> row = tx.run(query, Map.of("participantGuid", participantGuid, "skip", 0, "limit", 1))
                 .single().asMap();
+        for (String field : List.of("treatment_type", "age_at_treatment_start", "age_at_treatment_end",
+                "chemotherapy_agent", "radiation_therapy_type", "surgery_type", "other_treatment_type")) {
+            List<?> values = (List<?>) row.get(field);
+            assertEquals(values.stream().map(Object::toString).collect(java.util.stream.Collectors.joining("; ")),
+                    row.get(field + "_str"), field);
+        }
+        return row;
     }
 
     @SuppressWarnings("unchecked")
