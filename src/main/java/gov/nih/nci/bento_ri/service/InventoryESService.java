@@ -1543,6 +1543,111 @@ public class InventoryESService extends ESService {
         return data;
     }
 
+    /**
+     * Explicit doc-values counterpart to collectPage. listProperties names GraphQL output
+     * properties that must remain lists even when OpenSearch returns just one value.
+     * The caller requests _source:false and docvalue_fields; no source fallback is used.
+     * Keyword doc values sort/deduplicate lists and omit null/empty arrays. An omitted
+     * field is projected as null; semicolon-delimited scalar strings stay intact.
+     */
+    public List<Map<String, Object>> collectDocValuesPage(Request request, Map<String, Object> query,
+            String[][] properties, Set<String> listProperties, int pageSize, int offset) throws IOException {
+        if (pageSize < 0 || pageSize > ESService.MAX_ES_SIZE || offset < 0) {
+            throw new IOException("Invalid page size or offset");
+        }
+        if (pageSize == 0) {
+            return new ArrayList<>();
+        }
+        if ((long) pageSize + offset <= SCROLL_THRESHOLD) {
+            query.put("size", pageSize);
+            query.put("from", offset);
+            request.setJsonEntity(gson.toJson(query));
+            return collectDocValuesPage(send(request), properties, listProperties, pageSize);
+        }
+
+        query.remove("from");
+        query.put("size", SCROLL_SIZE);
+        request.setJsonEntity(gson.toJson(query));
+        request.addParameter("scroll", "1m");
+        List<Map<String, Object>> rows = new ArrayList<>();
+        String scrollId = null;
+        long skipped = 0;
+        try {
+            while (rows.size() < pageSize) {
+                JsonObject response = send(request);
+                if (response.has("_scroll_id")) {
+                    scrollId = response.get("_scroll_id").getAsString();
+                }
+                JsonArray hits = response.getAsJsonObject("hits").getAsJsonArray("hits");
+                if (hits.isEmpty()) {
+                    break;
+                }
+                for (JsonElement hit : hits) {
+                    if (skipped++ < offset) {
+                        continue;
+                    }
+                    rows.add(collectDocValuesRow(hit.getAsJsonObject(), properties, listProperties));
+                    if (rows.size() == pageSize) {
+                        break;
+                    }
+                }
+                if (rows.size() == pageSize) {
+                    break;
+                }
+                if (scrollId == null) {
+                    throw new IOException("Missing scroll ID in doc-values response");
+                }
+                request = new Request("POST", SCROLL_ENDPOINT);
+                request.setJsonEntity(gson.toJson(Map.of("scroll", "1m", "scroll_id", scrollId)));
+            }
+            return rows;
+        } finally {
+            if (scrollId != null) {
+                Request clear = new Request("DELETE", SCROLL_ENDPOINT);
+                clear.setJsonEntity(gson.toJson(Map.of("scroll_id", scrollId)));
+                try {
+                    send(clear);
+                } catch (IOException e) {
+                    logger.warn("Failed to clear doc-values scroll context", e);
+                }
+            }
+        }
+    }
+
+    public List<Map<String, Object>> collectDocValuesPage(JsonObject response, String[][] properties,
+            Set<String> listProperties, int pageSize) throws IOException {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (JsonElement hit : response.getAsJsonObject("hits").getAsJsonArray("hits")) {
+            if (rows.size() >= pageSize) {
+                break;
+            }
+            rows.add(collectDocValuesRow(hit.getAsJsonObject(), properties, listProperties));
+        }
+        return rows;
+    }
+
+    private Map<String, Object> collectDocValuesRow(JsonObject hit, String[][] properties,
+            Set<String> listProperties) throws IOException {
+        JsonObject fields = hit.getAsJsonObject("fields");
+        Map<String, Object> row = new HashMap<>();
+        for (String[] property : properties) {
+            JsonArray values = fields == null ? null : fields.getAsJsonArray(property[1]);
+            Object value = null;
+            if (values != null && !values.isEmpty()) {
+                if (listProperties.contains(property[0])) {
+                    value = getValue(values);
+                } else {
+                    if (values.size() != 1) {
+                        throw new IOException("Expected one doc value for scalar property: " + property[0]);
+                    }
+                    value = getValue(values.get(0));
+                }
+            }
+            row.put(property[0], value);
+        }
+        return row;
+    }
+
     // Collect a page of data, result will be of pageSize or less if not enough data remains
     public List<Map<String, Object>> collectPage(JsonObject jsonObject, String[][] properties, int pageSize) throws IOException {
         return collectPage(jsonObject, properties, pageSize, 0);

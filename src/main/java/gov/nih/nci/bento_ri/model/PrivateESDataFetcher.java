@@ -1832,7 +1832,7 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     }
 
     private List<Map<String, Object>> participantOverview(Map<String, Object> params) throws IOException {
-        // Project top-level display values; nested filter records are excluded below.
+        // Project display fields from doc values; preserve the remaining GraphQL list fields.
         final String[][] PROPERTIES = new String[][]{
             new String[]{"pid", "id"},
             new String[]{"id", "id"},
@@ -1924,7 +1924,9 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         );
 
         // Get the participant list from overview
-        List<Map<String, Object>> participant_list = overview(PARTICIPANTS_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "participants_table");
+        List<Map<String, Object>> participant_list = overview(PARTICIPANTS_END_POINT, params, PROPERTIES, defaultSort, mapping, Set.of(), "nested_filters", "participants_table",
+                Set.of("consent_group_id", "consent_group_name", "files", "diagnosis_category",
+                        "tumor_spatial_extent", "beam_radiation_type"));
 
         insertCPIDataIntoParticipants(participant_list);
 
@@ -3562,6 +3564,11 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
     // if the nestedProperty is set, this will filter based upon the params against the nested property for the endpoint's index.
     // otherwise, this will filter based upon the params against the top level properties for the index
     private List<Map<String, Object>> overview(String endpoint, Map<String, Object> params, String[][] properties, String defaultSort, Map<String, String> mapping, Set<String> regular_fields, String nestedProperty, String overviewType) throws IOException {
+        return overview(endpoint, params, properties, defaultSort, mapping, regular_fields, nestedProperty, overviewType, null);
+    }
+
+    // Opt in per overview. A null list-field set keeps the existing _source retrieval path.
+    private List<Map<String, Object>> overview(String endpoint, Map<String, Object> params, String[][] properties, String defaultSort, Map<String, String> mapping, Set<String> regular_fields, String nestedProperty, String overviewType, Set<String> docValueListProperties) throws IOException {
         
         Request request = new Request("GET", endpoint);
         Map<String, Object> query = inventoryESService.buildFacetFilterQuery(params, RANGE_PARAMS, Set.of(PAGE_SIZE, OFFSET, ORDER_BY, SORT_DIRECTION), regular_fields, nestedProperty, overviewType);
@@ -3569,6 +3576,12 @@ public class PrivateESDataFetcher extends AbstractPrivateESDataFetcher {
         String order_by = (String)params.get(ORDER_BY);
         String direction = ((String)params.get(SORT_DIRECTION)).toLowerCase();
         query.put("sort", mapSortOrder(order_by, direction, defaultSort, mapping));
+        if (docValueListProperties != null) {
+            query.put("_source", false);
+            query.put("docvalue_fields", Arrays.stream(properties).map(property -> property[1]).distinct().toList());
+            return inventoryESService.collectDocValuesPage(request, query, properties, docValueListProperties,
+                    (int) params.get(PAGE_SIZE), (int) params.get(OFFSET));
+        }
         // "_source": {"exclude": [ "sample_diagnosis_file_filters"]}
         if (overviewType.equals("participants_table")) {
             query.put("_source", Map.of("exclude", Set.of("sample_diagnosis_genetic_analysis_file_filters", "survival_filters", "treatment_filters", "treatment_response_filters")));

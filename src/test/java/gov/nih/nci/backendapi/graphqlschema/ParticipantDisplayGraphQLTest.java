@@ -89,8 +89,15 @@ class ParticipantDisplayGraphQLTest {
         source.put("event_free_survival_status", "Event-free");
         source.put("age_at_event_free_survival_status", 50);
         source.put("cause_of_death", "Not Reported");
+        // Doc values always arrive as arrays; null fields are omitted by OpenSearch.
+        Map<String, Object> fields = new LinkedHashMap<>();
+        source.forEach((field, value) -> {
+            if (value != null) {
+                fields.put(field, value instanceof List ? value : List.of(value));
+            }
+        });
         JsonObject response = InventoryESServiceTestSupport.GSON.toJsonTree(Map.of(
-            "hits", Map.of("hits", List.of(Map.of("_source", source)))
+            "hits", Map.of("hits", List.of(Map.of("fields", fields)))
         )).getAsJsonObject();
         when(inventory.buildFacetFilterQuery(anyMap(), anySet(), anySet(), anySet(),
                 eq("nested_filters"), eq("participants_table")))
@@ -98,10 +105,10 @@ class ParticipantDisplayGraphQLTest {
 
         InventoryESService collector = InventoryESServiceTestSupport.newService();
         try {
-            when(inventory.collectPage(any(Request.class), anyMap(), any(String[][].class),
-                    anyInt(), anyInt()))
+            when(inventory.collectDocValuesPage(any(Request.class), anyMap(), any(String[][].class),
+                    anySet(), anyInt(), anyInt()))
                 .thenAnswer(call -> {
-                    var projected = collector.collectPage(response, call.getArgument(2), 1);
+                    var projected = collector.collectDocValuesPage(response, call.getArgument(2), call.getArgument(3), 1);
                     mappedStrings.forEach((field, value) ->
                         assertEquals(value, projected.get(0).get(field), field));
                     return projected;

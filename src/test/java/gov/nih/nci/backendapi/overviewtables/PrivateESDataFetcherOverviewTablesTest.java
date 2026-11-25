@@ -39,6 +39,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PrivateESDataFetcherOverviewTablesTest {
 
+    private static final Set<String> PARTICIPANT_LIST_PROPERTIES = Set.of(
+            "consent_group_id", "consent_group_name", "files", "diagnosis_category",
+            "tumor_spatial_extent", "beam_radiation_type");
+
     private static final Set<String> PAGING_ARGUMENTS =
             Set.of("first", "offset", "order_by", "sort_direction");
 
@@ -296,11 +300,7 @@ class PrivateESDataFetcherOverviewTablesTest {
                 "participants_table",
                 orderBy,
                 expectedSortField,
-                Map.of("exclude", Set.of(
-                        "sample_diagnosis_genetic_analysis_file_filters",
-                        "survival_filters",
-                        "treatment_filters",
-                        "treatment_response_filters")),
+                false,
                 PARTICIPANT_PROPERTIES,
                 true);
 
@@ -478,7 +478,7 @@ class PrivateESDataFetcherOverviewTablesTest {
             String overviewType,
             String orderBy,
             String expectedSortField,
-            Map<String, Set<String>> expectedSource,
+            Object expectedSource,
             List<List<String>> expectedPropertyPairs,
             boolean useParticipantFixture) throws Exception {
         Map<String, Object> params = pagingParams(orderBy, "DESC", 17, 3);
@@ -492,9 +492,14 @@ class PrivateESDataFetcherOverviewTablesTest {
         when(inventoryESService.buildFacetFilterQuery(
                 eq(params), anySet(), eq(PAGING_ARGUMENTS), eq(Set.of()),
                 eq("nested_filters"), eq(overviewType))).thenReturn(query);
-        when(inventoryESService.collectPage(
-                any(Request.class), eq(query), any(String[][].class), eq(17), eq(3)))
-                .thenReturn(expected);
+        if (useParticipantFixture) {
+            when(inventoryESService.collectDocValuesPage(any(Request.class), eq(query), any(String[][].class),
+                    eq(PARTICIPANT_LIST_PROPERTIES), eq(17), eq(3))).thenReturn(expected);
+        } else {
+            when(inventoryESService.collectPage(
+                    any(Request.class), eq(query), any(String[][].class), eq(17), eq(3)))
+                    .thenReturn(expected);
+        }
 
         List<Map<String, Object>> result = invoke(methodName, params);
 
@@ -504,8 +509,16 @@ class PrivateESDataFetcherOverviewTablesTest {
 
         ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
         ArgumentCaptor<String[][]> propertiesCaptor = ArgumentCaptor.forClass(String[][].class);
-        verify(inventoryESService).collectPage(
-                requestCaptor.capture(), eq(query), propertiesCaptor.capture(), eq(17), eq(3));
+        if (useParticipantFixture) {
+            verify(inventoryESService).collectDocValuesPage(requestCaptor.capture(), eq(query),
+                    propertiesCaptor.capture(), eq(PARTICIPANT_LIST_PROPERTIES), eq(17), eq(3));
+            assertEquals(expectedPropertyPairs.stream().map(pair -> pair.get(1)).distinct().toList(),
+                    query.get("docvalue_fields"));
+        } else {
+            verify(inventoryESService).collectPage(
+                    requestCaptor.capture(), eq(query), propertiesCaptor.capture(), eq(17), eq(3));
+            assertEquals(null, query.get("docvalue_fields"));
+        }
         assertEquals(endpoint, requestCaptor.getValue().getEndpoint());
         List<List<String>> actualProperties = propertyPairs(propertiesCaptor.getValue());
         assertEquals(expectedPropertyPairs, actualProperties);
