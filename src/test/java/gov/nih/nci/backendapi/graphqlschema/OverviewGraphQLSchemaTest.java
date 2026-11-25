@@ -25,7 +25,7 @@ class OverviewGraphQLSchemaTest {
 
         TypeDefinitionRegistry registry = new SchemaParser().parse(schema);
 
-        assertListField(registry, "ParticipantOverViewResult", "race");
+        assertListField(registry, "ParticipantOverViewResult", "consent_group_id");
 
         assertListField(registry, "StudyOverViewResult", "diagnosis");
         assertListField(registry, "StudyOverViewResult", "anatomic_site");

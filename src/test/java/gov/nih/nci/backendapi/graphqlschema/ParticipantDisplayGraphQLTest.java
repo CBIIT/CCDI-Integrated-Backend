@@ -9,6 +9,9 @@ import graphql.GraphQL;
 import graphql.language.ObjectTypeDefinition;
 import graphql.schema.idl.SchemaParser;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.Request;
 
 import java.lang.reflect.Field;
@@ -29,18 +32,39 @@ import static org.mockito.Mockito.when;
 
 class ParticipantDisplayGraphQLTest {
     private static final List<String> DISPLAY_LISTS = List.of(
-        "consent_group_id", "consent_group_name", "diagnosis", "diagnosis_category",
-        "diagnosis_anatomic_site", "disease_phase",
-        "diagnosis_classification_system", "diagnosis_basis", "diagnosis_comment",
-        "tumor_classification", "toronto_childhood_cancer_staging", "tumor_grade",
-        "tumor_stage_clinical_t", "tumor_stage_clinical_n", "tumor_stage_clinical_m",
-        "tumor_spatial_extent", "treatment_type", "age_at_treatment_start",
-        "age_at_treatment_end", "chemotherapy_agent", "radiation_therapy_type",
-        "beam_radiation_type", "surgery_type", "other_treatment_type", "response"
+        "consent_group_id", "consent_group_name", "diagnosis_category",
+        "tumor_spatial_extent", "beam_radiation_type"
+    );
+    private static final List<String> DISPLAY_STRINGS = List.of(
+        "race",
+        "treatment_type",
+        "age_at_treatment_start",
+        "age_at_treatment_end",
+        "chemotherapy_agent",
+        "radiation_therapy_type",
+        "surgery_type",
+        "other_treatment_type",
+        "response",
+        "age_at_response",
+        "diagnosis",
+        "age_at_diagnosis",
+        "diagnosis_anatomic_site",
+        "disease_phase",
+        "diagnosis_classification_system",
+        "diagnosis_comment",
+        "tumor_classification",
+        "toronto_childhood_cancer_staging",
+        "tumor_grade",
+        "tumor_stage_clinical_t",
+        "tumor_stage_clinical_n",
+        "tumor_stage_clinical_m",
+        "diagnosis_basis"
     );
 
-    @Test
-    void participantDisplayProjectsMappedStringsAndReportsListSchemaMismatch() throws Exception {
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"first; second"})
+    void participantDisplayReturnsMappedStringsWithoutGraphQLErrors(String displayValue) throws Exception {
         InventoryESService inventory = mock(InventoryESService.class);
         CPIFetcherService cpi = mock(CPIFetcherService.class);
         PrivateESDataFetcher fetcher = new PrivateESDataFetcher(inventory);
@@ -54,13 +78,11 @@ class ParticipantDisplayGraphQLTest {
         source.put("participant_id", "P1");
         source.put("study_id", "S1");
         DISPLAY_LISTS.forEach(field -> source.put(field, List.of("first", "second")));
-        Map<String, String> mappedStrings = Map.of(
-            "treatment_type", "first; second",
-            "age_at_treatment_start", "10; -999",
-            "age_at_treatment_end", "20; -999",
-            "age_at_diagnosis", "10; -999",
-            "age_at_response", "30; -999"
-        );
+        Map<String, String> mappedStrings = new LinkedHashMap<>();
+        DISPLAY_STRINGS.forEach(field -> {
+            source.put(field, List.of("original", "list"));
+            mappedStrings.put(field, displayValue);
+        });
         mappedStrings.forEach((field, value) -> source.put(field + "_str", value));
         source.put("age_at_diagnosis", List.of(10, -999));
         source.put("age_at_response", List.of(30, -999));
@@ -90,19 +112,16 @@ class ParticipantDisplayGraphQLTest {
             ).build();
             var result = graphQL.execute("{ participantOverview(first: 1) { "
                 + String.join(" ", DISPLAY_LISTS)
-                + " age_at_diagnosis age_at_response event_free_survival_status"
+                + " " + String.join(" ", DISPLAY_STRINGS)
+                + " event_free_survival_status"
                 + " age_at_event_free_survival_status cause_of_death } }");
-            // These projections are scalar strings, but the current schema declares lists.
-            assertEquals(mappedStrings.size(), result.getErrors().size(), result.getErrors().toString());
-            assertEquals(mappedStrings.keySet(), result.getErrors().stream()
-                .map(error -> error.getPath().get(2))
-                .collect(java.util.stream.Collectors.toSet()));
+            assertEquals(List.of(), result.getErrors(), result.getErrors().toString());
             Map<String, Object> data = result.getData();
             @SuppressWarnings("unchecked")
             var row = ((List<Map<String, Object>>) data.get("participantOverview")).get(0);
-            DISPLAY_LISTS.stream().filter(field -> !mappedStrings.containsKey(field))
+            DISPLAY_LISTS.stream()
                 .forEach(field -> assertEquals(List.of("first", "second"), row.get(field), field));
-            mappedStrings.keySet().forEach(field -> assertEquals(null, row.get(field), field));
+            mappedStrings.forEach((field, value) -> assertEquals(value, row.get(field), field));
             assertEquals("50", row.get("age_at_event_free_survival_status"));
             assertEquals("Event-free", row.get("event_free_survival_status"));
             assertEquals("Not Reported", row.get("cause_of_death"));
