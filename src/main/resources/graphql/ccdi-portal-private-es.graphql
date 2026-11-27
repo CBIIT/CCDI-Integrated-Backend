@@ -1523,6 +1523,7 @@ schema {
 
 type QueryType {
     esVersion: String
+    # TODO: Rename participant_id to participant_ids with corresponding client updates.
     findParticipantIdsInList(participant_id: [String] = []): [ParticipantResult]
     globalSearch (input: String, first: Int = 10, offset: Int = 0): GlobalSearchResult
 
